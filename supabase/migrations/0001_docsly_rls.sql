@@ -76,6 +76,10 @@ create policy "User can insert ai conversations"
   on ai_conversations for insert
   with check (document_id in (select id from documents where workspace_id in (select id from workspaces where user_id = auth.uid())));
 
+create policy "User can delete their ai conversations"
+  on ai_conversations for delete
+  using (document_id in (select id from documents where workspace_id in (select id from workspaces where user_id = auth.uid())));
+
 -- 6. Prompt History
 create policy "User can view their prompt history"
   on prompt_history for select
@@ -84,6 +88,10 @@ create policy "User can view their prompt history"
 create policy "User can insert prompt history"
   on prompt_history for insert
   with check (conversation_id in (select id from ai_conversations where document_id in (select id from documents where workspace_id in (select id from workspaces where user_id = auth.uid()))));
+
+create policy "User can delete their prompt history"
+  on prompt_history for delete
+  using (conversation_id in (select id from ai_conversations where document_id in (select id from documents where workspace_id in (select id from workspaces where user_id = auth.uid()))));
 
 -- 7. Subscriptions Policies
 create policy "User can view their own subscriptions"

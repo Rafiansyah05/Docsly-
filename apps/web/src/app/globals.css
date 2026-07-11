@@ -1,27 +1,272 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 }
+
+@layer base {
+  .theme {
+    --font-heading: var(--font-sans);
+    --font-sans: var(--font-sans);
+  }
+  :root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+  }
+  .dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  
+  .prose a {
+    color: #2563eb !important;
+    text-decoration: underline !important;
+    cursor: pointer;
+  }
+  .prose a:hover {
+    color: #1d4ed8 !important;
+  }
+  
+  .prose table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  .prose table td,
+  .prose table th {
+    min-width: 1em;
+    border: 1px solid #cbd5e1 !important;
+    padding: 3px 5px;
+    vertical-align: top;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .prose table th {
+    background-color: #f8fafc !important;
+    font-weight: bold;
+    text-align: left;
+  }
+  .prose table .selectedCell:after {
+    z-index: 2;
+    position: absolute;
+    content: "";
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(200, 200, 255, 0.4);
+    pointer-events: none;
+  }
+  .prose table .column-resize-handle {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: -2px;
+    width: 4px;
+    background-color: #60a5fa;
+    pointer-events: none;
+  }
+  .prose table p {
+    margin: 0;
+  }
+
+  /* 
+   * MS Word Intelligent Formatting Rules
+   */
+  .prose {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+  
+  .prose p {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* PDF Export / Print Rules */
+  @media print {
+    .page-break-spacer {
+      height: 0 !important;
+      break-after: page;
+      page-break-after: always;
+    }
+    
+    .document-layout-wrapper {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+  }
+  
+  .prose p, .prose li {
+    orphans: 2;
+    widows: 2;
+    font-size: 11pt;
+  }
+
+  .prose h1, .prose h2, .prose h3 {
+    break-after: avoid; /* Keep with Next */
+  }
+
+  .prose h1 {
+    font-size: 16pt !important;
+    margin-top: 24pt !important;
+    margin-bottom: 12pt !important;
+  }
+
+  .prose h2 {
+    font-size: 14pt !important;
+    margin-top: 18pt !important;
+    margin-bottom: 8pt !important;
+  }
+
+  /* 
+   * Hierarchical Heading Indentations 
+   * Matches MS Word style requested by user
+   */
+  .prose .heading-level-2 {
+    margin-left: 1.5rem;
+  }
+  .prose .heading-level-3 {
+    margin-left: 3rem;
+  }
+  .prose .heading-level-4 {
+    margin-left: 4.5rem;
+  }
+
+  /* 
+   * Custom Ordered Lists
+   */
+  .prose ol[data-list-type="lower-alpha"] {
+    list-style-type: lower-alpha;
+  }
+
+  /* 
+   * Foldable Heading Hidden Blocks
+   */
+  .hidden-by-fold {
+    display: none !important;
+  }
+
+  /* 
+   * Suggestion styles for Diff Renderer (Sprint 3)
+   */
+  .suggestion-insert {
+    background-color: rgba(16, 185, 129, 0.08) !important; /* light green */
+    border-left: 2px solid #10b981;
+    padding-left: 4px;
+    margin-left: -6px;
+    text-decoration: none !important;
+  }
+  .suggestion-delete {
+    background-color: rgba(239, 68, 68, 0.08) !important; /* light red */
+    text-decoration: line-through !important;
+    color: #ef4444 !important;
+    opacity: 0.8;
+  }
+  
+  .suggestion-assumed {
+    border-bottom: 2px dashed #f59e0b !important; /* orange dashed underline for assumptions */
+    background-color: rgba(245, 158, 11, 0.05) !important; /* very light orange */
+  }
+
+  /* 
+   * Fix Image Selection Bounding Box (MS Word Style)
+   */
+  .prose img {
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Reset spacing on any wrapper around the image (e.g., Tiptap node views or resize wrappers) */
+  .prose [data-type="image"], 
+  .prose .image-resizer,
+  .prose .ProseMirror-selectednode {
+    display: inline-block;
+    width: fit-content;
+    height: fit-content;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 0 !important;
+  }
+}
+
+
