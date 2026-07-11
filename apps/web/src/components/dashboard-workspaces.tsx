@@ -17,9 +17,9 @@ import { useFormStatus } from 'react-dom';
 function CreateButton() {
   const { pending } = useFormStatus();
   return (
-    <Button 
-      type="submit" 
-      disabled={pending} 
+    <Button
+      type="submit"
+      disabled={pending}
       className="h-[40px] px-4 rounded-lg bg-slate-900 font-medium text-white hover:bg-slate-800 transition-colors"
     >
       {pending ? 'Membuat...' : 'Buat Workspace'}
@@ -89,14 +89,14 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-8 py-8 md:py-10">
-      
+
       {/* Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div className="flex flex-col gap-2">
           <h1 className="text-[32px] font-semibold tracking-tight text-slate-900 leading-none">Workspaces</h1>
           <p className="text-[14px] text-slate-500">Choose or create workspace to start working.</p>
         </div>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger render={<Button className="h-[40px] px-4 rounded-lg bg-slate-900 font-medium text-white hover:bg-slate-800 transition-colors flex items-center gap-2" />}>
             <Plus className="h-4 w-4" /> Buat Workspace
@@ -110,12 +110,12 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
             </DialogHeader>
             <form action={handleCreate}>
               <div className="flex flex-col gap-4 mb-6">
-                <Input 
-                  id="nama" 
-                  name="nama" 
-                  placeholder="Contoh: Skripsi Bab 1-3" 
+                <Input
+                  id="nama"
+                  name="nama"
+                  placeholder="Contoh: Skripsi Bab 1-3"
                   className="h-[40px] rounded-lg border-slate-200 px-3 text-[14px] text-slate-900 focus-visible:ring-1 focus-visible:ring-slate-400"
-                  required 
+                  required
                 />
               </div>
               <DialogFooter>
@@ -130,23 +130,30 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
       <div className="flex flex-col sm:flex-row gap-4 mb-8 items-center justify-between">
         <div className="relative w-full sm:w-[320px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input 
-            placeholder="Search workspace..." 
-            className="pl-9 h-[40px] rounded-lg border-slate-200 bg-white text-[14px] text-slate-900 focus-visible:ring-1 focus-visible:ring-slate-400" 
+          <Input
+            placeholder="Search workspace..."
+            className="pl-9 h-[40px] rounded-lg border-slate-200 bg-white text-[14px] text-slate-900 focus-visible:ring-1 focus-visible:ring-slate-400"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Select value={sort} onValueChange={setSort}>
+          <Select
+            value={sort}
+            onValueChange={(value) => {
+              if (value) {
+                setSort(value);
+              }
+            }}
+          >
             <SelectTrigger className="w-full sm:w-[200px] h-[40px] rounded-lg border-slate-200 bg-white text-[14px] text-slate-900 focus:ring-0 focus:ring-offset-0">
               <span className="flex-1 text-left">
-                {sort === 'updated_desc' ? 'Terbaru' : 
-                 sort === 'updated_asc' ? 'Terlama' : 
-                 sort === 'name_asc' ? 'Nama (A - Z)' : 
-                 sort === 'name_desc' ? 'Nama (Z - A)' : 
-                 'Urutkan'}
+                {sort === 'updated_desc' ? 'Terbaru' :
+                  sort === 'updated_asc' ? 'Terlama' :
+                    sort === 'name_asc' ? 'Nama (A - Z)' :
+                      sort === 'name_desc' ? 'Nama (Z - A)' :
+                        'Urutkan'}
               </span>
               <SelectValue className="hidden" />
             </SelectTrigger>
@@ -159,14 +166,14 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
           </Select>
 
           <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 h-[40px] items-center">
-            <button 
+            <button
               onClick={() => setView('grid')}
               className={`h-full px-2.5 rounded-md transition-colors flex items-center justify-center ${view === 'grid' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
               aria-label="Grid View"
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
-            <button 
+            <button
               onClick={() => setView('list')}
               className={`h-full px-2.5 rounded-md transition-colors flex items-center justify-center ${view === 'list' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
               aria-label="List View"
@@ -182,9 +189,9 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
         view === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredWorkspaces.map(ws => (
-              <div 
-                key={ws.id} 
-                onClick={() => router.push(`/w/${ws.id}`)} 
+              <div
+                key={ws.id}
+                onClick={() => router.push(`/w/${ws.id}`)}
                 className="h-full relative p-5 rounded-xl bg-white border border-slate-200 transition-all duration-150 ease-in-out hover:bg-slate-50 hover:-translate-y-[1px] hover:border-slate-300 flex flex-col group cursor-pointer"
               >
                 <div className="absolute top-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>
@@ -195,7 +202,7 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
                       </button>
                     } />
                     <DropdownMenuContent align="end" className="w-[160px] bg-white rounded-lg shadow-sm border border-slate-200 p-1 z-50">
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         className="text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 cursor-pointer text-[13px] rounded-md px-2 py-1.5 flex items-center gap-2"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -223,7 +230,7 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="pt-4 border-t border-slate-100 mt-auto">
                   <p className="text-[13px] text-slate-500 font-medium">
                     {ws.documents?.[0]?.count || 0} Documents
@@ -268,7 +275,7 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
                           </button>
                         } />
                         <DropdownMenuContent align="end" className="w-[160px] bg-white rounded-lg shadow-sm border border-slate-200 p-1 z-50">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 cursor-pointer text-[13px] rounded-md px-2 py-1.5 flex items-center gap-2"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -295,9 +302,9 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
           <p className="text-[14px] text-slate-500 max-w-[280px] mb-8 leading-relaxed">
             {search ? 'Tidak ada hasil yang cocok dengan pencarian Anda.' : 'Create your first workspace to start organizing documents.'}
           </p>
-          
+
           {!search && (
-            <Button 
+            <Button
               onClick={() => setIsDialogOpen(true)}
               className="h-[40px] px-6 rounded-lg bg-slate-900 font-medium text-white hover:bg-slate-800 transition-colors flex items-center gap-2"
             >
@@ -317,16 +324,16 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-3 mt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               className="h-[40px] px-4 rounded-lg bg-white border border-slate-200 font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
             >
               Batal
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={handleDelete}
               disabled={isDeleting}
               className="h-[40px] px-4 rounded-lg bg-red-600 font-medium text-white hover:bg-red-700 transition-colors border-0"
