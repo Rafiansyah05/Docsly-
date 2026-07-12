@@ -100,3 +100,56 @@ export function formatPageNumber(absolutePage: number, settings: PageSettings | 
     return relNumber.toString();
   }
 }
+
+export function estimatePageCount(kontenJson: any): number {
+  if (!kontenJson) return 1;
+  
+  let totalLength = 0;
+  let tableCount = 0;
+  let imageCount = 0;
+  let paragraphCount = 0;
+  let pageBreaks = 0;
+
+  function traverse(node: any) {
+    if (!node) return;
+    
+    // Check if the node has attributes suggesting a page break
+    if (node.attrs && (node.attrs.pageBreakBefore || node.attrs.pageBreakSpacer)) {
+      pageBreaks++;
+    }
+
+    if (node.type === 'text' && typeof node.text === 'string') {
+      totalLength += node.text.length;
+    } else if (node.type === 'table') {
+      tableCount++;
+    } else if (node.type === 'imagePlaceholder' || node.type === 'image') {
+      imageCount++;
+    } else if (node.type === 'paragraph') {
+      paragraphCount++;
+    }
+
+    if (Array.isArray(node.content)) {
+      node.content.forEach(traverse);
+    }
+  }
+
+  try {
+    traverse(kontenJson);
+  } catch (err) {
+    console.error('Error traversing document JSON:', err);
+  }
+
+  // An empty document is at least 1 page.
+  if (totalLength === 0 && tableCount === 0 && imageCount === 0) {
+    return 1;
+  }
+
+  // Calculate approximate page count based on character count and other blocks.
+  // 1 standard page is approx 2400 characters (approx 350-400 words with margins/spaces).
+  // A table takes about 800 character equivalents.
+  // An image takes about 1200 character equivalents.
+  const estimatedChars = totalLength + (tableCount * 800) + (imageCount * 1200) + (paragraphCount * 40);
+  
+  const estimatedPages = Math.max(1, Math.ceil(estimatedChars / 2400), pageBreaks + 1);
+  return estimatedPages;
+}

@@ -12,7 +12,11 @@ import { deleteDocument } from '@/lib/actions/document';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
+import { createClient } from '@/lib/supabase/client';
+import { estimatePageCount } from '@/lib/page-numbers';
+
 export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialDocuments: any[], workspaceId: string }) {
+  const [documents, setDocuments] = useState(initialDocuments);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('updated_desc');
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -23,7 +27,54 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
 
   const router = useRouter();
 
-  const filteredDocuments = initialDocuments
+  // Force Next.js Router Cache to refresh on mount
+  React.useEffect(() => {
+    router.refresh();
+  }, [router]);
+
+  // Sync prop changes to state
+  React.useEffect(() => {
+    setDocuments(initialDocuments);
+  }, [initialDocuments]);
+
+  // Real-time Supabase subscription
+  React.useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`realtime-workspace-docs-${workspaceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents',
+          filter: `workspace_id=eq.${workspaceId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setDocuments((prev) => {
+              if (prev.some((doc) => doc.id === payload.new.id)) return prev;
+              return [payload.new, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setDocuments((prev) =>
+              prev.map((doc) =>
+                doc.id === payload.new.id ? { ...doc, ...payload.new } : doc
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setDocuments((prev) => prev.filter((doc) => doc.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId]);
+
+  const filteredDocuments = documents
     .filter(doc => (doc.judul || '').toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (sort === 'updated_desc') {
@@ -165,7 +216,7 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
 
                 <div className="pt-4 border-t border-slate-100 mt-auto flex items-center justify-between">
                   <span className="inline-flex items-center rounded-md bg-slate-100 border-none px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                    {doc.status === 'draft' ? 'Draft' : 'Selesai'}
+                    {estimatePageCount(doc.konten_json_terkini)} Halaman
                   </span>
                 </div>
               </div>
@@ -177,7 +228,7 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/50">
                   <th className="px-6 py-4 text-[13px] font-medium text-slate-500 w-[50%]">Title</th>
-                  <th className="px-6 py-4 text-[13px] font-medium text-slate-500">Status</th>
+                  <th className="px-6 py-4 text-[13px] font-medium text-slate-500">Jumlah Halaman</th>
                   <th className="px-6 py-4 text-[13px] font-medium text-slate-500 text-right">Updated Date</th>
                   <th className="px-4 py-4 w-[60px]"></th>
                 </tr>
@@ -193,7 +244,7 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center rounded-md bg-slate-100 border-none px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                        {doc.status === 'draft' ? 'Draft' : 'Selesai'}
+                        {estimatePageCount(doc.konten_json_terkini)} Halaman
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">

@@ -32,7 +32,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full font-sans">
       <div className="mb-8">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">Yuk, mulai</h2>
         <p className="text-sm text-slate-500 mt-2">
@@ -47,23 +47,37 @@ export default function RegisterPage() {
           </div>
         )}
         <div className="space-y-2">
-          <Label htmlFor="nama_lengkap" className="font-medium">Nama Lengkap</Label>
-          <Input id="nama_lengkap" name="nama_lengkap" type="text" placeholder="John Doe" className="h-11" required />
+          <Label htmlFor="nama_lengkap" className="font-medium text-slate-700">Nama Lengkap</Label>
+          <Input
+            id="nama_lengkap"
+            name="nama_lengkap"
+            type="text"
+            placeholder="John Doe"
+            className="h-11 text-slate-900 bg-white border-slate-200 placeholder:text-slate-400 focus-visible:border-slate-400"
+            required
+          />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email" className="font-medium">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="nama@email.com" className="h-11" required />
+          <Label htmlFor="email" className="font-medium text-slate-700">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="nama@email.com"
+            className="h-11 text-slate-900 bg-white border-slate-200 placeholder:text-slate-400 focus-visible:border-slate-400"
+            required
+          />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password" className="font-medium">Password</Label>
+          <Label htmlFor="password" className="font-medium text-slate-700">Password</Label>
           <div className="relative">
-            <Input 
-              id="password" 
-              name="password" 
-              type={showPassword ? "text" : "password"} 
-              className="h-11 pr-10" 
-              required 
-              minLength={6} 
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              className="h-11 pr-10 text-slate-900 bg-white border-slate-200 placeholder:text-slate-400 focus-visible:border-slate-400"
+              required
+              minLength={6}
             />
             <button
               type="button"

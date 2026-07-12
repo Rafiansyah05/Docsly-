@@ -31,7 +31,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full font-sans">
       <div className="mb-8">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">Masuk</h2>
         <p className="text-sm text-slate-500 mt-2">
@@ -46,23 +46,30 @@ export default function LoginPage() {
           </div>
         )}
         <div className="space-y-2">
-          <Label htmlFor="email" className="font-medium">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="nama@email.com" className="h-11" required />
+          <Label htmlFor="email" className="font-medium text-slate-700">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="nama@email.com"
+            className="h-11 text-slate-900 bg-white border-slate-200 placeholder:text-slate-400 focus-visible:border-slate-400"
+            required
+          />
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="font-medium">Password</Label>
-            <Link href="#" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+            <Label htmlFor="password" className="font-medium text-slate-700">Password</Label>
+            <Link href="#" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
               Lupa Password?
             </Link>
           </div>
           <div className="relative">
-            <Input 
-              id="password" 
-              name="password" 
-              type={showPassword ? "text" : "password"} 
-              className="h-11 pr-10" 
-              required 
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              className="h-11 pr-10 text-slate-900 bg-white border-slate-200 placeholder:text-slate-400 focus-visible:border-slate-400"
+              required
             />
             <button
               type="button"

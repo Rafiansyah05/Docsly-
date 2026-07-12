@@ -47,6 +47,8 @@ import { VersionHistoryPanel } from './version-history-panel';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
+import { useRouter } from 'next/navigation';
+
 interface TiptapEditorProps {
   documentId: string;
   initialContent: any;
@@ -55,6 +57,7 @@ interface TiptapEditorProps {
 }
 
 export function TiptapEditor({ documentId, initialContent, initialTitle, workspaceId }: TiptapEditorProps) {
+  const router = useRouter();
   const { saveState, triggerSave } = useAutosave(documentId);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
@@ -153,6 +156,44 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       // Handled in a combined effect to track cursor position
     },
   });
+
+  // Force Next.js Router Cache to refresh on mount
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
+
+  // Fetch the latest content on mount from Supabase to bypass any client Router Cache
+  useEffect(() => {
+    if (!editor) return;
+    
+    let isMounted = true;
+    const supabase = createClient();
+    
+    const fetchLatest = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('documents')
+          .select('konten_json_terkini, judul')
+          .eq('id', documentId)
+          .single();
+          
+        if (error) throw error;
+        
+        if (isMounted && data && data.konten_json_terkini) {
+          editor.commands.setContent(data.konten_json_terkini);
+          window.dispatchEvent(new CustomEvent('update-title', { detail: data.judul }));
+        }
+      } catch (err) {
+        console.error('Gagal mengambil konten terbaru dari database:', err);
+      }
+    };
+    
+    fetchLatest();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [editor, documentId]);
 
   useEffect(() => {
     if (editor && typeof window !== 'undefined') {
