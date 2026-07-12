@@ -1,102 +1,152 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { WorkspaceSwitcher } from '@/components/workspace-switcher';
-import { UserMenu } from '@/components/user-menu';
-import { PremiumModal } from '@/components/premium-modal';
-import { Bell, Moon, Sun, Monitor } from 'lucide-react';
+import React, { useState } from 'react';
+import { Moon, Sun, Monitor, Search, ArrowLeft, Home, LayoutGrid, BookOpen, Bell, LifeBuoy, FolderOpen } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PremiumModal } from '@/components/premium-modal';
 
-export function HeaderNav({ user, profile, workspaces }: { user: any, profile: any, workspaces: any[] }) {
-  const pathname = usePathname();
-  const { setTheme, theme } = useTheme();
-  
-  const isWorkspaceDetail = pathname && pathname !== '/w' && pathname !== '/w/settings' && pathname !== '/w/template';
+/** Peta label + ikon untuk setiap tab nav */
+const PAGE_META: Record<string, { label: string; Icon: React.ElementType }> = {
+  '/w': { label: 'Home', Icon: Home },
+  '/w/template': { label: 'Template', Icon: LayoutGrid },
+  '/w/panduan': { label: 'Panduan', Icon: BookOpen },
+  '/w/notifications': { label: 'Notifikasi', Icon: Bell },
+  '/w/faq': { label: 'FAQ & Support', Icon: LifeBuoy },
+};
+
+interface HeaderNavProps {
+  /** 'fixed' = posisi fixed full-width (default, dipakai di editor).
+   *  'inline' = dalam flex layout non-editor (tidak fixed). */
+  variant?: 'fixed' | 'inline';
+  /** Pathname saat ini — diperlukan agar HeaderNav bisa menentukan label halaman */
+  pathname?: string;
+  /** Nama workspace (jika sedang di halaman workspace) */
+  workspaceName?: string;
+}
+
+export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName }: HeaderNavProps) {
+  const { setTheme } = useTheme();
+  const router = useRouter();
+  const [searchValue, setSearchValue] = useState('');
+
+  const isFixed = variant === 'fixed';
+
+  // Deteksi apakah sedang di halaman workspace detail
+  const isWorkspacePage = /^\/w\/[^/]+$/.test(pathname);
+
+  // Cari meta halaman yang cocok (exact match dulu, lalu prefix)
+  const pageMeta = (() => {
+    if (PAGE_META[pathname]) return PAGE_META[pathname];
+    // Cek prefix (misal /w/template/xxx)
+    for (const [key, meta] of Object.entries(PAGE_META)) {
+      if (key !== '/w' && pathname.startsWith(key + '/')) return meta;
+    }
+    return null;
+  })();
+
+  /** Sisi kiri navbar */
+  const renderLeft = () => {
+    // Halaman workspace detail → tampilkan back button + nama workspace
+    if (isWorkspacePage && workspaceName) {
+      return (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push('/w')}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors duration-200"
+            aria-label="Kembali ke Home"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-sm text-slate-400">
+              <Home className="h-3.5 w-3.5" />
+              <span>Home</span>
+              <span className="mx-0.5">/</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-md bg-[#EFF6FF] flex items-center justify-center">
+                <FolderOpen className="h-3.5 w-3.5 text-[#2563EB]" />
+              </div>
+              <span className="text-sm font-semibold text-[#111827] max-w-[200px] truncate">
+                {workspaceName}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Halaman tab biasa → tampilkan ikon + label tab
+    if (pageMeta) {
+      const { label, Icon } = pageMeta;
+      return (
+        <div className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
+            <Icon className="h-4 w-4 text-[#2563EB]" />
+          </div>
+          <span className="text-[15px] font-semibold text-[#111827]">{label}</span>
+        </div>
+      );
+    }
+
+    // Fallback
+    return <span className="text-[15px] font-semibold text-[#111827]">Docsly</span>;
+  };
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
-      
-      {/* Left side: Logo & Navigation */}
-      <div className="flex items-center gap-6">
-        <Link href="/w" className="flex items-center gap-2 font-semibold">
-          <Image src="/images/logo2.png" alt="Docsly Logo" width={100} height={100} className="object-contain" />
-        </Link>
-        
-        <nav className="hidden md:flex items-center gap-1">
-          <Link 
-            href="/w" 
-            className={`px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
-              pathname === '/w' 
-                ? 'bg-slate-100 text-slate-900' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            Home
-          </Link>
-          <Link 
-            href="/w/template" 
-            className={`px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
-              pathname === '/w/template' 
-                ? 'bg-slate-100 text-slate-900' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            Template
-          </Link>
-        </nav>
+    <nav
+      className={[
+        'flex h-14 items-center justify-between gap-4 bg-white border-b border-[#E2E8F0]',
+        isFixed ? 'fixed top-0 left-0 right-0 z-50 px-6' : 'px-6 w-full shrink-0',
+      ].join(' ')}
+    >
+      {/* Kiri: info halaman / breadcrumb workspace */}
+      <div className="flex items-center min-w-0">{renderLeft()}</div>
 
-        {isWorkspaceDetail && (
-          <div className="hidden md:flex items-center gap-4">
-            <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
-            <WorkspaceSwitcher workspaces={workspaces || []} />
-          </div>
-        )}
-      </div>
+      {/* Kanan: searchbar + upgrade + theme */}
+      <div className="flex items-center gap-2 shrink-0">
+        {/* Search */}
+        <div className="relative w-[260px]">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            placeholder="Cari dokumen..."
+            className="h-9 rounded-[10px] border border-slate-200 bg-[#F8FAFC] pl-9 pr-4 text-sm text-[#111827] placeholder:text-[#94A3B8] focus:border-[#2563EB]"
+          />
+        </div>
 
-      {/* Right side: Actions & Profile */}
-      <div className="flex items-center gap-3">
+        {/* Upgrade */}
         <PremiumModal />
-        
-        <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
-        
-        {/* Theme Switcher */}
+
+        {/* Theme toggle */}
         <DropdownMenu>
-          <DropdownMenuTrigger render={
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 outline-none">
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-          } />
-          <DropdownMenuContent align="end" className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm min-w-[120px] p-1">
-            <DropdownMenuItem onClick={() => setTheme("light")} className="text-[13px] rounded-lg cursor-pointer">
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-500 hover:bg-slate-100 outline-none">
+                <Sun className="h-4 w-4" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="bg-white rounded-xl p-1 text-sm">
+            <DropdownMenuItem onClick={() => setTheme('light')} className="rounded-lg px-2 py-2 text-slate-700">
               <Sun className="mr-2 h-4 w-4" /> Terang
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("dark")} className="text-[13px] rounded-lg cursor-pointer">
+            <DropdownMenuItem onClick={() => setTheme('dark')} className="rounded-lg px-2 py-2 text-slate-700">
               <Moon className="mr-2 h-4 w-4" /> Gelap
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("system")} className="text-[13px] rounded-lg cursor-pointer">
+            <DropdownMenuItem onClick={() => setTheme('system')} className="rounded-lg px-2 py-2 text-slate-700">
               <Monitor className="mr-2 h-4 w-4" /> Sistem
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Notifications */}
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 outline-none relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-red-500"></span>
-        </Button>
-        
-        <div className="ml-1">
-          <UserMenu user={user} profile={profile} />
-        </div>
       </div>
-      
-    </header>
+    </nav>
   );
 }

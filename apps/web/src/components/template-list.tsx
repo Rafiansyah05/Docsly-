@@ -36,18 +36,18 @@ export function TemplateList({ workspaces }: { workspaces: any[] }) {
     try {
       // Create new document
       const newDoc = await createDocumentClient(selectedWorkspace, selectedTemplate.title);
-      
+
       if (newDoc.error || !newDoc.id) {
         throw new Error(newDoc.error || 'Failed to create document');
       }
-      
+
       // Inject Template HTML
       localStorage.setItem(`import_${newDoc.id}`, selectedTemplate.html);
-      
+
       toast.success('Template berhasil diterapkan!');
       // Redirect to the new document
       router.push(`/w/${selectedWorkspace}/d/${newDoc.id}`);
-      
+
     } catch (err) {
       console.error(err);
       toast.error('Terjadi kesalahan saat menerapkan template.');
@@ -59,8 +59,8 @@ export function TemplateList({ workspaces }: { workspaces: any[] }) {
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {TEMPLATES_DATA.map((template) => (
-          <div 
-            key={template.id} 
+          <div
+            key={template.id}
             onClick={() => setSelectedTemplate(template)}
             className="h-full relative p-6 rounded-xl bg-white border border-slate-200 transition-all duration-200 ease-in-out hover:bg-slate-50 hover:-translate-y-[2px] hover:border-slate-300 hover:shadow-sm flex flex-col group cursor-pointer"
           >
@@ -74,11 +74,11 @@ export function TemplateList({ workspaces }: { workspaces: any[] }) {
                 </h3>
               </div>
             </div>
-            
+
             <p className="text-[14px] text-slate-500 flex-1 leading-relaxed mt-2">
               {template.description}
             </p>
-            
+
             <div className="pt-5 mt-auto flex items-center">
               <span className="text-[13px] font-medium text-blue-600 flex items-center gap-1 group-hover:text-blue-700 transition-colors">
                 <Plus className="h-3.5 w-3.5" /> Gunakan Template
@@ -96,10 +96,17 @@ export function TemplateList({ workspaces }: { workspaces: any[] }) {
               Anda memilih template <strong className="text-slate-700">{selectedTemplate?.title}</strong>. Silakan pilih Workspace tujuan untuk menyimpan dokumen ini.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             {workspaces.length > 0 ? (
-              <Select value={selectedWorkspace} onValueChange={setSelectedWorkspace}>
+              <Select
+                value={selectedWorkspace}
+                onValueChange={(value) => {
+                  if (value) {
+                    setSelectedWorkspace(value);
+                  }
+                }}
+              >
                 <SelectTrigger className="w-full h-[40px] rounded-lg border-slate-200 bg-white text-[14px] text-slate-900 focus:ring-1 focus:ring-slate-400">
                   <span className="flex-1 text-left truncate">
                     {selectedWorkspace ? workspaces.find(w => w.id === selectedWorkspace)?.nama_workspace : 'Pilih Workspace...'}
@@ -122,16 +129,16 @@ export function TemplateList({ workspaces }: { workspaces: any[] }) {
           </div>
 
           <DialogFooter className="gap-3 mt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setSelectedTemplate(null)}
               className="h-[40px] px-4 rounded-lg bg-white border border-slate-200 font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
             >
               Batal
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={handleUseTemplate}
               disabled={isCreating || !selectedWorkspace}
               className="h-[40px] px-4 rounded-lg bg-blue-600 font-medium text-white hover:bg-blue-700 transition-colors border-0"

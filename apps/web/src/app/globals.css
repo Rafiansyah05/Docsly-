@@ -1,5 +1,5 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,13 +83,22 @@
     --sidebar-ring: oklch(0.556 0 0);
   }
 
+  html,
+  body,
+  #__next {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
+    min-height: 100%;
+    overflow: hidden;
   }
   html {
     @apply font-sans;
   }
-  
+
   .prose a {
     color: #2563eb !important;
     text-decoration: underline !important;
@@ -98,7 +107,7 @@
   .prose a:hover {
     color: #1d4ed8 !important;
   }
-  
+
   .prose table {
     border-collapse: collapse;
     table-layout: fixed;
@@ -123,7 +132,7 @@
   .prose table .selectedCell:after {
     z-index: 2;
     position: absolute;
-    content: "";
+    content: '';
     left: 0;
     right: 0;
     top: 0;
@@ -153,7 +162,7 @@
     overflow-wrap: break-word !important;
     word-break: break-word !important;
   }
-  
+
   .prose p {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
@@ -166,20 +175,23 @@
       break-after: page;
       page-break-after: always;
     }
-    
+
     .document-layout-wrapper {
       padding-top: 0 !important;
       padding-bottom: 0 !important;
     }
   }
-  
-  .prose p, .prose li {
+
+  .prose p,
+  .prose li {
     orphans: 2;
     widows: 2;
     font-size: 11pt;
   }
 
-  .prose h1, .prose h2, .prose h3 {
+  .prose h1,
+  .prose h2,
+  .prose h3 {
     break-after: avoid; /* Keep with Next */
   }
 
@@ -212,7 +224,7 @@
   /* 
    * Custom Ordered Lists
    */
-  .prose ol[data-list-type="lower-alpha"] {
+  .prose ol[data-list-type='lower-alpha'] {
     list-style-type: lower-alpha;
   }
 
@@ -239,7 +251,7 @@
     color: #ef4444 !important;
     opacity: 0.8;
   }
-  
+
   .suggestion-assumed {
     border-bottom: 2px dashed #f59e0b !important; /* orange dashed underline for assumptions */
     background-color: rgba(245, 158, 11, 0.05) !important; /* very light orange */
@@ -255,9 +267,9 @@
     margin: 0 !important;
     padding: 0 !important;
   }
-  
+
   /* Reset spacing on any wrapper around the image (e.g., Tiptap node views or resize wrappers) */
-  .prose [data-type="image"], 
+  .prose [data-type='image'],
   .prose .image-resizer,
   .prose .ProseMirror-selectednode {
     display: inline-block;
@@ -268,5 +280,3 @@
     line-height: 0 !important;
   }
 }
-
-

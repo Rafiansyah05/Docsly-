@@ -7,11 +7,14 @@ import { createPortal } from 'react-dom';
 interface ImageCropModalProps {
   isOpen: boolean;
   onClose: () => void;
-  imageFile: File | null;
-  onConfirm: (croppedBlob: Blob | null, dataUrl: string) => void;
+  file: File | null;
+  onConfirm: (
+    croppedBlob: Blob | null,
+    dataUrl: string
+  ) => Promise<void>;
 }
 
-export function ImageCropModal({ isOpen, onClose, imageFile, onConfirm }: ImageCropModalProps) {
+export function ImageCropModal({ isOpen, onClose, file: imageFile, onConfirm }: ImageCropModalProps) {
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<any>(null);
@@ -81,14 +84,14 @@ export function ImageCropModal({ isOpen, onClose, imageFile, onConfirm }: ImageC
       <div className="bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-3xl flex flex-col max-h-[90vh]">
         <div className="p-4 border-b flex justify-between items-center bg-slate-50">
           <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-            <CropIcon className="h-4 w-4 text-[#006EFF]" /> 
+            <CropIcon className="h-4 w-4 text-[#006EFF]" />
             Potong Gambar (Crop)
           </h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-900 transition-colors p-1">
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-6 relative">
           <ReactCrop
             crop={crop}
@@ -107,15 +110,15 @@ export function ImageCropModal({ isOpen, onClose, imageFile, onConfirm }: ImageC
             />
           </ReactCrop>
         </div>
-        
+
         <div className="p-4 border-t bg-white flex justify-end gap-3">
-          <button 
+          <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
           >
             Batal
           </button>
-          <button 
+          <button
             onClick={handleConfirm}
             className="px-4 py-2 text-sm font-medium text-white bg-[#006EFF] hover:bg-[#005AD4] rounded-md transition-colors flex items-center gap-2 shadow-sm"
           >
