@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Moon, Sun, Monitor, Search, ArrowLeft, Home, LayoutGrid, BookOpen, Bell, LifeBuoy, FolderOpen } from 'lucide-react';
+import React from 'react';
+import { Moon, Sun, Monitor, ArrowLeft, Home, LayoutGrid, BookOpen, Bell, LifeBuoy, FolderOpen } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PremiumModal } from '@/components/premium-modal';
+import { SearchBar } from '@/components/search-bar';
 
 /** Peta label + ikon untuk setiap tab nav */
 const PAGE_META: Record<string, { label: string; Icon: React.ElementType }> = {
@@ -31,7 +31,6 @@ interface HeaderNavProps {
 export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName }: HeaderNavProps) {
   const { setTheme } = useTheme();
   const router = useRouter();
-  const [searchValue, setSearchValue] = useState('');
 
   const isFixed = variant === 'fixed';
 
@@ -111,15 +110,7 @@ export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName }: H
       {/* Kanan: searchbar + upgrade + theme */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Search */}
-        <div className="relative w-[260px]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-            placeholder="Cari dokumen..."
-            className="h-9 rounded-[10px] border border-slate-200 bg-[#F8FAFC] pl-9 pr-4 text-sm text-[#111827] placeholder:text-[#94A3B8] focus:border-[#2563EB]"
-          />
-        </div>
+        <SearchBar />
 
         {/* Upgrade */}
         <PremiumModal />
