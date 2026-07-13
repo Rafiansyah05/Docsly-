@@ -1,653 +1,387 @@
-Masalah yang terjadi pada layout saat ini bukan hanya masalah jarak, tetapi **struktur positioning antara navbar, toolbar, dan workspace belum memiliki hierarchy yang benar**.
+Kalau targetmu masih MVP/Beta, saya justru lebih menyarankan Mayar dibanding langsung menggunakan Midtrans atau Xendit, karena implementasinya lebih sederhana.
 
-Dari gambar terlihat ada 2 navbar:
+Arsitektur Payment Docsly
+User
+   │
+   ▼
+Pilih Paket
+   │
+   ▼
+Docsly Backend (Next.js API)
+   │
+   ▼
+Mayar API
+   │
+   ▼
+Checkout Mayar
+   │
+   ▼
+User Melakukan Pembayaran
+   │
+   ▼
+Mayar Webhook
+   │
+   ▼
+Docsly
+   │
+   ▼
+Update Subscription
+   │
+   ▼
+User Premium
+Paket yang Dijual
+Monthly
+Paket	Harga
+Pro	Rp39.000/bulan
+Premium	Rp89.000/bulan
 
-1. **Global Navbar**
+Nanti bisa ditambah Annual.
 
-   - Search documents
-   - Button Upgrade
-   - Theme toggle
+Misalnya
 
-2. **Document Navbar**
+Pro
 
-   - Tombol Kembali
-   - Nama dokumen
-   - Tools (Tabel, Gambar, Daftar Isi, Penomoran Halaman, Sitasi, Riwayat)
-   - Status tersimpan
-   - Export PDF/DOCX
+Rp390.000/tahun
 
-Saat ini keduanya memang fixed, tetapi kemungkinan dibuat sebagai **dua elemen terpisah dengan posisi fixed masing-masing**, sehingga:
+(Hemat 2 bulan)
 
-- jarak antar navbar terlalu besar
-- area bawah navbar tidak dihitung dengan benar
-- content editor masuk ke belakang navbar
-- toolbar menutupi bagian atas dokumen
+Premium
 
-Yang diinginkan adalah membuat keduanya menjadi **satu header frame aplikasi**.
+Rp890.000/tahun
 
-Berikan prompt berikut ke AI Agent:
+Database yang Saya Sarankan
+users
+id
+email
+full_name
 
----
+plan
 
-```text
-Saya ingin memperbaiki struktur navbar pada halaman Document Editor Docsly.
+plan
 
-Jangan mengubah logic apapun.
-Jangan mengubah editor, AI assistant, export, document rendering, atau fitur lainnya.
+FREE_TRIAL
+FREE
+PRO
+PREMIUM
+subscriptions
+id
 
-Fokus hanya memperbaiki:
-- struktur navbar
-- spacing
-- fixed positioning
-- layout offset
+user_id
 
+plan
 
-==================================================
-MASALAH SAAT INI
-==================================================
+status
 
+start_date
 
-Saat ini terdapat dua navbar:
+end_date
 
-1. Global Navbar:
-- Search documents
-- Upgrade button
-- Theme toggle
+renewal
 
+payment_provider
 
-2. Document Navbar:
-- Tombol kembali
-- Nama document
-- Tools document
-- Export PDF
-- Export DOCX
+provider_subscription_id
 
+provider_invoice_id
 
-Namun implementasi sekarang menyebabkan:
+created_at
 
-- Jarak antara navbar pertama dan kedua terlalu besar.
-- Navbar terlihat seperti dua bagian terpisah.
-- Beberapa component editor tertutup di belakang navbar.
-- Area document mulai terlalu tinggi atau masuk ke bawah navbar.
-- Fixed positioning tidak menghitung tinggi navbar secara keseluruhan.
+status
 
+ACTIVE
 
-==================================================
-PERUBAHAN YANG DIINGINKAN
-==================================================
+EXPIRED
 
+CANCELLED
 
-Gabungkan kedua navbar menjadi SATU FRAME HEADER.
+PENDING
+payments
+id
 
+user_id
 
-Bukan berarti semua isi menjadi satu baris.
+invoice_id
 
+transaction_id
 
-Tetapi buat satu container header:
+amount
 
+currency
 
------------------------------------------------
-| GLOBAL NAVBAR                                |
-| Search                     Upgrade Theme      |
------------------------------------------------
-| DOCUMENT NAVBAR                             |
-| Kembali | Document | Tools | Export          |
------------------------------------------------
+payment_method
 
+status
 
-Kedua navbar berada dalam satu parent container.
+provider
 
+created_at
 
-Contoh:
+status
 
+pending
 
-<AppHeader>
+paid
 
-    <GlobalNavbar />
+expired
 
-    <DocumentNavbar />
+failed
 
-</AppHeader>
-
-
-
-==================================================
-APP HEADER POSITION
-==================================================
-
-
-Parent header harus menjadi fixed.
-
-
-Gunakan:
-
-
-position:
-
-fixed
-
-
-top:
-
-0
-
-
-left:
-
-0
-
-
-right:
-
-0
-
-
-z-index:
-
-100
-
-
-
-Background:
-
-white
-
-
-
-Border bawah:
-
-
-1px solid #E2E8F0
-
-
-
-Jangan membuat masing-masing navbar memiliki fixed sendiri.
-
-
-SALAH:
-
-
-GlobalNavbar:
-fixed
-
-
-DocumentNavbar:
-fixed
-
-
-
-BENAR:
-
-
-AppHeader:
-fixed
-
-
-GlobalNavbar:
-relative
-
-
-DocumentNavbar:
-relative
-
-
-
-==================================================
-TINGGI HEADER
-==================================================
-
-
-Atur tinggi agar compact.
-
-
-Global Navbar:
-
-
-height:
-
-52px - 56px
-
-
-
-Document Navbar:
-
-
-height:
-
-44px - 48px
-
-
-
-Total:
-
-
-Header:
-
-96px - 104px
-
-
-
-Jangan memberikan jarak kosong besar.
-
-
-==================================================
-SPACING ANTAR NAVBAR
-==================================================
-
-
-Jarak antara Global Navbar dan Document Navbar:
-
-
-0px
-
-
-
-Jangan menggunakan margin besar.
-
-
-Keduanya harus terlihat seperti satu toolbar aplikasi.
-
-
-Contoh:
-
-
-Navbar atas:
-
-height 56px
-
-
-langsung dilanjutkan:
-
-
-Navbar document:
-
-height 48px
-
-
-
-==================================================
-GLOBAL NAVBAR DESIGN
-==================================================
-
-
-Tetap berada paling atas.
-
-
-Isi:
-
-
-Kiri:
-
-Search documents
-
-
-Kanan:
-
-Upgrade button
-
-Theme toggle
-
-
-
-Padding:
-
-
-horizontal:
-
-20px - 24px
-
-
-
-==================================================
-DOCUMENT NAVBAR DESIGN
-==================================================
-
-
-Berada tepat di bawah global navbar.
-
-
-Tidak boleh floating.
-
-
-Layout:
-
-
-Kiri:
-
-
-Back button
-
-separator
-
-Document name
-
-
-
-Tengah:
-
-
-Document tools
-
-
-Kanan:
-
-
-Save status
-
-Export PDF
-
-Export DOCX
-
-
-
-Height:
-
-
-48px
-
-
-
-Padding:
-
-
-20px - 24px
-
-
-
-==================================================
-CONTENT OFFSET
-==================================================
-
-
-PENTING:
-
-
-Karena header sekarang fixed:
-
-
-Workspace HARUS memiliki padding-top sesuai tinggi header.
-
-
-Jangan hanya:
-
-
-padding-top: 50px
-
-
-
-Gunakan:
-
-
-padding-top:
-
-tinggi AppHeader
-
-
-
-Contoh:
-
-
-Jika:
-
-
-Global Navbar:
-
-56px
-
-
-Document Navbar:
-
-48px
-
-
-
-Maka:
-
-
-content-wrapper:
-
-padding-top:
-
-104px
-
-
-
-Sehingga:
-
-
-Document page mulai tepat di bawah navbar.
-
-
-Tidak tertutup.
-
-
-==================================================
-EDITOR TOOLBAR
-==================================================
-
-
-Toolbar editor:
-
-
-Font
-
-Size
-
-Heading
-
-Bold
-
-Italic
-
-Alignment
-
-
-Jangan berada di belakang navbar.
-
-
-Ada dua opsi:
-
-
-Opsi terbaik:
-
-Masukkan toolbar editor sebagai bagian dari workspace.
-
-
-Struktur:
-
-
-Fixed Header
+refunded
+Flow User Baru
+Register
 
 ↓
 
-Editor Toolbar
+Status
+
+FREE_TRIAL
 
 ↓
 
-Document Area
+trial_start
 
+↓
 
+trial_end
 
-Atau jika toolbar ingin fixed:
+30 hari
 
+↓
 
-Hitung juga tinggi toolbar.
+Semua fitur aktif
 
+↓
 
-Contoh:
+AI Credit berjalan
 
+↓
 
-Header:
+Hari ke-30
 
-104px
+↓
 
+Otomatis
 
-Toolbar:
+FREE
+Flow Upgrade
 
-48px
+User
 
+↓
 
+Klik
 
-Maka:
+Upgrade
 
+↓
 
-Document area mulai:
+Pilih
 
+Pro
 
-152px
+↓
 
+Backend
 
+↓
 
-==================================================
-WORKSPACE STRUCTURE
-==================================================
+Request
 
+Mayar API
 
-Gunakan struktur:
+↓
 
+Mayar membuat Checkout
 
-<App>
+↓
 
+Mengembalikan URL Checkout
 
-    <FixedHeader>
+↓
 
-        <GlobalNavbar/>
+Redirect User
 
-        <DocumentNavbar/>
+↓
 
-    </FixedHeader>
+Bayar
 
+↓
 
+Webhook
 
-    <Workspace>
+↓
 
+Docsly
 
-        <EditorArea>
+↓
 
-             <Toolbar/>
+Update
 
-             <ScrollablePaper/>
+PRO
+Setelah Pembayaran Berhasil
 
-        </EditorArea>
+Misalnya webhook mengirim
 
+payment.received
 
+Maka backend akan:
 
-        <AISidebar/>
+Verifikasi webhook.
+Cari user.
+Simpan transaksi.
+Update subscription.
+Aktifkan fitur.
 
+Mayar menyediakan webhook untuk menerima event pembayaran secara real-time.
 
-    </Workspace>
+Ketika Langganan Habis
 
+Cron Job
 
+setiap jam
 
-    <Footer/>
+↓
 
+cek
 
-</App>
+subscription.end_date
 
+↓
 
+Jika
 
-==================================================
-SCROLLING BEHAVIOR
-==================================================
+today > end_date
 
+↓
 
-Tetap gunakan konsep:
+ubah
 
+FREE
 
-Body:
+↓
 
+AI Credit ikut berubah
 
-overflow:hidden
+↓
 
+Storage tetap
 
+↓
 
-Yang scroll hanya:
+Dokumen tetap aman
 
+AI Credit
 
-1.
-Document paper
+Saat user upgrade
 
+misalnya
 
-2.
-AI chat message
+Pro
 
+500 Credit
 
+Premium
 
-Header tidak pernah bergerak.
+1500 Credit
 
+Saat downgrade
 
-Footer tidak pernah bergerak.
+langsung
 
+10 Credit / hari
+Dashboard Subscription
 
+Saya menyarankan membuat halaman khusus.
 
-==================================================
-HASIL AKHIR YANG DIINGINKAN
-==================================================
+Misalnya
 
+Settings
 
-Ketika user membuka dokumen:
+   └── Subscription
 
+Berisi
 
-Bagian atas:
+Current Plan
 
+FREE TRIAL
 
-[ Search | Upgrade | Theme ]
+Sisa Trial
 
-[ Back | Document Name | Tools | Export ]
+18 Hari
 
-[ Editor Toolbar ]
+AI Credit
 
-[ Paper Document ]
+34 / 50
 
-[ AI Sidebar ]
+Storage
 
+1.1 GB / 2 GB
 
+Renewal
 
-Semua terlihat rapi.
+-
 
+Upgrade Button
 
-Tidak ada:
+Kalau Pro
 
+Current Plan
 
-- content tertutup navbar
-- toolbar masuk ke belakang header
-- jarak kosong besar
-- navbar terpisah
+PRO
 
+Renew
 
-Layout harus terasa seperti:
+12 Agustus
 
-- Google Docs
-- Microsoft Word Online
-- Notion Editor
+Payment
 
+Mayar
 
-Bukan seperti halaman website biasa.
-```
+Manage Subscription
+Webhook yang Perlu Dibuat
 
----
+Saya menyarankan endpoint
 
-Tambahan saran desain dari saya: untuk editor seperti Docsly, **jangan buat 3 layer fixed terpisah** (navbar + document navbar + toolbar). Itu sering menyebabkan bug overlap.
+POST
 
-Struktur yang paling stabil:
+/api/payment/mayar/webhook
 
-```
-Fixed App Header
- ├── Main Navbar (56px)
- └── Document Navbar (48px)
+Flow
 
-Workspace
- ├── Editor Toolbar (48px)
- ├── Paper Scroll Area
- └── AI Sidebar
+Mayar
 
-Fixed Footer
-```
+↓
 
-Jadi browser hanya mengenal:
+POST
 
-- Header tetap
-- Workspace fleksibel
-- Footer tetap
+/api/payment/mayar/webhook
 
-Ini akan jauh lebih mudah dirawat ketika nanti Docsly berkembang dengan fitur seperti komentar, version history, collaboration, dan AI tools.
+↓
+
+Verify
+
+↓
+
+Update Payment
+
+↓
+
+Update Subscription
+
+↓
+
+Response 200
+Environment Variable
+MAYAR_API_KEY=
+
+MAYAR_BASE_URL=https://api.mayar.id/hl/v1
+
+MAYAR_WEBHOOK_SECRET=
+
+NEXT_PUBLIC_APP_URL=
+
+SUPABASE_URL=
+
+SUPABASE_SERVICE_ROLE=
+
+Mayar menggunakan API Key dengan autentikasi Bearer dan menyediakan base URL untuk production maupun sandbox. API key dapat dibuat dari dashboard Mayar.

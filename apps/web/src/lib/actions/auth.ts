@@ -23,11 +23,17 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const namaLengkap = formData.get('namaLengkap') as string;
+  const namaLengkap = formData.get('nama_lengkap') as string;
   
   const supabase = createClient();
 
-  const { error } = await supabase.auth.signUp({
+  const { data: existingProfile } = await supabase.from('profiles').select('email').eq('email', email).single();
+  
+  if (existingProfile) {
+    return { error: 'Email sudah terdaftar. Silakan gunakan email lain atau masuk dengan Google.' };
+  }
+
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -41,7 +47,18 @@ export async function signup(formData: FormData) {
     return { error: error.message };
   }
 
-  redirect('/w'); // Assuming email verification might be disabled for dev, or redirect to a verify page
+  if (data.user) {
+    await supabase.from('profiles').insert([
+      {
+        id: data.user.id,
+        email: data.user.email,
+        full_name: namaLengkap,
+        avatar_url: ''
+      }
+    ]);
+  }
+
+  redirect('/w');
 }
 
 export async function logout() {

@@ -1,499 +1,621 @@
-Untuk project **Docsly**, sistem login/signup menggunakan Google (Google OAuth) pada dasarnya membutuhkan 3 bagian utama yang harus terhubung:
+# Sistem Pricing & Subscription Docsly
 
-1. **Google OAuth Provider** → Google sebagai penyedia autentikasi.
-2. **Authentication Service** → misalnya Supabase Auth (karena Docsly kamu sebelumnya banyak menggunakan Supabase).
-3. **Frontend Docsly** → tombol "Continue with Google", menangani redirect, session, dan user state.
+## 1. Konsep Umum Sistem Akun Docsly
 
-Alur akhirnya seperti ini:
+Docsly menggunakan model **Freemium + Subscription**, di mana setiap pengguna memiliki tingkatan akun berdasarkan akses fitur, batas penggunaan AI, dan kapasitas penyimpanan.
+
+Struktur akun terdiri dari:
+
+1. **Free Trial** → masa percobaan seluruh fitur Docsly
+2. **Free** → akun gratis setelah masa trial berakhir
+3. **Pro** → pengguna aktif yang membutuhkan kemampuan AI lebih besar
+4. **Premium** → pengguna berat dengan kebutuhan dokumen kompleks
+
+Tujuan sistem ini:
+
+* Memberikan kesempatan pengguna memahami value Docsly sebelum membayar.
+* Mengontrol biaya operasional AI.
+* Memberikan jalur upgrade yang jelas.
+* Memastikan pengguna gratis tetap dapat menggunakan Docsly dengan batas tertentu.
+
+---
+
+# 1. Free Trial (30 Hari)
+
+## Deskripsi
+
+Free Trial merupakan status awal setiap pengguna baru setelah melakukan registrasi.
+
+Pada tahap ini pengguna dapat mencoba **seluruh kemampuan Docsly tanpa pembatasan fitur**, sehingga pengguna dapat merasakan pengalaman penuh menggunakan AI Workspace Docsly.
+
+Free Trial bukan paket berlangganan, melainkan periode evaluasi produk.
+
+---
+
+## Benefit Free Trial
+
+### Document Editor
+
+Pengguna mendapatkan akses penuh:
+
+* Membuat dokumen baru
+* Menggunakan seluruh fitur editor
+* Formatting dokumen
+* Template dokumen
+* Export PDF
+* Export DOCX
+* Pengaturan halaman
+* Layout dokumen
+
+---
+
+### AI Workspace
+
+Pengguna dapat menggunakan seluruh kemampuan AI:
+
+* AI Writing Assistant
+* Generate konten
+* Rewrite teks
+* Improve writing
+* Summarize dokumen
+* Expand paragraf
+* Generate struktur dokumen
+* AI editing berdasarkan konteks dokumen
+
+---
+
+### Document Intelligence
+
+Pengguna dapat:
+
+* Upload dokumen PDF
+* Membaca isi dokumen menggunakan AI
+* Bertanya mengenai isi dokumen
+* Mendapatkan insight dari dokumen
+
+Contoh:
+
+> "Jelaskan metodologi penelitian dari jurnal ini"
+
+---
+
+### Citation Manager
+
+Pengguna dapat mencoba:
+
+* Automatic citation
+* Generate bibliography
+* Format APA
+* Format Harvard
+* Reference management
+
+---
+
+### Template Library
+
+Akses seluruh template:
+
+* Skripsi
+* Proposal penelitian
+* Makalah
+* Laporan
+* Proposal bisnis
+* CV
+* Surat lamaran kerja
+
+---
+
+## Limit Free Trial
+
+Walaupun semua fitur terbuka, penggunaan AI tetap memiliki batas agar biaya operasional dapat dikontrol.
+
+Sistem menggunakan **AI Credit System**.
+
+### Default:
+
+**50 AI Credit**
+
+Refresh:
+
+**Setiap 7 jam setelah credit habis**
+
+---
+
+Contoh:
+
+Pengguna mendapatkan:
 
 ```
-User membuka Docsly
-        |
-        v
-Klik "Continue with Google"
-        |
-        v
-Frontend meminta Supabase Auth login Google
-        |
-        v
-Supabase redirect ke halaman Google OAuth
-        |
-        v
-User memilih akun Google
-        |
-        v
-Google mengembalikan authorization code
-        |
-        v
-Supabase memvalidasi code
-        |
-        v
-Supabase membuat session user
-        |
-        v
-Frontend menerima session
-        |
-        v
-User masuk ke Dashboard Docsly
+AI Credit:
+50
+```
+
+Kemudian menggunakan:
+
+```
+Generate 1 halaman:
+10 credit
+```
+
+Sisa:
+
+```
+40 credit
+```
+
+Jika credit habis pada pukul:
+
+```
+10:00
+```
+
+Maka:
+
+```
+Reset:
+17:00
+```
+
+Credit kembali:
+
+```
+50 credit
 ```
 
 ---
 
-## Prompt untuk AI Agent Docsly
+## Prinsip Refresh Credit
 
-Berikan prompt berikut ke AI Agent kamu:
+Sistem tidak menggunakan reset waktu global.
+
+Bukan:
+
+```
+00:00 reset
+07:00 reset
+14:00 reset
+```
+
+Tetapi menggunakan:
+
+```
+Waktu penggunaan terakhir ketika credit habis
++
+7 jam
+```
+
+Hal ini membuat setiap user memiliki siklus penggunaan sendiri dan mencegah penyalahgunaan limit.
 
 ---
 
-```
-Saya ingin mengimplementasikan sistem Authentication menggunakan Google OAuth pada project Docsly.
+# 2. Free Account
+
+## Deskripsi
+
+Setelah masa Free Trial selesai, akun otomatis berubah menjadi Free.
+
+Pengguna tetap dapat menggunakan Docsly, tetapi dengan fitur dan penggunaan AI yang lebih terbatas.
 
 Tujuan:
-User dapat melakukan:
-1. Signup menggunakan akun Google.
-2. Login menggunakan akun Google.
-3. Setelah berhasil login, user diarahkan ke dashboard Docsly.
-4. Session user tetap tersimpan sehingga ketika membuka ulang website user masih login.
-5. User dapat logout.
 
-Gunakan Supabase Authentication sebagai backend authentication.
+* Mempertahankan pengguna
+* Memberikan pengalaman dasar
+* Mendorong upgrade ke Pro/Premium
 
-Tolong implementasikan secara lengkap dan jangan hanya membuat UI.
+---
 
-Lakukan langkah berikut:
+# Benefit Free
 
-=================================
-1. ANALISIS PROJECT
-=================================
+## Document Editor
 
-Pertama cek struktur project Docsly:
+Tetap mendapatkan:
 
-- Framework frontend yang digunakan.
-- Apakah sudah ada Supabase client.
-- Apakah sudah ada authentication context/provider.
-- Apakah sudah ada middleware untuk protected route.
-- Lokasi halaman login/signup.
+✓ Membuat dokumen
+✓ Editing dokumen
+✓ Formatting dasar
+✓ Export PDF
 
-Jangan membuat file baru sebelum memahami struktur yang sudah ada.
+---
 
-=================================
-2. KONFIGURASI SUPABASE AUTH
-=================================
+## AI Assistant
 
-Pastikan Supabase sudah dikonfigurasi.
+Limit:
 
-Buat atau perbaiki:
+```
+10 AI Credit / hari
+```
 
-- Supabase client initialization.
-- Environment variable:
+Refresh:
 
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
+24 jam
+```
 
-Pastikan tidak ada key yang ditulis langsung di source code.
+Digunakan untuk:
 
-=================================
-3. AKTIFKAN GOOGLE PROVIDER
-=================================
+* Rewrite sederhana
+* Perbaikan kalimat
+* Bantuan penulisan ringan
 
-Konfigurasikan Supabase OAuth Google.
+---
 
-Implementasikan:
+## Template
 
-supabase.auth.signInWithOAuth({
- provider: 'google'
-})
+Akses:
 
-Gunakan flow:
+* Template dokumen sederhana
+* Template laporan
+* Template surat
 
-redirectTo:
-- development:
-http://localhost:3000/auth/callback
+---
 
-- production:
-https://domain-docsly.com/auth/callback
+## Storage
 
+```
+100 MB
+```
 
-=================================
-4. BUAT GOOGLE CLOUD OAUTH CONFIGURATION
-=================================
+---
 
-Jelaskan dan buat checklist konfigurasi Google Cloud:
+# Batasan Free
 
-Buat OAuth Client ID:
+Tidak mendapatkan:
 
-Application type:
-Web Application
+❌ AI Agent penuh
 
-Authorized JavaScript origins:
+❌ Analisis PDF menggunakan AI
 
-Development:
-http://localhost:3000
+❌ Citation Manager
 
-Production:
-https://domain-docsly.com
+❌ Bibliography otomatis
 
+❌ Template premium
 
-Authorized redirect URI:
+❌ Pemrosesan dokumen panjang
 
-https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback
+---
 
+# 3. Pro Plan
 
-Pastikan redirect URL sama dengan Supabase.
+## Harga
 
+Rekomendasi:
 
-=================================
-5. IMPLEMENTASI BUTTON LOGIN GOOGLE
-=================================
+# Rp39.000 / bulan
 
-Pada halaman login/signup Docsly:
+Target pengguna:
 
-Buat button:
+* Mahasiswa
+* Pelajar
+* Pengguna aktif Docsly
 
-"Continue with Google"
+Pro menjadi paket utama karena memberikan keseimbangan antara harga dan kemampuan.
 
+---
 
-Ketika diklik:
+# Benefit Pro
 
-1. Jalankan fungsi loginWithGoogle().
-2. Redirect user ke Google OAuth.
-3. Handle loading state.
-4. Handle error.
+## Semua fitur Free +
 
+---
 
-Contoh flow:
+## AI Workspace
 
-User klik button
+Mendapatkan:
+
+✓ AI Agent
+
+✓ Context-aware editing
+
+✓ Generate dokumen
+
+✓ Rewrite kompleks
+
+✓ Summarization
+
+Limit:
+
+```
+500 AI Credit / bulan
+```
+
+---
+
+## Document Intelligence
+
+Dapat:
+
+✓ Upload PDF
+
+✓ AI membaca dokumen
+
+✓ Tanya jawab dokumen
+
+✓ Analisis isi dokumen
+
+---
+
+## Citation Manager
+
+Mendapat:
+
+✓ Automatic citation
+
+✓ Bibliography generator
+
+✓ APA
+
+✓ Harvard
+
+Limit:
+
+```
+50 citation / bulan
+```
+
+---
+
+## Template
+
+Akses:
+
+✓ Semua template Docsly
+
+---
+
+## Storage
+
+```
+2 GB
+```
+
+---
+
+# 4. Premium Plan
+
+## Harga
+
+Rekomendasi:
+
+# Rp89.000 / bulan
+
+Target:
+
+* Mahasiswa tingkat akhir
+* Peneliti
+* Profesional
+* Pengguna dengan dokumen besar
+
+---
+
+# Benefit Premium
+
+Semua fitur Pro +
+
+---
+
+## AI Usage Besar
+
+Limit:
+
+```
+1500 AI Credit / bulan
+```
+
+---
+
+## Advanced AI Agent
+
+Kemampuan:
+
+* Memproses dokumen panjang
+* Analisis kompleks
+* Generate dokumen besar
+* Editing multi bagian
+
+---
+
+## Large Document Processing
+
+Pro:
+
+```
+50 halaman
+```
+
+Premium:
+
+```
+300 halaman
+```
+
+---
+
+## Citation Manager Advanced
+
+✓ Unlimited citation
+
+✓ Reference organization
+
+✓ Advanced bibliography
+
+---
+
+## Priority Processing
+
+Ketika server ramai:
+
+```
+Premium → diproses lebih dahulu
+Pro → normal queue
+Free → standard queue
+```
+
+---
+
+## Storage
+
+```
+20 GB
+```
+
+---
+
+# Perbandingan Paket
+
+| Fitur           | Free Trial | Free      | Pro          | Premium      |
+| --------------- | ---------- | --------- | ------------ | ------------ |
+| Durasi          | 30 hari    | Selamanya | Berlangganan | Berlangganan |
+| Editor          | ✓          | ✓         | ✓            | ✓            |
+| Export PDF      | ✓          | ✓         | ✓            | ✓            |
+| Export DOCX     | ✓          | Terbatas  | ✓            | ✓            |
+| Semua Template  | ✓          | ❌         | ✓            | ✓            |
+| AI Agent        | ✓          | ❌         | ✓            | ✓ Advanced   |
+| PDF AI Analysis | ✓          | ❌         | ✓            | ✓            |
+| Citation        | ✓          | ❌         | 50/bln       | Unlimited    |
+| AI Credit       | 50/7 jam   | 10/hari   | 500/bln      | 1500/bln     |
+| Storage         | 2GB        | 100MB     | 2GB          | 20GB         |
+| Dokumen Panjang | ✓          | ❌         | 50 halaman   | 300 halaman  |
+| Priority AI     | ❌          | ❌         | ❌            | ✓            |
+
+---
+
+# Flow Sistem Subscription Docsly
+
+## 1. User Registrasi
+
+```
+User Signup
       |
-      v
-setLoading(true)
+      ↓
+Create Account
       |
-      v
-supabase.auth.signInWithOAuth()
+      ↓
+Status:
+FREE_TRIAL
       |
-      v
-Redirect Google
+      ↓
+Trial Start Date dicatat
+```
 
+---
 
-=================================
-6. BUAT AUTH CALLBACK
-=================================
+# 2. Penggunaan Masa Trial
 
-Buat route:
+```
+User menggunakan Docsly
+          |
+          ↓
+Request AI
+          |
+          ↓
+Cek AI Credit
+          |
+          ↓
+Credit tersedia?
+          |
+     YES
+          |
+          ↓
+Proses AI
+          |
+          ↓
+Kurangi Credit
+```
 
-/auth/callback
+---
 
+# 3. Sistem Credit Refresh
 
-Fungsinya:
+```
+Credit = 0
+      |
+      ↓
+Catat waktu habis
+      |
+      ↓
+Tambahkan timer 7 jam
+      |
+      ↓
+Timer selesai
+      |
+      ↓
+Credit kembali
+```
 
-- menerima response dari OAuth.
-- menukar authorization code menjadi session.
-- menyimpan session.
+---
 
+# 4. Trial Berakhir
 
-Gunakan:
+Sistem melakukan pengecekan:
 
-supabase.auth.exchangeCodeForSession()
-
-
-Setelah berhasil:
-
-redirect ke:
-
-/dashboard
-
-
-Jika gagal:
-
-redirect kembali ke:
-
-/login?error=oauth_failed
-
-
-=================================
-7. BUAT AUTH STATE MANAGEMENT
-=================================
-
-Buat authentication provider global.
-
-
-Harus menyediakan:
-
-user
-session
-loading
-signInWithGoogle()
-logout()
-
-
-Gunakan:
-
-supabase.auth.onAuthStateChange()
-
-
-Ketika:
-
-LOGIN:
-update user state
-
-
-LOGOUT:
-hapus user state
-
-
-=================================
-8. PROTECTED ROUTE
-=================================
-
-Dashboard Docsly hanya boleh diakses user login.
-
+```
+Current Date - Trial Start Date >= 30 hari
+```
 
 Jika:
 
-user ada:
-boleh masuk
+```
+TRUE
+```
 
+Maka:
 
-Jika:
-
-user null:
-redirect ke login
-
-
-Implementasikan menggunakan:
-
-Next.js middleware atau client-side guard sesuai arsitektur project.
-
-
-=================================
-9. USER PROFILE
-=================================
-
-Setelah login Google:
-
-Ambil data:
-
-email
-full_name
-avatar_url
-
-
-Simpan ke tabel:
-
-profiles
-
-
-Jika belum ada:
-
-buat profile baru.
-
-
-Struktur:
-
-profiles:
-
-id
-(user id dari auth.users)
-
-email
-
-full_name
-
-avatar_url
-
-created_at
-
-
-Gunakan trigger atau pengecekan ketika login pertama kali.
-
-
-=================================
-10. HANDLE EDGE CASE
-=================================
-
-Pastikan menangani:
-
-- User menolak login Google.
-- Popup gagal.
-- Redirect gagal.
-- Session expired.
-- User logout.
-- Refresh halaman.
-
-
-=================================
-11. TESTING
-=================================
-
-Lakukan testing:
-
-CASE 1:
-User baru login Google.
-
-Expected:
-- akun dibuat.
-- profile dibuat.
-- masuk dashboard.
-
-
-CASE 2:
-User lama login lagi.
-
-Expected:
-- tidak membuat akun baru.
-- langsung masuk dashboard.
-
-
-CASE 3:
-User logout.
-
-Expected:
-- session hilang.
-- kembali login.
-
-
-CASE 4:
-Refresh halaman setelah login.
-
-Expected:
-- user tetap login.
-
-
-=================================
-12. JANGAN MERUSAK FITUR EXISTING
-=================================
-
-Pastikan implementasi OAuth:
-
-- tidak merusak editor Docsly.
-- tidak mengubah struktur database yang sudah ada tanpa alasan.
-- tidak menghapus authentication yang sudah berjalan.
-- mengikuti pattern code existing.
-
-Sebelum melakukan perubahan besar, jelaskan file mana yang akan diubah.
+```
+FREE_TRIAL
+       ↓
+FREE
 ```
 
 ---
 
-## Hal yang perlu kamu siapkan sendiri sebelum AI Agent bekerja
+# 5. Upgrade Subscription
 
-### 1. Buat Google OAuth Client
-
-Masuk ke:
-
-[Google Cloud Console](https://console.cloud.google.com/?utm_source=chatgpt.com)
-
-Lalu:
+User memilih:
 
 ```
-APIs & Services
-      |
-      OAuth consent screen
-      |
-      Create OAuth Client
-      |
-      Web Application
+Upgrade Pro
+atau
+Upgrade Premium
 ```
 
-Ambil:
+Kemudian:
 
 ```
-Client ID
-Client Secret
+Payment Success
+        |
+        ↓
+Update Subscription Status
+        |
+        ↓
+Aktifkan Benefit Paket
 ```
 
 ---
 
-### 2. Masukkan ke Supabase
+# 6. Downgrade / Subscription Expired
 
-Masuk:
-
-[Supabase Dashboard](https://supabase.com/dashboard?utm_source=chatgpt.com)
-
-Menu:
+Jika pembayaran berhenti:
 
 ```
-Authentication
-   |
-Providers
-   |
-Google
+Subscription Expired
+        |
+        ↓
+Status kembali FREE
 ```
 
-Aktifkan:
-
-```
-Enable Google Provider = ON
-```
-
-Masukkan:
-
-```
-Client ID
-Client Secret
-```
+Dokumen pengguna tetap aman, tetapi akses fitur premium dikurangi.
 
 ---
 
-### 3. Tambahkan URL Redirect
+# Kesimpulan Sistem
 
-Development:
+Model pricing Docsly ini dirancang dengan prinsip:
 
-```
-http://localhost:3000/auth/callback
-```
+* **Free Trial memberikan pengalaman penuh agar user memahami value.**
+* **Free menjaga pengguna tetap menggunakan Docsly.**
+* **Pro menjadi paket utama dengan harga terjangkau untuk mahasiswa.**
+* **Premium menangani pengguna berat yang membutuhkan AI lebih besar.**
+* **AI Credit System menjaga biaya operasional tetap terkendali.**
 
-Production:
-
-```
-https://docsly-domain-kamu.com/auth/callback
-```
-
----
-
-## Struktur ideal Docsly setelah implementasi
-
-```
-src
-|
-├── app
-│   |
-│   ├── login
-│   │     └── page.tsx
-│   |
-│   ├── signup
-│   │     └── page.tsx
-│   |
-│   ├── auth
-│   │     |
-│   │     └── callback
-│   │            └── route.ts
-│   |
-│   └── dashboard
-│          └── page.tsx
-|
-├── lib
-│   |
-│   └── supabase
-│          ├── client.ts
-│          └── server.ts
-|
-├── context
-│   |
-│   └── AuthProvider.tsx
-|
-└── middleware.ts
-```
-
----
-
-Catatan penting untuk Docsly: karena Docsly adalah **AI document workspace**, jangan hanya menyimpan email user. Dari awal sebaiknya buat tabel `profiles` agar nanti mudah menambahkan fitur seperti:
-
-* jumlah dokumen yang dibuat,
-* subscription plan,
-* AI usage limit,
-* template favorit,
-* history dokumen,
-* storage quota.
-
-Jadi Google Auth bukan hanya untuk login, tetapi menjadi fondasi identitas user di seluruh ekosistem Docsly.
+Dengan struktur ini, Docsly dapat melakukan validasi pasar terlebih dahulu tanpa membebani biaya AI secara tidak terkendali, sambil tetap memberikan pengalaman produk yang kuat pada pengguna baru.

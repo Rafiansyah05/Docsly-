@@ -26,9 +26,11 @@ interface HeaderNavProps {
   pathname?: string;
   /** Nama workspace (jika sedang di halaman workspace) */
   workspaceName?: string;
+  /** Paket/plan pengguna saat ini */
+  currentPlan?: string;
 }
 
-export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName }: HeaderNavProps) {
+export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName, currentPlan }: HeaderNavProps) {
   const { setTheme } = useTheme();
   const router = useRouter();
 
@@ -113,7 +115,7 @@ export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName }: H
         <SearchBar />
 
         {/* Upgrade */}
-        <PremiumModal />
+        <PremiumModal currentPlan={currentPlan} />
 
         {/* Theme toggle */}
         <DropdownMenu>

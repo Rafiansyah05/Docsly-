@@ -118,20 +118,15 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
             <div className="flex items-center gap-3">
               <UserMenu user={user} profile={profile} />
               {!collapsed && (
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#111827] truncate">{profileName}</p>
-                  <p className="text-[13px] text-[#111827] truncate">{profileEmail}</p>
-                  <div className="mt-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-md text-[12px] font-semibold bg-[#EFF6FF] text-[#2563EB]">{accountStatus}</span>
+                <div className="min-w-0 font-sans">
+                  <p className="text-sm font-medium text-slate-700 truncate">{profileName}</p>
+                  <p className="text-[13px] text-slate-500 truncate">{profileEmail}</p>
+                  <div className="mt-1.5">
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600">{accountStatus}</span>
                   </div>
                 </div>
               )}
             </div>
-            {!collapsed && (
-              <div className="mt-4">
-                <PremiumModal compact={false} className="w-full" />
-              </div>
-            )}
           </div>
         </div>
       </aside>
@@ -143,6 +138,7 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
           variant="inline"
           pathname={pathname}
           workspaceName={activeWorkspaceName}
+          currentPlan={accountStatus}
         />
 
         {/* Konten halaman */}
