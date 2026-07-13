@@ -103,33 +103,33 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute right-0 top-12 w-80 bg-white border border-slate-200 shadow-xl rounded-lg z-50 flex flex-col overflow-hidden max-h-[85vh]">
-      <div className="bg-slate-50 p-3 border-b flex justify-between items-center">
-        <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm">
+    <div className="absolute right-0 top-12 w-80 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-xl rounded-lg z-50 flex flex-col overflow-hidden max-h-[85vh]">
+      <div className="bg-slate-50 dark:bg-zinc-900 p-3 border-b border-slate-200 dark:border-zinc-800 flex justify-between items-center">
+        <div className="flex items-center gap-2 text-slate-700 dark:text-zinc-100 font-semibold text-sm">
           <BookOpen className="h-4 w-4" />
           Sitasi & Pustaka
         </div>
-        <button onClick={onClose} className="text-slate-500 hover:text-slate-900">
+        <button onClick={onClose} className="text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors">
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="flex border-b text-xs font-medium">
+      <div className="flex border-b border-slate-200 dark:border-zinc-800 text-xs font-medium">
         <button 
           onClick={() => { setActiveTab('auto'); setIsAdding(false); setErrorMsg(null); }}
-          className={`flex-1 py-2 text-center ${activeTab === 'auto' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+          className={`flex-1 py-2 text-center transition-colors ${activeTab === 'auto' ? 'bg-white dark:bg-zinc-950 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'bg-slate-50 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
         >
           AI Generate
         </button>
         <button 
           onClick={() => { setActiveTab('manual'); setErrorMsg(null); }}
-          className={`flex-1 py-2 text-center ${activeTab === 'manual' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+          className={`flex-1 py-2 text-center transition-colors ${activeTab === 'manual' ? 'bg-white dark:bg-zinc-950 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'bg-slate-50 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
         >
           Manual
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-white">
+      <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-white dark:bg-zinc-950">
         {errorMsg && (
           <div className="bg-red-50 border border-red-200 text-red-700 p-2 rounded text-xs whitespace-pre-wrap">
             <div className="flex items-center gap-1 font-semibold mb-1"><AlertCircle className="w-3 h-3"/> Error</div>
@@ -140,17 +140,17 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
         {activeTab === 'auto' && !isAdding && (
           <div className="space-y-4">
             <div 
-              className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition-colors"
+              className="border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-900 hover:border-slate-300 dark:hover:border-zinc-700 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <input type="file" className="hidden" ref={fileInputRef} accept=".pdf,.docx,.txt" onChange={handleFileUpload} />
               {isLoading ? (
-                <Loader2 className="h-6 w-6 text-blue-500 animate-spin mb-2" />
+                <Loader2 className="h-6 w-6 text-blue-500 dark:text-blue-400 animate-spin mb-2" />
               ) : (
-                <Upload className="h-6 w-6 text-slate-400 mb-2" />
+                <Upload className="h-6 w-6 text-slate-400 dark:text-zinc-500 mb-2" />
               )}
-              <div className="text-sm font-medium text-slate-700">Upload Dokumen</div>
-              <div className="text-xs text-slate-400 mt-1">Ekstrak otomatis dari PDF/DOCX</div>
+              <div className="text-sm font-medium text-slate-700 dark:text-zinc-300">Upload Dokumen</div>
+              <div className="text-xs text-slate-400 dark:text-zinc-500 mt-1">Ekstrak otomatis dari PDF/DOCX</div>
             </div>
             <div className="text-[10px] text-slate-400 leading-tight">
               AI akan mengekstrak Judul, Penulis, Tahun, dll dari sumber Anda untuk dijadikan sitasi akademik yang valid.
@@ -161,48 +161,48 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
         {(activeTab === 'manual' || isAdding) && (
           <>
             {isAdding ? (
-              <div className="space-y-3 bg-slate-50/50 p-3 rounded border">
-                <div className="text-xs font-semibold text-slate-700">Konfirmasi / Edit Referensi</div>
+              <div className="space-y-3 bg-slate-50/50 dark:bg-zinc-900/50 p-3 rounded border border-slate-200 dark:border-zinc-800">
+                <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Konfirmasi / Edit Referensi</div>
                 <select
                   value={formData.jenis}
                   onChange={e => setFormData({ ...formData, jenis: e.target.value })}
-                  className="w-full text-sm border-b p-1 outline-none bg-transparent text-slate-900"
+                  className="w-full text-sm border-b border-slate-200 dark:border-zinc-800 p-1 outline-none bg-transparent text-slate-900 dark:text-zinc-100"
                 >
-                  <option>Buku</option>
-                  <option>Jurnal</option>
-                  <option>Situs Web</option>
-                  <option>Tesis</option>
-                  <option>Prosiding</option>
+                  <option className="dark:bg-zinc-900">Buku</option>
+                  <option className="dark:bg-zinc-900">Jurnal</option>
+                  <option className="dark:bg-zinc-900">Situs Web</option>
+                  <option className="dark:bg-zinc-900">Tesis</option>
+                  <option className="dark:bg-zinc-900">Prosiding</option>
                 </select>
                 <input
                   type="text" placeholder="Penulis (ex: Smith, J.)"
                   value={formData.penulis} onChange={e => setFormData({ ...formData, penulis: e.target.value })}
-                  className="w-full text-sm border-b p-1 outline-none bg-transparent text-slate-900"
+                  className="w-full text-sm border-b border-slate-200 dark:border-zinc-800 p-1 outline-none bg-transparent text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                 />
                 <input
                   type="text" placeholder="Tahun (ex: 2026)"
                   value={formData.tahun} onChange={e => setFormData({ ...formData, tahun: e.target.value })}
-                  className="w-full text-sm border-b p-1 outline-none bg-transparent text-slate-900"
+                  className="w-full text-sm border-b border-slate-200 dark:border-zinc-800 p-1 outline-none bg-transparent text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                 />
                 <input
                   type="text" placeholder="Judul Buku/Artikel"
                   value={formData.judul} onChange={e => setFormData({ ...formData, judul: e.target.value })}
-                  className="w-full text-sm border-b p-1 outline-none bg-transparent text-slate-900"
+                  className="w-full text-sm border-b border-slate-200 dark:border-zinc-800 p-1 outline-none bg-transparent text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                 />
                 <input
                   type="text" placeholder="Penerbit / Jurnal"
                   value={formData.penerbit} onChange={e => setFormData({ ...formData, penerbit: e.target.value })}
-                  className="w-full text-sm border-b p-1 outline-none bg-transparent text-slate-900"
+                  className="w-full text-sm border-b border-slate-200 dark:border-zinc-800 p-1 outline-none bg-transparent text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                 />
                 <div className="flex gap-3 pt-2">
                   <Button size="sm" onClick={handleSaveManual} className="flex-1 bg-blue-600 text-white hover:bg-blue-700">Simpan</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setIsAdding(false)} className="flex-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100">Batal</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsAdding(false)} className="flex-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800">Batal</Button>
                 </div>
               </div>
             ) : (
               <Button 
                 onClick={() => { setFormData({ id: '', judul: '', penulis: '', tahun: '', penerbit: '', jenis: 'Buku' }); setIsAdding(true); }} 
-                className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors"
+                className="w-full flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 transition-colors border-0"
               >
                 <Plus className="h-4 w-4" /> Input Manual Baru
               </Button>
@@ -212,13 +212,13 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
 
         {/* List Referensi */}
         {!isAdding && refs.length > 0 && (
-          <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+          <div className="space-y-2 mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800">
             <div className="flex justify-between items-center mb-2">
-              <div className="text-xs font-semibold text-slate-500 uppercase">Koleksi Referensi ({refs.length})</div>
+              <div className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase">Koleksi Referensi ({refs.length})</div>
               <select 
                 value={citationStyle} 
                 onChange={(e) => setCitationStyle(e.target.value as 'APA' | 'Harvard')}
-                className="text-xs border rounded p-1 text-slate-600 outline-none"
+                className="text-xs border border-slate-200 dark:border-zinc-800 rounded p-1 text-slate-600 dark:text-zinc-300 bg-white dark:bg-zinc-900 outline-none"
               >
                 <option value="APA">Format APA</option>
                 <option value="Harvard">Format Harvard</option>
@@ -226,15 +226,15 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
             </div>
             
             {refs.map((r) => (
-              <div key={r.id} className="p-2 border rounded hover:bg-slate-50 group flex flex-col gap-2 transition-colors">
-                <div className="text-sm text-slate-800 leading-tight">
+              <div key={r.id} className="p-2 border border-slate-200 dark:border-zinc-800 rounded hover:bg-slate-50 dark:hover:bg-zinc-900 group flex flex-col gap-2 transition-colors">
+                <div className="text-sm text-slate-800 dark:text-zinc-200 leading-tight">
                   <span className="font-semibold">{r.penulis}</span> ({r.tahun}). <i>{r.judul}</i>.
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button size="sm" variant="secondary" className="h-7 text-xs flex-1 bg-blue-50 text-blue-700 hover:bg-blue-100" onClick={() => handleInsertCitation(r.id)}>
+                  <Button size="sm" variant="secondary" className="h-7 text-xs flex-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border-0" onClick={() => handleInsertCitation(r.id)}>
                     <Plus className="h-3 w-3 mr-1"/> Sisipkan
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 text-slate-500" onClick={() => {
+                  <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800" onClick={() => {
                     setFormData(r);
                     setIsAdding(true);
                     setActiveTab('manual');

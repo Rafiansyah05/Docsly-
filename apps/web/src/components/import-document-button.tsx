@@ -74,7 +74,7 @@ export function ImportDocumentButton({ workspaceId }: { workspaceId: string }) {
         variant="outline" 
         onClick={() => fileInputRef.current?.click()} 
         disabled={isImporting}
-        className="h-[40px] px-4 gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-700 transition-all text-[14px] font-medium"
+        className="h-[40px] px-4 gap-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900 hover:text-slate-900 dark:hover:text-zinc-100 transition-all text-[14px] font-medium"
       >
         {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
         {isImporting ? 'Mengimpor...' : 'Import DOCX'}

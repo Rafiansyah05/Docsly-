@@ -37,13 +37,13 @@ export default async function WorkspacePage({ params }: { params: { workspace_id
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-8 py-8 md:py-10 space-y-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-zinc-800 pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-[32px] font-semibold tracking-tight text-slate-900 leading-none">{workspace.nama_workspace}</h1>
+            <h1 className="text-[32px] font-semibold tracking-tight text-slate-900 dark:text-zinc-100 leading-none">{workspace.nama_workspace}</h1>
             <WorkspaceOptions workspaceId={workspace.id} initialName={workspace.nama_workspace} />
           </div>
-          <p className="text-[14px] text-slate-500 mt-2">Kelola dan buat dokumen pintar Anda di sini.</p>
+          <p className="text-[14px] text-slate-500 dark:text-zinc-400 mt-2">Kelola dan buat dokumen pintar Anda di sini.</p>
         </div>
         <div className="flex gap-2 items-center">
           <ImportDocumentButton workspaceId={workspace.id} />

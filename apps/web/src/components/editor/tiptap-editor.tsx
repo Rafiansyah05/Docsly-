@@ -480,7 +480,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
   const pageSettings = editor?.state?.doc?.attrs?.pageSettings as PageSettings | null;
 
   return (
-    <div className="flex flex-col w-full h-full bg-slate-50">
+    <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-zinc-950">
       <DocumentNavbar
         editor={editor}
         saveState={saveState}
@@ -501,9 +501,9 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       <SuggestionBubbleMenu editor={editor} />
 
       <div className="flex-1 flex flex-row min-h-0 h-full overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-y-auto pb-4 md:pb-8 flex flex-col items-center bg-slate-200" onClick={() => setContextMenu(null)}>
+        <div className="flex-1 min-h-0 overflow-y-auto pb-4 md:pb-8 flex flex-col items-center bg-slate-200 dark:bg-zinc-900" onClick={() => setContextMenu(null)}>
           {/* Horizontal Ruler (Sticky Top) */}
-          <div className="sticky top-0 z-30 mb-4 flex w-full justify-center bg-white border-b border-slate-200 py-1.5 shadow-sm">
+          <div className="sticky top-0 z-30 mb-4 flex w-full justify-center bg-white dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800 py-1.5 shadow-sm">
             <div style={{ marginLeft: '24px' }}>
               <HorizontalRuler layout={layout} onChange={setLayout} />
             </div>
@@ -590,20 +590,20 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       {/* Custom Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-xl max-w-sm w-full mx-4 overflow-hidden border border-zinc-200">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl max-w-sm w-full mx-4 overflow-hidden border border-zinc-200 dark:border-zinc-800">
             <div className="p-5">
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Hapus Halaman?</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Halaman <span className="font-medium text-slate-700">{currentPage}</span> saat ini memiliki konten di dalamnya. Apakah Anda yakin ingin menghapus halaman beserta isinya?
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-zinc-100 mb-2">Hapus Halaman?</h3>
+              <p className="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+                Halaman <span className="font-medium text-slate-700 dark:text-zinc-200">{currentPage}</span> saat ini memiliki konten di dalamnya. Apakah Anda yakin ingin menghapus halaman beserta isinya?
               </p>
             </div>
-            <div className="bg-slate-50 px-5 py-3 flex justify-end gap-2 border-t border-slate-100">
+            <div className="bg-slate-50 dark:bg-zinc-900/50 px-5 py-3 flex justify-end gap-2 border-t border-slate-100 dark:border-zinc-800">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
                   setPendingDeleteNodes([]);
                 }}
-                className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-700 transition-colors"
               >
                 Batal
               </button>
@@ -617,13 +617,13 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
 
       {/* Right-Click Context Menu */}
       {contextMenu && contextMenu.visible && (
-        <div className="fixed z-50 min-w-[200px] bg-white rounded-lg shadow-xl border border-slate-200 py-1" style={{ top: contextMenu.y, left: contextMenu.x }}>
+        <div className="fixed z-50 min-w-[200px] bg-white dark:bg-zinc-900 rounded-lg shadow-xl border border-slate-200 dark:border-zinc-800 py-1" style={{ top: contextMenu.y, left: contextMenu.x }}>
           <button
             onClick={() => {
               handleDeleteCurrentPage(contextMenu.page);
               setContextMenu(null);
             }}
-            className="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+            className="w-full px-4 py-2 text-left text-sm text-rose-600 dark:text-red-400 hover:bg-rose-50 dark:hover:bg-red-900/30 flex items-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 6h18" />

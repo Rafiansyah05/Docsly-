@@ -41,7 +41,7 @@ export function AppHeader({
   isUploading,
 }: AppHeaderProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white border-b border-[#E2E8F0]">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-zinc-950 border-b border-[#E2E8F0] dark:border-zinc-800">
       {/* Global Navbar - 56px (h-14) */}
       <div className="h-14">
         <HeaderNav />
@@ -50,19 +50,19 @@ export function AppHeader({
       {/* Document Navbar - 48px (h-12) - shown only on editor pages */}
       {showDocumentNavbar && (
         <DocumentNavbar
-          editor={editor}
-          saveState={saveState}
-          documentId={documentId}
-          initialTitle={initialTitle}
-          workspaceId={workspaceId}
-          onToggleHistory={onToggleHistory}
+          editor={editor || null}
+          saveState={saveState || 'saved'}
+          documentId={documentId || ''}
+          initialTitle={initialTitle || ''}
+          workspaceId={workspaceId || ''}
+          onToggleHistory={onToggleHistory || (() => {})}
           onOpenPageNumbers={onOpenPageNumbers}
-          isExportingPdf={isExportingPdf}
-          isExportingDocx={isExportingDocx}
-          onExportPdf={onExportPdf}
-          onExportDocx={onExportDocx}
-          onUploadImage={onUploadImage}
-          isUploading={isUploading}
+          isExportingPdf={isExportingPdf || false}
+          isExportingDocx={isExportingDocx || false}
+          onExportPdf={onExportPdf || (() => {})}
+          onExportDocx={onExportDocx || (() => {})}
+          onUploadImage={onUploadImage || (() => {})}
+          isUploading={isUploading || false}
         />
       )}
     </header>

@@ -185,7 +185,7 @@ export function SearchBar() {
           aria-autocomplete="list"
           aria-expanded={showDropdown}
           aria-haspopup="listbox"
-          className="h-9 w-full rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] pl-9 pr-4 text-[13px] text-[#111827] placeholder:text-[#94A3B8] outline-none transition-all duration-200 focus:border-[#93C5FD] focus:bg-white focus:shadow-[0_0_0_3px_rgba(37,99,235,0.06)]"
+          className="h-9 w-full rounded-[10px] border border-[#E2E8F0] dark:border-zinc-800 bg-[#F8FAFC] dark:bg-zinc-900/50 pl-9 pr-4 text-[13px] text-[#111827] dark:text-zinc-100 placeholder:text-[#94A3B8] outline-none transition-all duration-200 focus:border-[#93C5FD] dark:focus:border-blue-500/50 focus:bg-white dark:focus:bg-zinc-950 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.06)] dark:focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)]"
         />
       </div>
 
@@ -194,7 +194,7 @@ export function SearchBar() {
         <div
           role="listbox"
           aria-label="Hasil pencarian dokumen"
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-[200] overflow-hidden rounded-xl border border-[#E8EDF5] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)]"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-[200] overflow-hidden rounded-xl border border-[#E8EDF5] dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-[0_8px_30px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-black/40"
           style={{ minWidth: '320px', right: 'auto' }}
         >
           {results.length > 0 ? (
@@ -222,18 +222,18 @@ export function SearchBar() {
                         onMouseLeave={() => setActiveIndex(-1)}
                         onClick={() => handleSelect(result)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-100 ${
-                          isActive ? 'bg-[#F8FAFC]' : 'hover:bg-[#F8FAFC]'
+                          isActive ? 'bg-[#F8FAFC] dark:bg-zinc-900' : 'hover:bg-[#F8FAFC] dark:hover:bg-zinc-900'
                         }`}
                       >
                         {/* Doc icon */}
                         <div
                           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-100 ${
-                            isActive ? 'bg-[#EFF6FF]' : 'bg-[#F1F5F9]'
+                            isActive ? 'bg-[#EFF6FF] dark:bg-blue-900/20' : 'bg-[#F1F5F9] dark:bg-zinc-800'
                           }`}
                         >
                           <FileText
                             className={`h-[15px] w-[15px] transition-colors duration-100 ${
-                              isActive ? 'text-[#2563EB]' : 'text-[#64748B]'
+                              isActive ? 'text-[#2563EB] dark:text-blue-400' : 'text-[#64748B] dark:text-zinc-400'
                             }`}
                           />
                         </div>
@@ -242,7 +242,7 @@ export function SearchBar() {
                         <div className="flex-1 min-w-0">
                           <p
                             className={`text-[13px] font-medium truncate leading-tight transition-colors duration-100 ${
-                              isActive ? 'text-[#1D4ED8]' : 'text-[#111827]'
+                              isActive ? 'text-[#1D4ED8] dark:text-blue-400' : 'text-[#111827] dark:text-zinc-200'
                             }`}
                           >
                             {result.judul}
@@ -269,33 +269,33 @@ export function SearchBar() {
               </ul>
 
               {/* Footer hint */}
-              <div className="border-t border-[#F1F5F9] px-3 py-2 flex items-center gap-2">
-                <kbd className="inline-flex h-5 items-center rounded border border-[#E2E8F0] bg-[#F8FAFC] px-1.5 font-mono text-[10px] text-[#94A3B8]">
+              <div className="border-t border-[#F1F5F9] dark:border-zinc-800 px-3 py-2 flex items-center gap-2">
+                <kbd className="inline-flex h-5 items-center rounded border border-[#E2E8F0] dark:border-zinc-700 bg-[#F8FAFC] dark:bg-zinc-800 px-1.5 font-mono text-[10px] text-[#94A3B8] dark:text-zinc-400">
                   ↑↓
                 </kbd>
-                <span className="text-[11px] text-[#94A3B8]">navigasi</span>
-                <kbd className="ml-1 inline-flex h-5 items-center rounded border border-[#E2E8F0] bg-[#F8FAFC] px-1.5 font-mono text-[10px] text-[#94A3B8]">
+                <span className="text-[11px] text-[#94A3B8] dark:text-zinc-500">navigasi</span>
+                <kbd className="ml-1 inline-flex h-5 items-center rounded border border-[#E2E8F0] dark:border-zinc-700 bg-[#F8FAFC] dark:bg-zinc-800 px-1.5 font-mono text-[10px] text-[#94A3B8] dark:text-zinc-400">
                   ↵
                 </kbd>
-                <span className="text-[11px] text-[#94A3B8]">buka</span>
-                <kbd className="ml-1 inline-flex h-5 items-center rounded border border-[#E2E8F0] bg-[#F8FAFC] px-1.5 font-mono text-[10px] text-[#94A3B8]">
+                <span className="text-[11px] text-[#94A3B8] dark:text-zinc-500">buka</span>
+                <kbd className="ml-1 inline-flex h-5 items-center rounded border border-[#E2E8F0] dark:border-zinc-700 bg-[#F8FAFC] dark:bg-zinc-800 px-1.5 font-mono text-[10px] text-[#94A3B8] dark:text-zinc-400">
                   Esc
                 </kbd>
-                <span className="text-[11px] text-[#94A3B8]">tutup</span>
+                <span className="text-[11px] text-[#94A3B8] dark:text-zinc-500">tutup</span>
               </div>
             </>
           ) : (
             /* Empty state */
             <div className="flex flex-col items-center justify-center px-4 py-8">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9]">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-zinc-800">
                 <Search className="h-4 w-4 text-[#94A3B8]" />
               </div>
-              <p className="text-[13px] font-medium text-[#64748B]">
+              <p className="text-[13px] font-medium text-[#64748B] dark:text-zinc-300">
                 Tidak ada hasil
               </p>
-              <p className="mt-1 text-center text-[12px] text-[#94A3B8]">
+              <p className="mt-1 text-center text-[12px] text-[#94A3B8] dark:text-zinc-500">
                 Tidak ditemukan dokumen dengan nama{' '}
-                <span className="font-medium text-[#64748B]">
+                <span className="font-medium text-[#64748B] dark:text-zinc-400">
                   &ldquo;{query}&rdquo;
                 </span>
               </p>

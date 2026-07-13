@@ -783,8 +783,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
   if (isCollapsed) {
     return (
-      <div className="w-12 border-l bg-slate-50 flex flex-col items-center py-4 gap-4 h-full shadow-sm z-20 flex-shrink-0 transition-all duration-300">
-        <button onClick={() => setIsCollapsed(false)} className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors shadow-sm" title="Buka Asisten AI">
+      <div className="w-12 border-l border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex flex-col items-center py-4 gap-4 h-full shadow-sm z-20 flex-shrink-0 transition-all duration-300">
+        <button onClick={() => setIsCollapsed(false)} className="p-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg text-blue-600 dark:text-blue-400 transition-colors shadow-sm" title="Buka Asisten AI">
           <Sparkles className="h-5 w-5" />
         </button>
       </div>
@@ -792,21 +792,21 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   }
 
   return (
-    <div style={{ width: `${width}px` }} className="relative border-l bg-white flex flex-col h-full shadow-sm z-20 flex-shrink-0 transition-all duration-100">
+    <div style={{ width: `${width}px` }} className="relative border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col h-full shadow-sm z-20 flex-shrink-0 transition-all duration-100">
       {/* Drag Resize Handle */}
       <div onMouseDown={startResize} className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-blue-500/50 active:bg-blue-600 transition-colors z-30" />
 
       {/* Sidebar Header */}
-      <div className="px-4 py-3 border-b flex items-center justify-between bg-slate-50 pl-5 flex-shrink-0">
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between bg-slate-50 dark:bg-zinc-900/50 pl-5 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0 whitespace-nowrap">
-          <Sparkles className="h-4 w-4 text-blue-600 flex-shrink-0" />
+          <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
 
-          <span className="font-semibold text-slate-800 text-base truncate">
+          <span className="font-semibold text-slate-800 dark:text-zinc-100 text-base truncate">
             Docsly AI
           </span>
 
           <div className="flex items-center gap-1.5 ml-1">
-            <span className="text-[11px] text-slate-400 whitespace-nowrap">
+            <span className="text-[11px] text-slate-400 dark:text-zinc-500 whitespace-nowrap">
               Powered by
             </span>
 
@@ -817,58 +817,58 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {workflowState !== 'chat' && viewMode === 'chat' && <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Mode Alur Kerja</span>}
-          <button onClick={startNewChat} className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors flex items-center gap-1" title="Chat Baru">
+          {workflowState !== 'chat' && viewMode === 'chat' && <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium px-2 py-0.5 rounded-full">Mode Alur Kerja</span>}
+          <button onClick={startNewChat} className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-600 dark:text-zinc-400 transition-colors flex items-center gap-1" title="Chat Baru">
             <Plus className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode(viewMode === 'chat' ? 'history' : 'chat')}
-            className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors flex items-center gap-1"
+            className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-600 dark:text-zinc-400 transition-colors flex items-center gap-1"
             title={viewMode === 'chat' ? 'Lihat Riwayat Chat' : 'Kembali ke Chat'}
           >
             {viewMode === 'chat' ? <History className="h-4 w-4" /> : <MessageSquarePlus className="h-4 w-4" />}
           </button>
-          <button onClick={() => setIsCollapsed(true)} className="p-1 hover:bg-slate-200 rounded text-slate-500 transition-colors" title="Sembunyikan">
+          <button onClick={() => setIsCollapsed(true)} className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-500 dark:text-zinc-400 transition-colors" title="Sembunyikan">
             <X className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col">
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-zinc-950">
           {viewMode === 'history' ? (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-700 mb-2">Riwayat Percakapan</h3>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">Riwayat Percakapan</h3>
               {pastConversations.map((conv) => (
                 <button
                   key={conv.id}
                   onClick={() => loadConversation(conv.id)}
-                  className={`w-full text-left p-3 rounded-lg border text-sm transition-colors group relative ${conversationId === conv.id ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-zinc-200 text-slate-700 hover:bg-slate-50'
+                  className={`w-full text-left p-3 rounded-lg border text-sm transition-colors group relative ${conversationId === conv.id ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
                     }`}
                 >
                   <div className="font-medium truncate pr-6">{conv.judul_percakapan}</div>
-                  <div className="text-xs text-slate-500 mt-1">{new Date(conv.dibuat_pada).toLocaleString('id-ID')}</div>
+                  <div className="text-xs text-slate-500 dark:text-zinc-500 mt-1">{new Date(conv.dibuat_pada).toLocaleString('id-ID')}</div>
                   <div
                     onClick={(e) => deleteConversation(conv.id, e)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-all"
                     title="Hapus riwayat"
                   >
                     <Trash2 className="h-4 w-4" />
                   </div>
                 </button>
               ))}
-              {pastConversations.length === 0 && <div className="text-center text-sm text-slate-500 py-8">Belum ada riwayat percakapan untuk dokumen ini.</div>}
+              {pastConversations.length === 0 && <div className="text-center text-sm text-slate-500 dark:text-zinc-500 py-8">Belum ada riwayat percakapan untuk dokumen ini.</div>}
             </div>
           ) : (
             <>
               <div className="space-y-4">
                 {messages.map((msg, index) => (
                   <div key={index} className={`flex gap-2 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${msg.role === 'user' ? 'bg-blue-100 text-blue-600' : 'bg-zinc-200 text-zinc-600'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'}`}>
                       {msg.role === 'user' ? <User className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
                     </div>
                     <div
-                      className={`rounded-xl px-3.5 py-2.5 text-[15px] leading-relaxed border ${msg.role === 'user' ? 'bg-[#006EFF] text-white border-transparent rounded-tr-sm' : 'bg-zinc-100 text-zinc-800 border-transparent rounded-tl-sm'
+                      className={`rounded-xl px-3.5 py-2.5 text-[15px] leading-relaxed border ${msg.role === 'user' ? 'bg-[#006EFF] text-white border-transparent rounded-tr-sm' : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border-transparent rounded-tl-sm'
                         }`}
                     >
                       {formatMessageContent(msg.content)}
@@ -877,20 +877,20 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 ))}
 
                 {workflowState === 'asking_questions' && !isLoading && (
-                  <div className="bg-white border-2 border-blue-100 rounded-lg p-4 shadow-sm space-y-4 mr-auto w-full max-w-[95%]">
-                    <div className="flex items-center gap-2 text-blue-700">
+                  <div className="bg-white dark:bg-zinc-900 border-2 border-blue-100 dark:border-blue-900/50 rounded-lg p-4 shadow-sm space-y-4 mr-auto w-full max-w-[95%]">
+                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
                       <Sparkles className="h-4 w-4" />
                       <span className="text-sm font-semibold">Tingkatkan Kualitas Dokumen</span>
                     </div>
-                    <p className="text-xs text-slate-600">Saya menyadari beberapa detail penting belum disebutkan. Jawab pertanyaan berikut untuk hasil yang lebih presisi, atau lewati agar AI mengasumsikannya secara otomatis.</p>
+                    <p className="text-xs text-slate-600 dark:text-zinc-400">Saya menyadari beberapa detail penting belum disebutkan. Jawab pertanyaan berikut untuk hasil yang lebih presisi, atau lewati agar AI mengasumsikannya secara otomatis.</p>
                     <div className="space-y-3">
                       {smartQuestions.map((q, idx) => (
                         <div key={idx} className="space-y-1.5">
-                          <label className="text-xs font-medium text-slate-700 block">{q}</label>
+                          <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 block">{q}</label>
                           <input
                             type="text"
                             placeholder="Ketik jawaban (opsional)"
-                            className="w-full text-sm border-b focus:border-blue-500 outline-none px-1 py-1 text-slate-700 bg-slate-50/50 focus:bg-white transition-colors"
+                            className="w-full text-sm border-b border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-500 outline-none px-1 py-1 text-slate-700 dark:text-zinc-200 bg-slate-50/50 dark:bg-zinc-900/50 focus:bg-white dark:focus:bg-zinc-800 transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
                             value={questionAnswers[idx] || ''}
                             onChange={(e) => setQuestionAnswers((prev) => ({ ...prev, [idx]: e.target.value }))}
                           />
@@ -901,7 +901,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                       <Button onClick={handleSubmitAnswers} size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-1.5">
                         Kirim Jawaban
                       </Button>
-                      <Button onClick={handleSkipQuestions} size="sm" variant="outline" className="w-full text-slate-600 hover:text-slate-800 hover:bg-slate-50 text-sm py-1.5">
+                      <Button onClick={handleSkipQuestions} size="sm" variant="outline" className="w-full text-slate-600 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 text-sm py-1.5 border-zinc-200 dark:border-zinc-700">
                         Lewati (Biar AI yang Asumsikan)
                       </Button>
                     </div>
@@ -909,14 +909,14 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 )}
 
                 {workflowState === 'outline_review' && !isLoading && (
-                  <div className="bg-white border rounded-lg p-3 shadow-sm space-y-3 mr-auto max-w-[85%]">
-                    <span className="text-sm font-semibold text-slate-700 block">Apakah kerangka (outline) ini sesuai?</span>
-                    <p className="text-xs text-slate-500">Jika Anda menyetujui, AI akan menulis konten untuk setiap heading di atas secara bertahap.</p>
+                  <div className="bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg p-3 shadow-sm space-y-3 mr-auto max-w-[85%]">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-zinc-200 block">Apakah kerangka (outline) ini sesuai?</span>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">Jika Anda menyetujui, AI akan menulis konten untuk setiap heading di atas secara bertahap.</p>
                     <div className="flex flex-col gap-1.5">
                       <Button onClick={handleConfirmOutline} size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-1">
                         Setuju & Mulai Tulis Isi
                       </Button>
-                      <Button onClick={handleRejectOutline} size="sm" variant="ghost" className="w-full text-slate-600 hover:text-slate-800 text-sm py-1">
+                      <Button onClick={handleRejectOutline} size="sm" variant="ghost" className="w-full text-slate-600 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 text-sm py-1">
                         Tolak Outline
                       </Button>
                     </div>
@@ -924,12 +924,12 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 )}
 
                 {workflowState === 'writing_content' && !isLoading && (
-                  <div className="bg-white border rounded-lg p-3 shadow-sm space-y-3 mr-auto max-w-[85%]">
-                    <span className="text-sm font-semibold text-slate-700 block">
+                  <div className="bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg p-3 shadow-sm space-y-3 mr-auto max-w-[85%]">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-zinc-200 block">
                       Bagian {currentHeadingIndex + 1} dari {headingsToWrite.length} Selesai
                     </span>
-                    <p className="text-xs text-slate-600 font-medium">Selesai menulis: "{headingsToWrite[currentHeadingIndex]?.text}"</p>
-                    <p className="text-xs text-slate-400">Tinjau tulisan hijau di editor. Anda bisa menerima, mengedit, atau lanjut ke bagian berikutnya.</p>
+                    <p className="text-xs text-slate-600 dark:text-zinc-400 font-medium">Selesai menulis: "{headingsToWrite[currentHeadingIndex]?.text}"</p>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500">Tinjau tulisan hijau di editor. Anda bisa menerima, mengedit, atau lanjut ke bagian berikutnya.</p>
                     <div className="flex flex-col gap-1.5 pt-1">
                       <Button onClick={handleNextSection} size="sm" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm py-1 flex items-center justify-center gap-1.5">
                         Lanjut Tulis Bagian Berikutnya
@@ -943,7 +943,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                         }}
                         size="sm"
                         variant="ghost"
-                        className="w-full text-red-600 hover:text-red-700 text-sm py-1"
+                        className="w-full text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm py-1"
                       >
                         Selesai & Keluar Alur Kerja
                       </Button>
@@ -952,15 +952,15 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 )}
 
                 {isLoading && (
-                  <div className="flex items-center gap-2 text-slate-500 mr-auto max-w-[85%] bg-white border rounded-lg rounded-tl-none p-3 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-400 mr-auto max-w-[85%] bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg rounded-tl-none p-3 shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400 flex-shrink-0" />
                     <div className="flex flex-col gap-1 w-full">
-                      <span className="text-sm font-medium text-slate-700">{stageLabel}</span>
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
-                        <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+                      <span className="text-sm font-medium text-slate-700 dark:text-zinc-300">{stageLabel}</span>
+                      <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 mt-1 overflow-hidden">
+                        <div className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
                       </div>
-                      <span className="text-xs text-slate-400">{progress}% selesai</span>
-                      <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 h-6 px-2 mt-2 w-max text-xs" onClick={handleStop}>
+                      <span className="text-xs text-slate-400 dark:text-zinc-500">{progress}% selesai</span>
+                      <Button variant="ghost" size="sm" className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 h-6 px-2 mt-2 w-max text-xs" onClick={handleStop}>
                         <StopCircle className="h-3.5 w-3.5 mr-1" />
                         Hentikan
                       </Button>
@@ -973,31 +973,31 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           )}
 
           {suggestions.length > 0 && (
-            <div className="border-t bg-white p-3 mt-4 rounded-xl">
-              <div className="text-sm font-semibold text-slate-600 mb-2 flex items-center justify-between">
+            <div className="border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 mt-4 rounded-xl">
+              <div className="text-sm font-semibold text-slate-600 dark:text-zinc-300 mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
                   Saran Perbaikan ({suggestions.length})
                 </div>
                 <div className="flex gap-2 text-xs">
-                  <button onClick={handleAcceptAllPending} className="text-emerald-600 hover:underline">
+                  <button onClick={handleAcceptAllPending} className="text-emerald-600 dark:text-emerald-400 hover:underline">
                     Terima Semua
                   </button>
-                  <button onClick={handleRejectAllPending} className="text-rose-600 hover:underline">
+                  <button onClick={handleRejectAllPending} className="text-rose-600 dark:text-rose-400 hover:underline">
                     Tolak Semua
                   </button>
                 </div>
               </div>
               <div className="space-y-2">
                 {suggestions.map((sug, i) => (
-                  <div key={i} className={`p-2 rounded border text-xs flex flex-col justify-between gap-2 shadow-sm ${sug.suggestionType === 'insert' ? 'border-emerald-200 bg-emerald-50/30' : 'border-rose-200 bg-rose-50/30'}`}>
+                  <div key={i} className={`p-2 rounded border text-xs flex flex-col justify-between gap-2 shadow-sm ${sug.suggestionType === 'insert' ? 'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-900/20' : 'border-rose-200 dark:border-rose-900/50 bg-rose-50/30 dark:bg-rose-900/20'}`}>
                     <div className="flex justify-between items-start">
-                      <span className={`font-semibold px-1 rounded text-[10px] uppercase ${sug.suggestionType === 'insert' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      <span className={`font-semibold px-1 rounded text-[10px] uppercase ${sug.suggestionType === 'insert' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400'}`}>
                         {sug.suggestionType === 'insert' ? 'Tambah' : 'Hapus'}
                       </span>
-                      <span className="text-slate-400 font-mono text-[10px] truncate">{sug.type}</span>
+                      <span className="text-slate-400 dark:text-zinc-500 font-mono text-[10px] truncate">{sug.type}</span>
                     </div>
-                    <p className="text-slate-600 italic line-clamp-2">"{sug.text || 'Teks kosong'}"</p>
+                    <p className="text-slate-600 dark:text-zinc-400 italic line-clamp-2">"{sug.text || 'Teks kosong'}"</p>
                     <div className="flex gap-1.5 self-end">
                       <button onClick={() => handleAccept(sug.pos)} className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded flex items-center justify-center transition-colors" title="Terima">
                         <Check className="h-3 w-3" />
@@ -1013,14 +1013,14 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           )}
         </div>
 
-        <div className="p-3 border-t bg-white flex-shrink-0">
+        <div className="p-3 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex-shrink-0">
           <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.xlsx,.xls,.pptx,.ppt,.txt,.csv,image/*" className="hidden" onChange={handleFileAttach} />
 
-          <div className="relative rounded-xl transition-colors duration-200" style={{ background: '#F4F4F5' }}>
+          <div className="relative rounded-xl transition-colors duration-200 bg-[#F4F4F5] dark:bg-zinc-900 border border-transparent dark:border-zinc-800">
             {selectedContext && (
               <div className="flex px-4 pt-3 pb-0">
-                <div className="flex items-center gap-2 bg-zinc-200/50 text-slate-700 rounded-lg px-3 py-1.5 text-[13px] font-medium w-full">
-                  <Quote className="h-3 w-3 shrink-0 text-slate-400" />
+                <div className="flex items-center gap-2 bg-zinc-200/50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg px-3 py-1.5 text-[13px] font-medium w-full">
+                  <Quote className="h-3 w-3 shrink-0 text-slate-400 dark:text-zinc-500" />
                   <span className="truncate flex-1">{selectedContext}</span>
                 </div>
               </div>
@@ -1056,7 +1056,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
               placeholder={workflowState === 'chat' ? 'Tanyakan sesuatu atau / untuk perintah...' : 'Alur kerja aktif...'}
               disabled={isLoading || workflowState !== 'chat'}
               rows={1}
-              className="w-full resize-none bg-transparent text-slate-800 placeholder-slate-400 text-[15px] leading-relaxed px-4 pt-3.5 pb-2 focus:outline-none disabled:opacity-50"
+              className="w-full resize-none bg-transparent text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 text-[15px] leading-relaxed px-4 pt-3.5 pb-2 focus:outline-none disabled:opacity-50"
               style={{ minHeight: '52px', maxHeight: '240px', overflowY: 'hidden' }}
             />
 
@@ -1065,13 +1065,13 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 <button
                   onClick={() => setShowAttachMenu((v) => !v)}
                   disabled={isLoading}
-                  className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-150 disabled:opacity-40"
+                  className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 disabled:opacity-40"
                   title="Lampirkan file"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
                 {showAttachMenu && (
-                  <div className="absolute bottom-10 left-0 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 min-w-[180px] z-50">
+                  <div className="absolute bottom-10 left-0 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl shadow-lg py-1.5 min-w-[180px] z-50">
                     {[
                       { label: 'PDF', ext: '.pdf,application/pdf' },
                       { label: 'Word (.docx)', ext: '.doc,.docx' },
@@ -1082,7 +1082,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                     ].map((item) => (
                       <button
                         key={item.label}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-slate-600 dark:text-zinc-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
                         onClick={() => {
                           if (fileInputRef.current) {
                             fileInputRef.current.accept = item.ext;
@@ -1097,13 +1097,13 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 )}
               </div>
 
-              <span className="text-slate-400 text-[11px] leading-snug text-center flex-1 px-2 select-none">AI dapat membuat kesalahan. Verifikasi informasi penting.</span>
+              <span className="text-slate-400 dark:text-zinc-500 text-[11px] leading-snug text-center flex-1 px-2 select-none">AI dapat membuat kesalahan. Verifikasi informasi penting.</span>
 
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleMic}
                   disabled={isLoading}
-                  className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-150 disabled:opacity-40 ${isListening ? 'bg-red-500 text-white animate-pulse shadow-sm' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                  className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-150 disabled:opacity-40 ${isListening ? 'bg-red-500 text-white animate-pulse shadow-sm' : 'text-slate-400 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
                     }`}
                   title={isListening ? 'Berhenti merekam' : 'Input suara'}
                 >

@@ -76,7 +76,7 @@ function StartNumberInput({ section, disabled, onChange }: { section: PageNumber
       onChange={handleChange}
       onBlur={handleCommit}
       onKeyDown={handleKeyDown}
-      className="h-8 text-sm text-slate-900"
+      className="h-8 text-sm text-slate-900 dark:text-zinc-100 dark:bg-zinc-950 dark:border-zinc-800"
     />
   );
 }
@@ -139,15 +139,15 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
 
   return (
     <div className="fixed inset-0 z-[50] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl max-w-lg w-full mx-4 overflow-hidden border border-slate-200">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <h3 className="text-lg font-semibold text-slate-800">Pengaturan Nomor Halaman</h3>
+      <div className="bg-white dark:bg-zinc-950 rounded-xl max-w-lg w-full mx-4 overflow-hidden border border-slate-200 dark:border-zinc-800">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50 dark:bg-zinc-900">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-zinc-100">Pengaturan Nomor Halaman</h3>
           <div className="flex items-center gap-2">
-            <Label htmlFor="enable-page-numbers" className="text-sm font-medium text-slate-700">Aktifkan</Label>
+            <Label htmlFor="enable-page-numbers" className="text-sm font-medium text-slate-700 dark:text-zinc-300">Aktifkan</Label>
             <input 
               id="enable-page-numbers"
               type="checkbox"
-              className="w-4 h-4 accent-blue-600 rounded border-slate-300 cursor-pointer"
+              className="w-4 h-4 accent-blue-600 rounded border-slate-300 dark:border-zinc-700 cursor-pointer"
               checked={currentSettings.enabled} 
               onChange={(e) => setCurrentSettings(s => ({ ...s, enabled: e.target.checked }))} 
             />
@@ -158,13 +158,13 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
           {/* General Settings */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs text-slate-500 font-medium uppercase tracking-wider">Posisi</Label>
+              <Label className="text-xs text-slate-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Posisi</Label>
               <Select 
                 disabled={!currentSettings.enabled}
                 value={currentSettings.position} 
                 onValueChange={(v: any) => setCurrentSettings(s => ({ ...s, position: v }))}
               >
-                <SelectTrigger className="w-full h-9 bg-slate-50 border-slate-200 text-slate-900">
+                <SelectTrigger className="w-full h-9 bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-100">
                   <SelectValue placeholder="Pilih Posisi" />
                 </SelectTrigger>
                 <SelectContent>
@@ -174,13 +174,13 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs text-slate-500 font-medium uppercase tracking-wider">Perataan</Label>
+              <Label className="text-xs text-slate-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Perataan</Label>
               <Select 
                 disabled={!currentSettings.enabled}
                 value={currentSettings.align} 
                 onValueChange={(v: any) => setCurrentSettings(s => ({ ...s, align: v }))}
               >
-                <SelectTrigger className="w-full h-9 bg-slate-50 border-slate-200 text-slate-900">
+                <SelectTrigger className="w-full h-9 bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-100">
                   <SelectValue placeholder="Pilih Perataan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -192,18 +192,18 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
             </div>
           </div>
 
-          <hr className="border-slate-100" />
+          <hr className="border-slate-100 dark:border-zinc-800" />
 
           {/* Sections List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-xs text-slate-500 font-medium uppercase tracking-wider">Format per Halaman (Sections)</Label>
+              <Label className="text-xs text-slate-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Format per Halaman (Sections)</Label>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={handleAddSection}
                 disabled={!currentSettings.enabled}
-                className="h-7 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                className="h-7 px-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Tambah Bagian
@@ -212,27 +212,27 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
 
             <div className="space-y-3">
               {currentSettings.sections.map((section, idx) => (
-                <div key={idx} className={`p-3 rounded-lg border ${currentSettings.enabled ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-60'} flex flex-col gap-3 relative group`}>
+                <div key={idx} className={`p-3 rounded-lg border ${currentSettings.enabled ? 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950' : 'border-slate-100 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900 opacity-60'} flex flex-col gap-3 relative group`}>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-[11px] text-slate-400">Mulai dari Halaman</Label>
+                      <Label className="text-[11px] text-slate-400 dark:text-zinc-500">Mulai dari Halaman</Label>
                       <Input 
                         type="number" 
                         min={1}
                         disabled={!currentSettings.enabled}
                         value={section.startPage}
                         onChange={(e) => handleUpdateSection(idx, 'startPage', parseInt(e.target.value) || 1)}
-                        className="h-8 text-sm text-slate-900"
+                        className="h-8 text-sm text-slate-900 dark:text-zinc-100 dark:bg-zinc-950 dark:border-zinc-800"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[11px] text-slate-400">Format Angka</Label>
+                      <Label className="text-[11px] text-slate-400 dark:text-zinc-500">Format Angka</Label>
                       <Select 
                         disabled={!currentSettings.enabled}
                         value={section.format} 
                         onValueChange={(v: any) => handleUpdateSection(idx, 'format', v)}
                       >
-                        <SelectTrigger className="h-8 text-sm text-slate-900">
+                        <SelectTrigger className="h-8 text-sm text-slate-900 dark:text-zinc-100 dark:bg-zinc-950 dark:border-zinc-800">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -243,7 +243,7 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[11px] text-slate-400">Mulai dari Nomor</Label>
+                      <Label className="text-[11px] text-slate-400 dark:text-zinc-500">Mulai dari Nomor</Label>
                       <StartNumberInput 
                         section={section}
                         disabled={!currentSettings.enabled}
@@ -255,7 +255,7 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
                     <button 
                       onClick={() => handleRemoveSection(idx)}
                       disabled={!currentSettings.enabled}
-                      className="absolute -top-2 -right-2 bg-white border border-slate-200 p-1 rounded-full text-slate-400 hover:text-red-500 hover:border-red-200 shadow-sm transition-all"
+                      className="absolute -top-2 -right-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-1 rounded-full text-slate-400 dark:text-zinc-500 hover:text-red-500 hover:border-red-200 shadow-sm transition-all"
                       title="Hapus Bagian"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -264,17 +264,17 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-slate-400 mt-2">
+            <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-2">
               Contoh: Jika Anda ingin Halaman 1-3 romawi dan Halaman 4+ angka biasa, buat 2 bagian: (Mulai dari Halaman 1, Format i,ii,iii, Mulai dari 1) dan (Mulai dari Halaman 4, Format 1,2,3, Mulai dari 1).
             </p>
           </div>
         </div>
 
-        <div className="bg-slate-50 px-5 py-3 flex justify-end gap-3 border-t border-slate-100">
+        <div className="bg-slate-50 dark:bg-zinc-900 px-5 py-3 flex justify-end gap-3 border-t border-slate-100 dark:border-zinc-800">
           <Button 
             onClick={onClose}
             variant="outline"
-            className="text-slate-600 bg-white hover:bg-slate-50 hover:text-slate-900"
+            className="text-slate-600 dark:text-zinc-300 bg-white dark:bg-zinc-950 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border-slate-200 dark:border-zinc-800"
           >
             Batal
           </Button>

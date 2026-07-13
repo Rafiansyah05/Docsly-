@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={cn("font-sans", jakarta.variable)}>
-      <body className="antialiased dark:bg-slate-950 dark:text-slate-50 transition-colors duration-300">
+      <body className="antialiased bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-300 transition-colors duration-300">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

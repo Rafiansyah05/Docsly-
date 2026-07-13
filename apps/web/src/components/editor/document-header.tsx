@@ -41,7 +41,7 @@ export function DocumentHeader({ documentId, initialTitle }: { documentId: strin
       }}
       onBlur={handleTitleBlur}
       onKeyDown={handleKeyDown}
-      className="text-sm font-medium text-slate-700 max-w-sm truncate border border-transparent focus:border-slate-300 focus:ring-0 focus:outline-none bg-transparent hover:bg-slate-100 px-2 py-1 rounded-md transition-colors"
+      className="text-sm font-medium text-slate-700 dark:text-zinc-100 max-w-sm truncate border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:ring-0 focus:outline-none bg-transparent hover:bg-slate-100 dark:hover:bg-zinc-800 px-2 py-1 rounded-md transition-colors"
       placeholder="Ketik judul dokumen..."
     />
   );

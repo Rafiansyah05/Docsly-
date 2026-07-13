@@ -36,17 +36,17 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
   // Untuk halaman editor: gunakan fixed header (AppHeader) dan tidak tampilkan sidebar
   if (isEditor) {
     return (
-      <div className="h-screen overflow-hidden bg-slate-50 text-slate-900">
+      <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-300">
         {children}
       </div>
     );
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-50 text-slate-900 flex">
+    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-300 flex">
       {/* Sidebar — full viewport height, di atas navbar */}
       <aside
-        className={`${collapsed ? 'w-20' : 'w-[260px]'} hidden lg:flex flex-col justify-between bg-white border-r border-[#E2E8F0] h-full transition-all duration-300 ease-out relative shrink-0 z-40`}
+        className={`${collapsed ? 'w-20' : 'w-[260px]'} hidden lg:flex flex-col justify-between bg-white dark:bg-zinc-900 border-r border-[#E2E8F0] dark:border-zinc-800 h-full transition-all duration-300 ease-out relative shrink-0 z-40`}
       >
         <div className="flex flex-col h-full">
           <div className="px-4 py-5">
@@ -58,7 +58,7 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
                 <button
                   type="button"
                   onClick={() => setCollapsed((value) => !value)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0] transition-colors duration-200"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#F1F5F9] dark:bg-zinc-800 text-[#64748B] dark:text-zinc-400 hover:bg-[#E2E8F0] dark:hover:bg-zinc-700 transition-colors duration-200"
                   aria-label="Expand sidebar"
                 >
                   <span className="sr-only">Toggle sidebar</span>
@@ -71,13 +71,13 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
                   <div className="relative h-8 w-8 overflow-hidden rounded-full">
                     <Image src="/images/icon.png" alt="Docsly" fill className="object-contain" />
                   </div>
-                  <span className="text-[18px] font-semibold text-[#111827]">Docsly</span>
+                  <span className="text-[18px] font-semibold text-[#111827] dark:text-zinc-100">Docsly</span>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setCollapsed((value) => !value)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0] transition-colors duration-200"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#F1F5F9] dark:bg-zinc-800 text-[#64748B] dark:text-zinc-400 hover:bg-[#E2E8F0] dark:hover:bg-zinc-700 transition-colors duration-200"
                   aria-label="Collapse sidebar"
                 >
                   <span className="sr-only">Toggle sidebar</span>
@@ -99,13 +99,13 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
                 ? 'flex items-center justify-center h-11 w-full rounded-[10px] transition-colors duration-200'
                 : 'flex items-center h-11 gap-3 rounded-[10px] px-3 transition-colors duration-200';
 
-              const activeClass = !collapsed && active ? 'bg-[#EFF6FF] text-[#2563EB]' : '';
-              const inactiveClass = !collapsed && !active ? 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#111827]' : '';
-              const collapsedIconClass = collapsed ? 'text-[#64748B]' : '';
+              const activeClass = !collapsed && active ? 'bg-[#EFF6FF] dark:bg-blue-900/30 text-[#2563EB] dark:text-blue-400' : '';
+              const inactiveClass = !collapsed && !active ? 'text-[#64748B] dark:text-zinc-400 hover:bg-[#F8FAFC] dark:hover:bg-zinc-800 hover:text-[#111827] dark:hover:text-zinc-200' : '';
+              const collapsedIconClass = collapsed ? 'text-[#64748B] dark:text-zinc-400 hover:text-[#111827] dark:hover:text-zinc-200' : '';
 
               return (
                 <Link key={item.label} href={item.href} title={collapsed ? item.label : undefined} className={`${baseClass} ${activeClass} ${inactiveClass}`}>
-                  <Icon className={`${active ? 'text-[#2563EB]' : collapsedIconClass} h-5 w-5`} />
+                  <Icon className={`${active ? 'text-[#2563EB] dark:text-blue-400' : collapsedIconClass} h-5 w-5`} />
                   {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
                 </Link>
               );
@@ -114,15 +114,15 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
         </div>
 
         <div className="absolute bottom-5 left-4 right-4">
-          <div className={`rounded-3xl ${collapsed ? 'p-2' : 'p-4'} bg-white border-t border-[#E2E8F0]`}>
+          <div className={`rounded-3xl ${collapsed ? 'p-2' : 'p-4'} bg-white dark:bg-zinc-900 border-t border-[#E2E8F0] dark:border-zinc-800`}>
             <div className="flex items-center gap-3">
               <UserMenu user={user} profile={profile} />
               {!collapsed && (
                 <div className="min-w-0 font-sans">
-                  <p className="text-sm font-medium text-slate-700 truncate">{profileName}</p>
-                  <p className="text-[13px] text-slate-500 truncate">{profileEmail}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-zinc-300 truncate">{profileName}</p>
+                  <p className="text-[13px] text-slate-400 dark:text-zinc-400/80 truncate">{profileEmail}</p>
                   <div className="mt-1.5">
-                    <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600">{accountStatus}</span>
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-zinc-800/80 text-slate-500 dark:text-zinc-400">{accountStatus}</span>
                   </div>
                 </div>
               )}

@@ -259,18 +259,18 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
   };
 
   return (
-    <div className="w-full flex flex-col border-b border-slate-200 bg-white mt-0">
+    <div className="w-full flex flex-col border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 mt-0">
       {/* Formatting Tools */}
       <div className="flex flex-wrap items-center gap-1 px-4 py-1.5 overflow-x-auto">
         {/* Font Family */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center h-8 text-xs font-medium w-36 justify-between px-2 border border-slate-200 rounded-lg hover:bg-slate-100 outline-none transition-colors text-slate-900">
+          <DropdownMenuTrigger className="inline-flex items-center h-8 text-xs font-medium w-36 justify-between px-2 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 outline-none transition-colors text-zinc-900 dark:text-zinc-200">
             <span className="truncate text-left w-full">
               {editor.getAttributes('textStyle').fontFamily ? FONTS.find((f) => editor.getAttributes('textStyle').fontFamily.includes(f.value.split(',')[0]))?.name || 'Times New Roman' : 'Times New Roman'}
             </span>
             <ChevronDown className="h-3 w-3 opacity-50 ml-1 shrink-0" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="rounded-xl shadow-lg border-slate-200 bg-white w-36">
+          <DropdownMenuContent className="rounded-xl shadow-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 w-36">
             {FONTS.map((font) => (
               <DropdownMenuItem
                 key={font.name}
@@ -278,7 +278,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
                   e.preventDefault();
                   (editor.chain().focus() as any).setFontFamily(font.value).run();
                 }}
-                className="text-sm cursor-pointer hover:bg-slate-100 text-slate-900"
+                className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-200"
               >
                 <span style={{ fontFamily: font.value }}>{font.name}</span>
                 {editor.isActive('textStyle', { fontFamily: font.value }) && <Check className="h-4 w-4 ml-auto text-blue-600" />}
@@ -289,11 +289,11 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
 
         {/* Font Size */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center h-8 text-xs font-medium w-32 justify-between px-2 border border-slate-200 rounded-lg hover:bg-slate-100 outline-none transition-colors text-slate-900">
+          <DropdownMenuTrigger className="inline-flex items-center h-8 text-xs font-medium w-32 justify-between px-2 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 outline-none transition-colors text-zinc-900 dark:text-zinc-200">
             <span className="truncate">{editor.getAttributes('textStyle').fontSize || '11pt'}</span>
             <ChevronDown className="h-3 w-3 opacity-50 shrink-0" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="rounded-xl shadow-lg border-slate-200 min-w-[8rem] w-32 z-50 bg-white">
+          <DropdownMenuContent className="rounded-xl shadow-lg border-zinc-200 dark:border-zinc-800 min-w-[8rem] w-32 z-50 bg-white dark:bg-zinc-900">
             {FONT_SIZES.map((size) => (
               <DropdownMenuItem
                 key={size}
@@ -301,7 +301,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
                   e.preventDefault();
                   (editor.chain().focus() as any).setFontSize(size).run();
                 }}
-                className="text-sm cursor-pointer hover:bg-slate-100 justify-center text-slate-900"
+                className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 justify-center text-zinc-900 dark:text-zinc-200"
               >
                 {size}
                 {editor.isActive('textStyle', { fontSize: size }) && <Check className="h-3 w-3 ml-2 text-blue-600 absolute right-2" />}
@@ -310,7 +310,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="flex items-center ml-1 bg-white border border-slate-200 rounded-lg h-8 overflow-hidden">
+        <div className="flex items-center ml-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg h-8 overflow-hidden">
           <input
             type="color"
             onInput={(e) => (editor.chain().focus() as any).setColor((e.target as HTMLInputElement).value).run()}
@@ -320,13 +320,13 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           />
         </div>
 
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
 
         {/* Headings */}
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 1 }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 1 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
         >
           <Heading1 className="h-4 w-4" />
@@ -334,7 +334,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 2 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         >
           <Heading2 className="h-4 w-4" />
@@ -342,19 +342,19 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 3 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         >
           <Heading3 className="h-4 w-4" />
         </Button>
 
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
 
         {/* Basic Marks */}
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('bold') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('bold') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <Bold className="h-4 w-4" />
@@ -362,7 +362,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('italic') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('italic') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic className="h-4 w-4" />
@@ -370,7 +370,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('underline') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('underline') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <Underline className="h-4 w-4" />
@@ -378,7 +378,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('strike') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('strike') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <Strikethrough className="h-4 w-4" />
@@ -386,7 +386,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('superscript') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('superscript') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => (editor.chain().focus() as any).toggleSuperscript().run()}
         >
           <Superscript className="h-4 w-4" />
@@ -394,7 +394,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('subscript') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('subscript') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => (editor.chain().focus() as any).toggleSubscript().run()}
         >
           <Subscript className="h-4 w-4" />
@@ -402,19 +402,19 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('highlight') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('highlight') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => (editor.chain().focus() as any).toggleHighlight().run()}
         >
           <Highlighter className="h-4 w-4" />
         </Button>
 
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
 
         {/* Alignment */}
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'left' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'left' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => (editor.chain().focus() as any).setTextAlign('left').run()}
         >
           <AlignLeft className="h-4 w-4" />
@@ -422,7 +422,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'center' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'center' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => (editor.chain().focus() as any).setTextAlign('center').run()}
         >
           <AlignCenter className="h-4 w-4" />
@@ -430,7 +430,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'right' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'right' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => (editor.chain().focus() as any).setTextAlign('right').run()}
         >
           <AlignRight className="h-4 w-4" />
@@ -438,20 +438,20 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => (editor.chain().focus() as any).setTextAlign('justify').run()}
         >
           <AlignJustify className="h-4 w-4" />
         </Button>
 
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
 
         {/* Spacing & Indent */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 text-slate-600 hover:bg-slate-100 rounded-lg outline-none transition-colors" title="Spasi Baris">
+          <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg outline-none transition-colors" title="Spasi Baris">
             <ArrowUpDown className="h-4 w-4" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="rounded-xl shadow-lg border-slate-200 min-w-[8rem] z-50 bg-white">
+          <DropdownMenuContent className="rounded-xl shadow-lg border-zinc-200 dark:border-zinc-800 min-w-[8rem] z-50 bg-white dark:bg-zinc-900">
             {['1.0', '1.15', '1.5', '2.0'].map((size) => (
               <DropdownMenuItem
                 key={size}
@@ -459,7 +459,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
                   e.preventDefault();
                   (editor.chain().focus() as any).setLineHeight(size).run();
                 }}
-                className="text-sm cursor-pointer hover:bg-slate-100 justify-between px-3 py-1.5"
+                className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 justify-between px-3 py-1.5"
               >
                 <span>Spasi {size}</span>
                 {editor.isActive({ lineHeight: size }) && <Check className="h-3 w-3 text-blue-600" />}
@@ -468,20 +468,20 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-600 hover:bg-slate-200 hover:text-slate-800" onClick={() => (editor.chain().focus() as any).outdent().run()}>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200" onClick={() => (editor.chain().focus() as any).outdent().run()}>
           <OutdentIcon className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-600 hover:bg-slate-200 hover:text-slate-800" onClick={() => (editor.chain().focus() as any).indent().run()}>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200" onClick={() => (editor.chain().focus() as any).indent().run()}>
           <IndentIcon className="h-4 w-4" />
         </Button>
 
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
 
         {/* Lists & Blocks */}
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('bulletList') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('bulletList') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         >
           <List className="h-4 w-4" />
@@ -489,7 +489,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('orderedList') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('orderedList') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         >
           <ListOrdered className="h-4 w-4" />
@@ -497,7 +497,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('blockquote') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('blockquote') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         >
           <Quote className="h-4 w-4" />
@@ -505,16 +505,16 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('codeBlock') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('codeBlock') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
           <Code className="h-4 w-4" />
         </Button>
 
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
 
         {/* Links */}
-        <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${editor.isActive('link') ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`} onClick={openLinkDialog}>
+        <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${editor.isActive('link') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`} onClick={openLinkDialog}>
           <LinkIcon className="h-4 w-4" />
         </Button>
       </div>
@@ -524,16 +524,16 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
 
       {/* Link Dialog */}
       <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
-        <DialogContent className="sm:max-w-md p-6 bg-white">
+        <DialogContent className="sm:max-w-md p-6 bg-zinc-50 dark:bg-zinc-900">
           <form onSubmit={applyLink}>
             <DialogHeader>
-              <DialogTitle className="text-black">Masukkan Tautan (Link)</DialogTitle>
+              <DialogTitle className="text-zinc-900 dark:text-zinc-100">Masukkan Tautan (Link)</DialogTitle>
             </DialogHeader>
             <div className="flex items-center space-x-2 mt-4">
-              <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://example.com" className="flex-1 text-slate-900" autoFocus />
+              <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://example.com" className="flex-1 text-zinc-900 dark:text-zinc-100" autoFocus />
             </div>
             <DialogFooter className="gap-3 sm:justify-end mt-6">
-              <Button type="button" variant="secondary" onClick={() => setShowLinkDialog(false)} className="hover:bg-slate-100 hover:text-slate-900">
+              <Button type="button" variant="secondary" onClick={() => setShowLinkDialog(false)} className="hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100">
                 Batal
               </Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
