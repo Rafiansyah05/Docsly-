@@ -168,12 +168,12 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
         view === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredDocuments.map(doc => (
-              <div
+              <Link
                 key={doc.id}
-                onClick={() => router.push(`/w/${workspaceId}/d/${doc.id}`)}
-                className="h-full relative p-5 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 transition-all duration-150 ease-in-out hover:bg-slate-50 dark:hover:bg-zinc-900 hover:-translate-y-[1px] hover:border-slate-300 dark:hover:border-zinc-700 flex flex-col group cursor-pointer"
+                href={`/w/${workspaceId}/d/${doc.id}`}
+                className="h-full relative p-5 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 transition-all duration-150 ease-in-out hover:bg-slate-50 dark:hover:bg-zinc-900 hover:-translate-y-[1px] hover:border-slate-300 dark:hover:border-zinc-700 flex flex-col group cursor-pointer block"
               >
-                <div className="absolute top-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-4 right-4 z-10" onClick={(e) => e.preventDefault()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger render={
                       <button className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-100 rounded-md hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors opacity-0 group-hover:opacity-100 data-[open]:opacity-100 focus:opacity-100">
@@ -184,7 +184,7 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
                       <DropdownMenuItem
                         className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 cursor-pointer text-[13px] rounded-md px-2 py-1.5 flex items-center gap-2"
                         onClick={(e) => {
-                          e.stopPropagation();
+                          e.preventDefault();
                           setDocumentToDelete(doc);
                           setIsDeleteDialogOpen(true);
                         }}
@@ -218,7 +218,7 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
                     {estimatePageCount(doc.konten_json_terkini)} Halaman
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
