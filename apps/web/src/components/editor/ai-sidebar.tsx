@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Claude } from '@lobehub/icons';
+import { AiRatingModal } from './ai-rating-modal';
 
 interface AiSidebarProps {
   editor: any;
@@ -87,6 +88,10 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
 
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [hasRatedAi, setHasRatedAi] = useState(true);
+
   // Resize handling
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -124,6 +129,15 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   // Initialize Session and Fetch Past Conversations
   useEffect(() => {
     const initSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: profile } = await supabase.from('profiles').select('ai_prompt_count, has_rated_ai').eq('id', user.id).single();
+        if (profile) {
+          setHasRatedAi(profile.has_rated_ai || false);
+        }
+      }
+
       if (!documentId) return;
 
       // Hanya ambil riwayat percakapan sebelumnya
@@ -314,6 +328,17 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     setStageLabel('Menghubungi server AI...');
 
     const finalPrompt = selectedContext ? `[Konteks Teks Terpilih: "${selectedContext}"]\n\nPrompt Pengguna: "${userMessage}"` : userMessage;
+
+    if (userId && !hasRatedAi) {
+      const { data: profile } = await supabase.from('profiles').select('ai_prompt_count').eq('id', userId).single();
+      if (profile) {
+        const newCount = (profile.ai_prompt_count || 0) + 1;
+        await supabase.from('profiles').update({ ai_prompt_count: newCount }).eq('id', userId);
+        if (newCount >= 5) {
+          setShowRatingModal(true);
+        }
+      }
+    }
 
     let activeConversationId = conversationId;
 
@@ -1123,6 +1148,17 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           </div>
         </div>
       </div>
+
+      {userId && (
+        <AiRatingModal 
+          open={showRatingModal} 
+          onClose={() => {
+            setShowRatingModal(false);
+            setHasRatedAi(true);
+          }} 
+          userId={userId} 
+        />
+      )}
     </div>
   );
 }
