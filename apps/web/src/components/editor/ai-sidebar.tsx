@@ -3,6 +3,7 @@ import { Send, Check, X, Loader2, Sparkles, StopCircle, User, ArrowRight, Plus, 
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { Claude } from '@lobehub/icons';
 
 interface AiSidebarProps {
   editor: any;
@@ -616,7 +617,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
               }
             }
             if (eventType === 'error') throw new Error(data.message);
-          } catch (_) {}
+          } catch (_) { }
         }
       }
     } catch (e) {
@@ -769,7 +770,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
               setMessages((prev) => [...prev, { role: 'assistant', content: responseContent }]);
             }
             if (eventType === 'error') throw new Error(data.message);
-          } catch (e) {}
+          } catch (e) { }
         }
       }
     } catch (error: any) {
@@ -797,9 +798,23 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
       {/* Sidebar Header */}
       <div className="px-4 py-3 border-b flex items-center justify-between bg-slate-50 pl-5 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-blue-600" />
-          <span className="font-semibold text-slate-800 text-base truncate">Asisten AI Docsly</span>
+        <div className="flex items-center gap-2 min-w-0 whitespace-nowrap">
+          <Sparkles className="h-4 w-4 text-blue-600 flex-shrink-0" />
+
+          <span className="font-semibold text-slate-800 text-base truncate">
+            Docsly AI
+          </span>
+
+          <div className="flex items-center gap-1.5 ml-1">
+            <span className="text-[11px] text-slate-400 whitespace-nowrap">
+              Powered by
+            </span>
+
+            <Claude.Color
+              size={18}
+
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {workflowState !== 'chat' && viewMode === 'chat' && <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Mode Alur Kerja</span>}
@@ -828,9 +843,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 <button
                   key={conv.id}
                   onClick={() => loadConversation(conv.id)}
-                  className={`w-full text-left p-3 rounded-lg border text-sm transition-colors group relative ${
-                    conversationId === conv.id ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-zinc-200 text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className={`w-full text-left p-3 rounded-lg border text-sm transition-colors group relative ${conversationId === conv.id ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-zinc-200 text-slate-700 hover:bg-slate-50'
+                    }`}
                 >
                   <div className="font-medium truncate pr-6">{conv.judul_percakapan}</div>
                   <div className="text-xs text-slate-500 mt-1">{new Date(conv.dibuat_pada).toLocaleString('id-ID')}</div>
@@ -854,9 +868,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                       {msg.role === 'user' ? <User className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
                     </div>
                     <div
-                      className={`rounded-xl px-3.5 py-2.5 text-[15px] leading-relaxed border ${
-                        msg.role === 'user' ? 'bg-[#006EFF] text-white border-transparent rounded-tr-sm' : 'bg-zinc-100 text-zinc-800 border-transparent rounded-tl-sm'
-                      }`}
+                      className={`rounded-xl px-3.5 py-2.5 text-[15px] leading-relaxed border ${msg.role === 'user' ? 'bg-[#006EFF] text-white border-transparent rounded-tr-sm' : 'bg-zinc-100 text-zinc-800 border-transparent rounded-tl-sm'
+                        }`}
                     >
                       {formatMessageContent(msg.content)}
                     </div>
@@ -1090,9 +1103,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 <button
                   onClick={handleMic}
                   disabled={isLoading}
-                  className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-150 disabled:opacity-40 ${
-                    isListening ? 'bg-red-500 text-white animate-pulse shadow-sm' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
-                  }`}
+                  className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-150 disabled:opacity-40 ${isListening ? 'bg-red-500 text-white animate-pulse shadow-sm' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
                   title={isListening ? 'Berhenti merekam' : 'Input suara'}
                 >
                   <Mic className="h-4 w-4" />

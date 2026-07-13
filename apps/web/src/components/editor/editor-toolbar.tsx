@@ -527,7 +527,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <DialogContent className="sm:max-w-md p-6 bg-white">
           <form onSubmit={applyLink}>
             <DialogHeader>
-              <DialogTitle>Masukkan Tautan (Link)</DialogTitle>
+              <DialogTitle className="text-black">Masukkan Tautan (Link)</DialogTitle>
             </DialogHeader>
             <div className="flex items-center space-x-2 mt-4">
               <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://example.com" className="flex-1 text-slate-900" autoFocus />
