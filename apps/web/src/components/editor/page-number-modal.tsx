@@ -165,7 +165,9 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
                 onValueChange={(v: any) => setCurrentSettings(s => ({ ...s, position: v }))}
               >
                 <SelectTrigger className="w-full h-9 bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-100">
-                  <SelectValue placeholder="Pilih Posisi" />
+                  <SelectValue>
+                    {currentSettings.position === 'top' ? 'Header (Atas)' : currentSettings.position === 'bottom' ? 'Footer (Bawah)' : 'Pilih Posisi'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="top">Header (Atas)</SelectItem>
@@ -181,7 +183,9 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
                 onValueChange={(v: any) => setCurrentSettings(s => ({ ...s, align: v }))}
               >
                 <SelectTrigger className="w-full h-9 bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-100">
-                  <SelectValue placeholder="Pilih Perataan" />
+                  <SelectValue>
+                    {currentSettings.align === 'left' ? 'Kiri' : currentSettings.align === 'center' ? 'Tengah' : currentSettings.align === 'right' ? 'Kanan' : 'Pilih Perataan'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="left">Kiri</SelectItem>
@@ -213,7 +217,7 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
             <div className="space-y-3">
               {currentSettings.sections.map((section, idx) => (
                 <div key={idx} className={`p-3 rounded-lg border ${currentSettings.enabled ? 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950' : 'border-slate-100 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900 opacity-60'} flex flex-col gap-3 relative group`}>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-[1fr_2fr_1fr] gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-[11px] text-slate-400 dark:text-zinc-500">Mulai dari Halaman</Label>
                       <Input 
@@ -232,8 +236,10 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
                         value={section.format} 
                         onValueChange={(v: any) => handleUpdateSection(idx, 'format', v)}
                       >
-                        <SelectTrigger className="h-8 text-sm text-slate-900 dark:text-zinc-100 dark:bg-zinc-950 dark:border-zinc-800">
-                          <SelectValue />
+                        <SelectTrigger className="w-full h-8 text-sm text-slate-900 dark:text-zinc-100 dark:bg-zinc-950 dark:border-zinc-800">
+                          <SelectValue>
+                            {section.format === 'arabic' ? '1, 2, 3' : section.format === 'roman_lower' ? 'i, ii, iii' : section.format === 'roman_upper' ? 'I, II, III' : 'Format'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="arabic">1, 2, 3</SelectItem>

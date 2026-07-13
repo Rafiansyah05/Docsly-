@@ -104,10 +104,11 @@ export function formatPageNumber(absolutePage: number, settings: PageSettings | 
 export function estimatePageCount(kontenJson: any): number {
   if (!kontenJson) return 1;
   
-  let totalLength = 0;
-  let tableCount = 0;
-  let imageCount = 0;
-  let paragraphCount = 0;
+  if (typeof kontenJson._totalPages === 'number') {
+    return kontenJson._totalPages;
+  }
+
+  let totalHeight = 0;
   let pageBreaks = 0;
 
   function traverse(node: any) {
@@ -118,14 +119,37 @@ export function estimatePageCount(kontenJson: any): number {
       pageBreaks++;
     }
 
-    if (node.type === 'text' && typeof node.text === 'string') {
-      totalLength += node.text.length;
+    if (node.type === 'paragraph') {
+      let chars = 0;
+      if (node.content) {
+        node.content.forEach((child: any) => {
+          if (child.type === 'text' && child.text) {
+            chars += child.text.length;
+          }
+        });
+      }
+      // Approx 90 chars per line for 12pt font. Line height ~24px + 16px paragraph margin
+      const lines = Math.max(1, Math.ceil(chars / 90));
+      totalHeight += (lines * 24) + 16;
+    } else if (node.type === 'heading') {
+      let chars = 0;
+      if (node.content) {
+        node.content.forEach((child: any) => {
+          if (child.type === 'text' && child.text) {
+            chars += child.text.length;
+          }
+        });
+      }
+      const lines = Math.max(1, Math.ceil(chars / 60));
+      totalHeight += (lines * 36) + 24;
     } else if (node.type === 'table') {
-      tableCount++;
+      // Rough estimate for table height
+      totalHeight += 200;
     } else if (node.type === 'imagePlaceholder' || node.type === 'image') {
-      imageCount++;
-    } else if (node.type === 'paragraph') {
-      paragraphCount++;
+      // Rough estimate for image height
+      totalHeight += 400;
+    } else if (node.type === 'bulletList' || node.type === 'orderedList') {
+      totalHeight += 16; // Just the list margins
     }
 
     if (Array.isArray(node.content)) {
@@ -140,16 +164,13 @@ export function estimatePageCount(kontenJson: any): number {
   }
 
   // An empty document is at least 1 page.
-  if (totalLength === 0 && tableCount === 0 && imageCount === 0) {
+  if (totalHeight === 0 && pageBreaks === 0) {
     return 1;
   }
 
-  // Calculate approximate page count based on character count and other blocks.
-  // 1 standard page is approx 2400 characters (approx 350-400 words with margins/spaces).
-  // A table takes about 800 character equivalents.
-  // An image takes about 1200 character equivalents.
-  const estimatedChars = totalLength + (tableCount * 800) + (imageCount * 1200) + (paragraphCount * 40);
-  
-  const estimatedPages = Math.max(1, Math.ceil(estimatedChars / 2400), pageBreaks + 1);
+  // A standard A4 page is approx 1123px tall (at 96 DPI), minus top/bottom margins (say 192px total)
+  // Let's use 1000px as a rough printable area height.
+  const PRINTABLE_HEIGHT = 1000;
+  const estimatedPages = Math.max(1, Math.ceil(totalHeight / PRINTABLE_HEIGHT), pageBreaks + 1);
   return estimatedPages;
 }

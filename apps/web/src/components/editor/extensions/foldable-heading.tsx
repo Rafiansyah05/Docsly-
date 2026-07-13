@@ -16,9 +16,10 @@ const FoldableHeadingComponent = (props: any) => {
 
   const Tag = `h${node.attrs.level}` as any;
   const isEditable = editor.isEditable;
+  const textAlign = node.attrs.textAlign || 'left';
 
   return (
-    <NodeViewWrapper className={`group relative heading-level-${node.attrs.level}`}>
+    <NodeViewWrapper className={`group relative heading-level-${node.attrs.level}`} style={{ textAlign }}>
       {isEditable && (
         <div 
           contentEditable={false} 
@@ -28,7 +29,7 @@ const FoldableHeadingComponent = (props: any) => {
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
         </div>
       )}
-      <NodeViewContent as={Tag} className="w-full m-0" />
+      <NodeViewContent as={Tag} className="w-full m-0" style={{ textAlign }} />
     </NodeViewWrapper>
   );
 };

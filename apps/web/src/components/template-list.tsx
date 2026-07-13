@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { GraduationCap, Briefcase, BookOpen, FileSignature, TrendingUp, Award, Loader2, Plus } from 'lucide-react';
 import { createDocumentClient } from '@/lib/actions/document';
 import { useRouter } from 'next/navigation';
@@ -111,7 +111,6 @@ export function TemplateList({ workspaces }: { workspaces: any[] }) {
                   <span className="flex-1 text-left truncate">
                     {selectedWorkspace ? workspaces.find(w => w.id === selectedWorkspace)?.nama_workspace : 'Pilih Workspace...'}
                   </span>
-                  <SelectValue className="hidden" />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false} className="w-[var(--anchor-width)] rounded-lg border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm z-50 text-slate-900 dark:text-zinc-100">
                   {workspaces.map((workspace) => (

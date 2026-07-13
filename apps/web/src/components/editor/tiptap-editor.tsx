@@ -60,6 +60,8 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
   const router = useRouter();
   const { saveState, triggerSave } = useAutosave(documentId);
   const [totalPages, setTotalPages] = useState(1);
+  const totalPagesRef = React.useRef(1);
+  const savedTotalPages = React.useRef(initialContent?._totalPages || 1);
   const [currentPage, setCurrentPage] = useState(1);
   const [words, setWords] = useState(0);
   const [chars, setChars] = useState(0);
@@ -138,7 +140,10 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       },
     },
     onUpdate: ({ editor }) => {
-      triggerSave(() => editor.getJSON());
+      triggerSave(() => {
+        const json = editor.getJSON();
+        return { ...json, _totalPages: totalPagesRef.current };
+      });
 
       const wordsCount = editor.storage.characterCount.words();
       const charsCount = editor.storage.characterCount.characters();
@@ -241,8 +246,17 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         const UNPRINTABLE_GAP = layout.bottom + 40 + layout.top;
         // total pages calculation
         const total = Math.max(1, Math.ceil((contentHeight + UNPRINTABLE_GAP) / FULL_STEP));
+        totalPagesRef.current = total;
         setTotalPages(total);
         dom.style.minHeight = 'auto';
+
+        if (savedTotalPages.current !== total) {
+          savedTotalPages.current = total;
+          triggerSave(() => {
+            const json = editor.getJSON();
+            return { ...json, _totalPages: total };
+          });
+        }
 
         try {
           const { from } = editor.state.selection;

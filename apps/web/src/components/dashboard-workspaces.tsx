@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Search, Folder, Plus, LayoutGrid, List as ListIcon, Clock, ArrowUpDown, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -155,7 +155,6 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
                       sort === 'name_desc' ? 'Nama (Z - A)' :
                         'Urutkan'}
               </span>
-              <SelectValue className="hidden" />
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false} align="end" sideOffset={4} className="rounded-lg border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm text-slate-900 dark:text-zinc-100">
               <SelectItem value="updated_desc" className="focus:bg-slate-100 dark:focus:bg-zinc-800">Terbaru</SelectItem>
