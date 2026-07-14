@@ -8,13 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { signup, signInWithGoogle } from '@/lib/actions/auth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full h-11 font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors" disabled={pending}>
+    <Button type="submit" className="w-full h-11 font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm" disabled={pending}>
       {pending ? 'Memproses...' : 'Daftar'}
     </Button>
   );
@@ -24,15 +26,25 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  const router = useRouter();
+
   async function clientAction(formData: FormData) {
     const result = await signup(formData);
     if (result?.error) {
       setError(result.error);
+    } else if (result?.success) {
+      router.push('/w');
+      router.refresh();
     }
   }
 
   return (
-    <div className="w-full font-sans">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="w-full font-sans"
+    >
       <div className="mb-8">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">Yuk, mulai</h2>
         <p className="text-sm text-slate-500 mt-2">
@@ -137,6 +149,6 @@ export default function RegisterPage() {
           Masuk di sini
         </Link>
       </p>
-    </div>
+    </motion.div>
   );
 }

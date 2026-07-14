@@ -1,621 +1,591 @@
-# Sistem Pricing & Subscription Docsly
+Menurut saya keputusan menggunakan **Midtrans** untuk Docsly cukup masuk akal, terutama kalau kamu melihat Docsly sebagai produk SaaS yang kemungkinan berkembang ke skala lebih besar. Dan pendekatan yang kamu mau (**frontend checkout buatan sendiri, backend/payment processing menggunakan Midtrans**) justru adalah pendekatan yang banyak dipakai produk profesional.
 
-## 1. Konsep Umum Sistem Akun Docsly
-
-Docsly menggunakan model **Freemium + Subscription**, di mana setiap pengguna memiliki tingkatan akun berdasarkan akses fitur, batas penggunaan AI, dan kapasitas penyimpanan.
-
-Struktur akun terdiri dari:
-
-1. **Free Trial** → masa percobaan seluruh fitur Docsly
-2. **Free** → akun gratis setelah masa trial berakhir
-3. **Pro** → pengguna aktif yang membutuhkan kemampuan AI lebih besar
-4. **Premium** → pengguna berat dengan kebutuhan dokumen kompleks
-
-Tujuan sistem ini:
-
-* Memberikan kesempatan pengguna memahami value Docsly sebelum membayar.
-* Mengontrol biaya operasional AI.
-* Memberikan jalur upgrade yang jelas.
-* Memastikan pengguna gratis tetap dapat menggunakan Docsly dengan batas tertentu.
+Namun ada beberapa hal yang perlu kamu pahami: kamu **tidak membuat sistem pembayaran sendiri sepenuhnya**, tetapi membuat **custom payment experience** di atas infrastruktur Midtrans.
 
 ---
 
-# 1. Free Trial (30 Hari)
+# Konsep Arsitektur Docsly + Midtrans
 
-## Deskripsi
+Flow sederhananya:
 
-Free Trial merupakan status awal setiap pengguna baru setelah melakukan registrasi.
-
-Pada tahap ini pengguna dapat mencoba **seluruh kemampuan Docsly tanpa pembatasan fitur**, sehingga pengguna dapat merasakan pengalaman penuh menggunakan AI Workspace Docsly.
-
-Free Trial bukan paket berlangganan, melainkan periode evaluasi produk.
+```
+User Docsly
+    |
+    |
+Klik "Upgrade Pro"
+    |
+    ↓
+Halaman Pricing / Checkout Docsly
+    |
+    ↓
+Pilih Paket
+(Pro / Premium)
+    |
+    ↓
+Klik Bayar
+    |
+    ↓
+Backend Docsly membuat transaksi Midtrans
+    |
+    ↓
+Midtrans memberikan payment token
+    |
+    ↓
+Frontend menampilkan metode pembayaran
+    |
+    ↓
+User membayar
+    |
+    ↓
+Midtrans kirim webhook
+    |
+    ↓
+Backend Docsly update subscription
+    |
+    ↓
+User menjadi Pro/Premium
+```
 
 ---
 
-## Benefit Free Trial
+# 1. Frontend Payment Page Docsly
 
-### Document Editor
-
-Pengguna mendapatkan akses penuh:
-
-* Membuat dokumen baru
-* Menggunakan seluruh fitur editor
-* Formatting dokumen
-* Template dokumen
-* Export PDF
-* Export DOCX
-* Pengaturan halaman
-* Layout dokumen
-
----
-
-### AI Workspace
-
-Pengguna dapat menggunakan seluruh kemampuan AI:
-
-* AI Writing Assistant
-* Generate konten
-* Rewrite teks
-* Improve writing
-* Summarize dokumen
-* Expand paragraf
-* Generate struktur dokumen
-* AI editing berdasarkan konteks dokumen
-
----
-
-### Document Intelligence
-
-Pengguna dapat:
-
-* Upload dokumen PDF
-* Membaca isi dokumen menggunakan AI
-* Bertanya mengenai isi dokumen
-* Mendapatkan insight dari dokumen
+Kamu tetap bisa membuat desain sendiri.
 
 Contoh:
 
-> "Jelaskan metodologi penelitian dari jurnal ini"
+```
+----------------------------------
+
+Upgrade Your Docsly Experience
+
+
+Current Plan:
+Free
+
+
+Choose Plan:
+
+┌──────────────┐
+│ Pro          │
+│ Rp39.000/mo  │
+│              │
+│ ✓ AI lebih banyak
+│ ✓ Template premium
+│ ✓ Export
+│              │
+│ [Choose Pro]
+└──────────────┘
+
+
+┌──────────────┐
+│ Premium      │
+│ Rp79.000/mo  │
+│              │
+│ ✓ Semua fitur
+│ ✓ Collaboration
+│ ✓ Priority AI
+│              │
+│ [Choose Premium]
+└──────────────┘
+
+
+----------------------------------
+```
+
+Setelah klik:
+
+```
+Continue Payment
+```
+
+baru membuka payment modal Midtrans.
 
 ---
 
-### Citation Manager
+# 2. Jangan Gunakan Redirect Payment Default Midtrans
 
-Pengguna dapat mencoba:
+Midtrans menyediakan:
 
-* Automatic citation
-* Generate bibliography
-* Format APA
-* Format Harvard
-* Reference management
+## Snap Redirect
+
+Contoh:
+
+```
+docsly.com/payment
+
+↓
+
+midtrans.com/payment-page
+
+↓
+
+kembali ke docsly
+```
+
+Ini paling mudah.
+
+Tapi untuk Docsly saya lebih menyarankan:
+
+## Snap Embed
+
+Karena:
+
+* user tetap merasa berada di Docsly
+* UX lebih premium
+* brand Docsly tetap terlihat
+
+Flow:
+
+```
+Docsly Checkout Page
+
+        ↓
+
+Midtrans Payment Popup
+
+        ↓
+
+Selesai
+
+        ↓
+
+Kembali Docsly
+```
 
 ---
 
-### Template Library
+# 3. Backend Docsly yang Dibutuhkan
 
-Akses seluruh template:
+Kamu membutuhkan beberapa endpoint.
 
-* Skripsi
-* Proposal penelitian
-* Makalah
-* Laporan
-* Proposal bisnis
-* CV
-* Surat lamaran kerja
+Contoh Next.js API:
+
+```
+app/api/payment/
+
+create/
+    route.ts
+
+notification/
+    route.ts
+
+status/
+    route.ts
+```
 
 ---
 
-## Limit Free Trial
+## Create Transaction
 
-Walaupun semua fitur terbuka, penggunaan AI tetap memiliki batas agar biaya operasional dapat dikontrol.
+Ketika user klik bayar:
 
-Sistem menggunakan **AI Credit System**.
+Frontend:
 
-### Default:
+```
+POST /api/payment/create
+```
 
-**50 AI Credit**
+Body:
 
-Refresh:
+```json
+{
+  "plan":"PRO"
+}
+```
 
-**Setiap 7 jam setelah credit habis**
+Backend:
+
+1. cek user
+2. buat order ID
+3. request Midtrans
+
+Contoh:
+
+```
+DOCSLY-PRO-USER123-20260714
+```
+
+Kemudian Midtrans memberikan:
+
+```
+snap_token
+```
+
+Token ini dikirim kembali ke frontend.
+
+---
+
+# 4. Database Subscription Docsly
+
+Saya sarankan jangan menyimpan status hanya di user.
+
+Buat tabel:
+
+## subscriptions
+
+```sql
+id
+
+user_id
+
+plan
+
+status
+
+midtrans_order_id
+
+start_date
+
+expired_date
+
+created_at
+```
+
+Contoh:
+
+```
+user:
+rafi@email.com
+
+
+plan:
+PRO
+
+
+status:
+ACTIVE
+
+
+expired:
+14 August 2026
+```
+
+---
+
+# 5. Webhook Midtrans (Bagian Paling Penting)
+
+Jangan percaya frontend.
+
+Misalnya:
+
+User manipulasi:
+
+```
+Saya sudah bayar
+```
+
+Padahal belum.
+
+Maka:
+
+Status pembayaran harus berasal dari Midtrans.
+
+Flow:
+
+```
+Midtrans
+
+↓
+
+POST webhook
+
+↓
+
+Backend Docsly
+
+↓
+
+Verify signature
+
+↓
+
+Update database
+
+```
 
 ---
 
 Contoh:
 
-Pengguna mendapatkan:
+Midtrans kirim:
 
-```
-AI Credit:
-50
-```
-
-Kemudian menggunakan:
-
-```
-Generate 1 halaman:
-10 credit
+```json
+{
+ "transaction_status":"settlement",
+ "order_id":"DOCSLY-PRO-123"
+}
 ```
 
-Sisa:
+Backend:
 
 ```
-40 credit
-```
+Jika settlement:
 
-Jika credit habis pada pukul:
+ubah subscription:
 
-```
-10:00
-```
-
-Maka:
-
-```
-Reset:
-17:00
-```
-
-Credit kembali:
-
-```
-50 credit
-```
-
----
-
-## Prinsip Refresh Credit
-
-Sistem tidak menggunakan reset waktu global.
-
-Bukan:
-
-```
-00:00 reset
-07:00 reset
-14:00 reset
-```
-
-Tetapi menggunakan:
-
-```
-Waktu penggunaan terakhir ketika credit habis
-+
-7 jam
-```
-
-Hal ini membuat setiap user memiliki siklus penggunaan sendiri dan mencegah penyalahgunaan limit.
-
----
-
-# 2. Free Account
-
-## Deskripsi
-
-Setelah masa Free Trial selesai, akun otomatis berubah menjadi Free.
-
-Pengguna tetap dapat menggunakan Docsly, tetapi dengan fitur dan penggunaan AI yang lebih terbatas.
-
-Tujuan:
-
-* Mempertahankan pengguna
-* Memberikan pengalaman dasar
-* Mendorong upgrade ke Pro/Premium
-
----
-
-# Benefit Free
-
-## Document Editor
-
-Tetap mendapatkan:
-
-✓ Membuat dokumen
-✓ Editing dokumen
-✓ Formatting dasar
-✓ Export PDF
-
----
-
-## AI Assistant
-
-Limit:
-
-```
-10 AI Credit / hari
-```
-
-Refresh:
-
-```
-24 jam
-```
-
-Digunakan untuk:
-
-* Rewrite sederhana
-* Perbaikan kalimat
-* Bantuan penulisan ringan
-
----
-
-## Template
-
-Akses:
-
-* Template dokumen sederhana
-* Template laporan
-* Template surat
-
----
-
-## Storage
-
-```
-100 MB
-```
-
----
-
-# Batasan Free
-
-Tidak mendapatkan:
-
-❌ AI Agent penuh
-
-❌ Analisis PDF menggunakan AI
-
-❌ Citation Manager
-
-❌ Bibliography otomatis
-
-❌ Template premium
-
-❌ Pemrosesan dokumen panjang
-
----
-
-# 3. Pro Plan
-
-## Harga
-
-Rekomendasi:
-
-# Rp39.000 / bulan
-
-Target pengguna:
-
-* Mahasiswa
-* Pelajar
-* Pengguna aktif Docsly
-
-Pro menjadi paket utama karena memberikan keseimbangan antara harga dan kemampuan.
-
----
-
-# Benefit Pro
-
-## Semua fitur Free +
-
----
-
-## AI Workspace
-
-Mendapatkan:
-
-✓ AI Agent
-
-✓ Context-aware editing
-
-✓ Generate dokumen
-
-✓ Rewrite kompleks
-
-✓ Summarization
-
-Limit:
-
-```
-500 AI Credit / bulan
-```
-
----
-
-## Document Intelligence
-
-Dapat:
-
-✓ Upload PDF
-
-✓ AI membaca dokumen
-
-✓ Tanya jawab dokumen
-
-✓ Analisis isi dokumen
-
----
-
-## Citation Manager
-
-Mendapat:
-
-✓ Automatic citation
-
-✓ Bibliography generator
-
-✓ APA
-
-✓ Harvard
-
-Limit:
-
-```
-50 citation / bulan
-```
-
----
-
-## Template
-
-Akses:
-
-✓ Semua template Docsly
-
----
-
-## Storage
-
-```
-2 GB
-```
-
----
-
-# 4. Premium Plan
-
-## Harga
-
-Rekomendasi:
-
-# Rp89.000 / bulan
-
-Target:
-
-* Mahasiswa tingkat akhir
-* Peneliti
-* Profesional
-* Pengguna dengan dokumen besar
-
----
-
-# Benefit Premium
-
-Semua fitur Pro +
-
----
-
-## AI Usage Besar
-
-Limit:
-
-```
-1500 AI Credit / bulan
-```
-
----
-
-## Advanced AI Agent
-
-Kemampuan:
-
-* Memproses dokumen panjang
-* Analisis kompleks
-* Generate dokumen besar
-* Editing multi bagian
-
----
-
-## Large Document Processing
-
-Pro:
-
-```
-50 halaman
-```
-
-Premium:
-
-```
-300 halaman
-```
-
----
-
-## Citation Manager Advanced
-
-✓ Unlimited citation
-
-✓ Reference organization
-
-✓ Advanced bibliography
-
----
-
-## Priority Processing
-
-Ketika server ramai:
-
-```
-Premium → diproses lebih dahulu
-Pro → normal queue
-Free → standard queue
-```
-
----
-
-## Storage
-
-```
-20 GB
-```
-
----
-
-# Perbandingan Paket
-
-| Fitur           | Free Trial | Free      | Pro          | Premium      |
-| --------------- | ---------- | --------- | ------------ | ------------ |
-| Durasi          | 30 hari    | Selamanya | Berlangganan | Berlangganan |
-| Editor          | ✓          | ✓         | ✓            | ✓            |
-| Export PDF      | ✓          | ✓         | ✓            | ✓            |
-| Export DOCX     | ✓          | Terbatas  | ✓            | ✓            |
-| Semua Template  | ✓          | ❌         | ✓            | ✓            |
-| AI Agent        | ✓          | ❌         | ✓            | ✓ Advanced   |
-| PDF AI Analysis | ✓          | ❌         | ✓            | ✓            |
-| Citation        | ✓          | ❌         | 50/bln       | Unlimited    |
-| AI Credit       | 50/7 jam   | 10/hari   | 500/bln      | 1500/bln     |
-| Storage         | 2GB        | 100MB     | 2GB          | 20GB         |
-| Dokumen Panjang | ✓          | ❌         | 50 halaman   | 300 halaman  |
-| Priority AI     | ❌          | ❌         | ❌            | ✓            |
-
----
-
-# Flow Sistem Subscription Docsly
-
-## 1. User Registrasi
-
-```
-User Signup
-      |
-      ↓
-Create Account
-      |
-      ↓
-Status:
-FREE_TRIAL
-      |
-      ↓
-Trial Start Date dicatat
-```
-
----
-
-# 2. Penggunaan Masa Trial
-
-```
-User menggunakan Docsly
-          |
-          ↓
-Request AI
-          |
-          ↓
-Cek AI Credit
-          |
-          ↓
-Credit tersedia?
-          |
-     YES
-          |
-          ↓
-Proses AI
-          |
-          ↓
-Kurangi Credit
-```
-
----
-
-# 3. Sistem Credit Refresh
-
-```
-Credit = 0
-      |
-      ↓
-Catat waktu habis
-      |
-      ↓
-Tambahkan timer 7 jam
-      |
-      ↓
-Timer selesai
-      |
-      ↓
-Credit kembali
-```
-
----
-
-# 4. Trial Berakhir
-
-Sistem melakukan pengecekan:
-
-```
-Current Date - Trial Start Date >= 30 hari
-```
-
-Jika:
-
-```
-TRUE
-```
-
-Maka:
-
-```
-FREE_TRIAL
-       ↓
 FREE
+
+↓
+
+PRO
 ```
 
 ---
 
-# 5. Upgrade Subscription
+# 6. Metode Pembayaran
 
-User memilih:
+Midtrans mendukung:
+
+## Bank Transfer
+
+* BCA
+* Mandiri
+* BNI
+* BRI
+* Permata
+
+## E-wallet
+
+* GoPay
+* OVO
+* Dana
+* ShopeePay
+
+## QRIS
+
+Ini menurut saya wajib untuk Indonesia.
+
+Karena user Docsly kemungkinan besar mahasiswa.
+
+---
+
+# 7. Subscription System Docsly
+
+Karena Docsly punya:
+
+* Free
+* Pro
+* Premium
+
+Jangan hanya bergantung pada Midtrans.
+
+Buat logic sendiri.
+
+Contoh:
 
 ```
-Upgrade Pro
-atau
-Upgrade Premium
-```
+User bayar Pro:
 
-Kemudian:
+14 July
 
-```
-Payment Success
-        |
-        ↓
-Update Subscription Status
-        |
-        ↓
-Aktifkan Benefit Paket
+expired:
+
+14 August
+
+
+Tanggal 14 August:
+
+cron check
+
+
+Jika expired:
+
+PRO
+
+↓
+
+FREE
+
 ```
 
 ---
 
-# 6. Downgrade / Subscription Expired
+# 8. Free Trial 30 Hari
 
-Jika pembayaran berhenti:
+Ini jangan lewat payment gateway.
+
+Flow:
+
+User signup:
 
 ```
-Subscription Expired
-        |
-        ↓
-Status kembali FREE
+create account
+
+↓
+
+subscription table:
+
+plan:
+TRIAL
+
+trial_end:
++30 hari
+
 ```
 
-Dokumen pengguna tetap aman, tetapi akses fitur premium dikurangi.
+Contoh:
+
+```
+User daftar:
+
+14 July
+
+Trial selesai:
+
+13 August
+
+```
 
 ---
 
-# Kesimpulan Sistem
+# 9. Halaman yang Perlu Kamu Buat
 
-Model pricing Docsly ini dirancang dengan prinsip:
+Untuk SaaS Docsly:
 
-* **Free Trial memberikan pengalaman penuh agar user memahami value.**
-* **Free menjaga pengguna tetap menggunakan Docsly.**
-* **Pro menjadi paket utama dengan harga terjangkau untuk mahasiswa.**
-* **Premium menangani pengguna berat yang membutuhkan AI lebih besar.**
-* **AI Credit System menjaga biaya operasional tetap terkendali.**
+## Pricing Page
 
-Dengan struktur ini, Docsly dapat melakukan validasi pasar terlebih dahulu tanpa membebani biaya AI secara tidak terkendali, sambil tetap memberikan pengalaman produk yang kuat pada pengguna baru.
+```
+/pricing
+```
+
+---
+
+## Checkout Page
+
+```
+/checkout
+```
+
+Isi:
+
+* paket
+* ringkasan
+* harga
+* metode pembayaran
+
+---
+
+## Payment Success
+
+```
+/payment/success
+```
+
+Contoh:
+
+```
+🎉 Payment Successful
+
+Your Docsly Pro plan is active.
+
+Start creating documents.
+```
+
+---
+
+## Payment Failed
+
+```
+/payment/failed
+```
+
+---
+
+## Subscription Management
+
+```
+/settings/subscription
+```
+
+Isi:
+
+```
+Current Plan
+
+Docsly Pro
+
+Renews:
+14 August 2026
+
+
+[Upgrade]
+
+[Cancel Subscription]
+```
+
+---
+
+# 10. Security yang Wajib
+
+Jangan simpan:
+
+❌ Server Key Midtrans di frontend
+
+Hanya:
+
+Backend:
+
+```
+MIDTRANS_SERVER_KEY
+```
+
+Frontend:
+
+```
+MIDTRANS_CLIENT_KEY
+```
+
+Environment:
+
+```
+.env
+
+MIDTRANS_SERVER_KEY=
+MIDTRANS_CLIENT_KEY=
+```
+
+---
+
+# Saran Saya untuk Docsly
+
+Dengan kondisi Docsly sekarang:
+
+✅ Buat UI pricing dan checkout sendiri
+✅ Gunakan Midtrans Snap Embed
+✅ Backend handle transaksi
+✅ Gunakan webhook Midtrans
+✅ Buat subscription system sendiri di Supabase
+✅ Jangan membuat recurring payment dulu
+
+Untuk awal, gunakan model:
+
+```
+User bayar manual setiap bulan
+
+↓
+
+Midtrans
+
+↓
+
+Aktifkan paket
+
+↓
+
+Reminder sebelum expired
+```
+
+Setelah user banyak, baru pertimbangkan:
+
+* auto renewal
+* subscription billing otomatis
+
+---
+
+Menurut saya kombinasi ini paling cocok untuk Docsly karena kamu mendapatkan:
+
+* UX premium seperti SaaS modern
+* keamanan payment dari Midtrans
+* fleksibilitas mengatur paket Free Trial/Pro/Premium sendiri
+* tidak terikat tampilan checkout bawaan Midtrans.

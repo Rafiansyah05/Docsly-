@@ -22,8 +22,22 @@ const FAQ_DATA = [
         a: "Docsly bukan sekadar generator teks, melainkan AI Office Agent. Docsly dirancang khusus untuk memproduksi dokumen formal dan profesional (Skripsi, Laporan, Proposal, Surat Dinas, dll). AI Docsly akan menyusun kerangka, mengatur format, memperbaiki gaya bahasa (PUEBI), membuat daftar isi, merapikan tabel, dan menyusun sitasi, hingga siap diekspor dalam format dokumen resmi."
       },
       {
-        q: "Mengapa hasil teks dari AI Docsly selalu berwarna hitam polos?",
-        a: "Docsly menjunjung standar dokumen profesional. Kami memastikan dokumen hasil generate AI selalu menggunakan teks hitam standar (#000000) pada latar putih, tanpa elemen dekoratif visual berlebihan atau sorotan warna-warni, sehingga dokumen 100% siap untuk dicetak atau diserahkan secara resmi ke instansi tanpa harus Anda edit warnanya lagi."
+        q: "Apakah Docsly menggunakan dokumen saya untuk melatih AI?",
+        a: (
+          <div className="space-y-4">
+            <p>Tidak. Dokumen pengguna tidak digunakan untuk melatih atau meningkatkan model AI tanpa persetujuan pengguna.</p>
+            <p>Docsly dirancang dengan prinsip bahwa dokumen yang dibuat dan disimpan oleh pengguna adalah milik pengguna sepenuhnya. Dokumen tersebut digunakan hanya untuk menyediakan fitur yang diminta oleh pengguna, seperti membantu menulis, memperbaiki isi dokumen, memberikan saran, melakukan analisis, atau membantu menyelesaikan pekerjaan di dalam workspace.</p>
+            <p>Ketika pengguna menggunakan fitur AI Docsly, sistem hanya memproses informasi yang diperlukan untuk memberikan respons yang relevan terhadap permintaan pengguna, bukan untuk mengambil kepemilikan atau menggunakan isi dokumen tersebut sebagai data pelatihan model AI.</p>
+            <p>Selain itu:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Dokumen pengguna tidak digunakan untuk membuat model AI menjadi lebih pintar tanpa izin.</li>
+              <li>Dokumen antar pengguna tidak dicampurkan atau digunakan untuk memberikan jawaban kepada pengguna lain.</li>
+              <li>Workspace dan dokumen setiap pengguna tetap terisolasi sesuai dengan sistem akses yang berlaku.</li>
+              <li>Pengguna tetap memiliki kendali penuh terhadap dokumen mereka, termasuk mengedit, menghapus, membagikan, atau mengatur siapa saja yang dapat mengaksesnya.</li>
+            </ul>
+            <p>Jika pengguna menggunakan fitur collaboration, akses terhadap dokumen hanya diberikan kepada pengguna yang memang mendapatkan izin dari pemilik dokumen. Pengguna lain tetap tidak dapat melihat dokumen atau aktivitas pribadi yang tidak dibagikan kepada mereka.</p>
+          </div>
+        )
       },
       {
         q: "Apakah AI Docsly akan terus bertanya sebelum membuat dokumen?",
@@ -35,8 +49,20 @@ const FAQ_DATA = [
     category: "Panduan Fitur Editor & Format",
     items: [
       {
-        q: "Bagaimana cara membuat Daftar Isi Otomatis?",
-        a: "Daftar isi (Table of Contents) dibuat secara otomatis berdasarkan Heading (H1-H4) yang ada di dokumen Anda. Setiap kali Anda menambah atau menghapus bagian dokumen, daftar isi akan diperbarui seketika (real-time). Anda tidak perlu men-sinkronisasi nomor halaman secara manual."
+        q: "Apakah riwayat chat AI saya dapat dilihat pengguna lain?",
+        a: (
+          <div className="space-y-4">
+            <p>Tidak. Seluruh riwayat percakapan AI Anda dengan Docsly bersifat 100% privat dan terenkripsi hanya untuk akun Anda sendiri.</p>
+            <p>Docsly menjamin kerahasiaan interaksi Anda dengan AI. Ketentuan privasi kami mencakup:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Percakapan Anda dengan AI tidak akan pernah muncul, bocor, atau dapat diakses oleh pengguna mana pun.</li>
+              <li>Riwayat instruksi (prompt), data yang Anda masukkan ke dalam chat, dan teks yang dihasilkan oleh AI dijamin hanya tersimpan di dalam akun Anda.</li>
+              <li>Setiap sesi dokumen yang Anda kerjakan memiliki ruang obrolan AI-nya sendiri yang terisolasi dengan aman.</li>
+              <li>Tim Docsly tidak memantau atau membaca isi percakapan Anda dengan AI untuk menjaga kerahasiaan ide, rancangan, dan dokumen Anda.</li>
+            </ul>
+            <p>Anda dapat berdiskusi dengan leluasa bersama AI Docsly tanpa perlu khawatir privasi dan kerahasiaan dokumen Anda terkompromi.</p>
+          </div>
+        )
       },
       {
         q: "Apakah AI Docsly dapat memeriksa ejaan dan tata bahasa?",
@@ -76,7 +102,7 @@ const FAQ_DATA = [
   }
 ];
 
-const AccordionItem = ({ question, answer }: { question: string, answer: string }) => {
+const AccordionItem = ({ question, answer }: { question: string, answer: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -173,10 +199,12 @@ export default function FAQPage() {
 
   const filteredData = FAQ_DATA.map(category => ({
     ...category,
-    items: category.items.filter(item => 
-      item.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      item.a.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    items: category.items.filter(item => {
+      // For ReactNode answers, we only search in the question text to avoid complex stringification
+      const answerText = typeof item.a === 'string' ? item.a : '';
+      return item.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
+             answerText.toLowerCase().includes(searchQuery.toLowerCase());
+    })
   })).filter(category => category.items.length > 0);
 
   return (
