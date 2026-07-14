@@ -1,0 +1,1 @@
+create table if not exists user_limits ( user_id uuid references auth.users(id) primary key, ai_credits_used integer default 0, ai_limit_reset_at timestamptz, citations_used integer default 0, citations_limit_reset_at timestamptz, storage_used_bytes bigint default 0 ); alter table user_limits enable row level security;

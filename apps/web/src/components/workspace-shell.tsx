@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { HeaderNav } from '@/components/header-nav';
 import { UserMenu } from '@/components/user-menu';
 import { PremiumModal } from '@/components/premium-modal';
+import { SubscriptionSyncer } from '@/components/subscription-syncer';
 import { Home, LayoutGrid, BookOpen, Bell, LifeBuoy, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 
 const navItems = [
@@ -17,14 +18,22 @@ const navItems = [
   { label: 'FAQ & Support', href: '/w/faq', icon: LifeBuoy },
 ];
 
-export function WorkspaceShell({ user, profile, workspaces, children }: { user: any; profile: any; workspaces: any[]; children: React.ReactNode }) {
+export function WorkspaceShell({ user, profile, workspaces, subscription, unreadNotificationCount = 0, children }: { user: any; profile: any; workspaces: any[]; subscription?: any; unreadNotificationCount?: number; children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const isEditor = /^\/w\/[^/]+\/d\/[^/]+/.test(pathname);
 
   const profileName = profile?.nama_lengkap || user.email || 'Pengguna';
   const profileEmail = user.email || '';
-  const accountStatus = profile?.plan || 'Free Plan';
+  
+  // Hitung status langganan
+  let accountStatus = 'Free Plan';
+  if (subscription && subscription.status === 'active') {
+    const expiryDate = new Date(subscription.berlaku_sampai);
+    if (expiryDate > new Date()) {
+      accountStatus = `${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)} Plan`;
+    }
+  }
 
   // Ekstrak workspace_id dari pathname (format: /w/<workspace_id> atau /w/<workspace_id>/...)
   const workspaceMatch = pathname.match(/^\/w\/([^/]+)/);
@@ -44,6 +53,7 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-300 flex">
+      <SubscriptionSyncer />
       {/* Sidebar — full viewport height, di atas navbar */}
       <aside
         className={`${collapsed ? 'w-20' : 'w-[260px]'} hidden lg:flex flex-col justify-between bg-white dark:bg-zinc-900 border-r border-[#E2E8F0] dark:border-zinc-800 h-full transition-all duration-300 ease-out relative shrink-0 z-40`}
@@ -105,7 +115,12 @@ export function WorkspaceShell({ user, profile, workspaces, children }: { user: 
 
               return (
                 <Link key={item.label} href={item.href} title={collapsed ? item.label : undefined} className={`${baseClass} ${activeClass} ${inactiveClass}`}>
-                  <Icon className={`${active ? 'text-[#2563EB] dark:text-blue-400' : collapsedIconClass} h-5 w-5`} />
+                  <div className="relative">
+                    <Icon className={`${active ? 'text-[#2563EB] dark:text-blue-400' : collapsedIconClass} h-5 w-5`} />
+                    {item.label === 'Notifikasi' && unreadNotificationCount > 0 && (
+                      <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white dark:ring-zinc-900 transform translate-x-1/3 -translate-y-1/3" />
+                    )}
+                  </div>
                   {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
                 </Link>
               );

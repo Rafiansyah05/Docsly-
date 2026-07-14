@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Claude } from '@lobehub/icons';
 import { AiRatingModal } from './ai-rating-modal';
+import { LimitReachedModal } from '@/components/limit-reached-modal';
 
 interface AiSidebarProps {
   editor: any;
@@ -98,6 +99,11 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [hasRatedAi, setHasRatedAi] = useState(true);
+
+  // Limit States
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitResetAt, setLimitResetAt] = useState<string | null>(null);
+  const [limitPlan, setLimitPlan] = useState<string>('Free');
 
   // Resize handling
   const startResize = (e: React.MouseEvent) => {
@@ -426,8 +432,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
     try {
       // POST the request first to get the stream URL pattern
-      // We use fetch with streaming
-      const response = await fetch('http://localhost:3001/ai/execute', {
+      // We use fetch with streaming via Next.js proxy
+      const response = await fetch('/api/ai/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -437,6 +443,18 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
         }),
       });
+
+      if (response.status === 429) {
+        const errorData = await response.json();
+        setLimitResetAt(errorData.resetAt);
+        setLimitPlan(errorData.plan || 'Free');
+        setLimitModalOpen(true);
+        setIsLoading(false);
+        setProgress(0);
+        setStageLabel('Memproses...');
+        // Remove the user message optimistically added earlier, or keep it. Let's just stop loading.
+        return;
+      }
 
       if (!response.ok) {
         const errText = await response.text();
@@ -645,7 +663,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
         currentIndex++;
       });
 
-      const response = await fetch('http://localhost:3001/ai/execute', {
+      const response = await fetch('/api/ai/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -655,6 +673,16 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           intent: 'generate_content',
         }),
       });
+
+      if (response.status === 429) {
+        const errorData = await response.json();
+        setLimitResetAt(errorData.resetAt);
+        setLimitPlan(errorData.plan || 'Free');
+        setLimitModalOpen(true);
+        setIsLoading(false);
+        setProgress(0);
+        return;
+      }
 
       if (!response.ok || !response.body) throw new Error('Failed to start content generation');
 
@@ -790,7 +818,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     const finalPrompt = selectedContext ? `[Konteks Teks Terpilih: "${selectedContext}"]\n\nPrompt Pengguna: "${promptToSend}"` : promptToSend;
 
     try {
-      const response = await fetch('http://localhost:3001/ai/execute', {
+      const response = await fetch('/api/ai/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -800,6 +828,16 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           action: actionStr,
         }),
       });
+
+      if (response.status === 429) {
+        const errorData = await response.json();
+        setLimitResetAt(errorData.resetAt);
+        setLimitPlan(errorData.plan || 'Free');
+        setLimitModalOpen(true);
+        setIsLoading(false);
+        setProgress(0);
+        return;
+      }
 
       if (!response.ok) throw new Error('Gagal menghubungi server AI');
       if (!response.body) throw new Error('Tidak ada respons');
@@ -1242,6 +1280,14 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           </div>
         </div>
       </div>
+
+      <LimitReachedModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        resetAt={limitResetAt}
+        plan={limitPlan}
+        type="ai"
+      />
 
       {userId && (
         <AiRatingModal 

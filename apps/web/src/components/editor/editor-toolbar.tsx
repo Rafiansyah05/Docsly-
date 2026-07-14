@@ -205,6 +205,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           content: jsonDoc,
         }),
       });
+
       if (!response.ok) throw new Error('Export failed');
 
       const blob = await response.blob();
@@ -239,6 +240,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           pageSettings: editor.state.doc.attrs.pageSettings,
         }),
       });
+
       if (!response.ok) throw new Error('Export failed');
 
       const blob = await response.blob();

@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
   let browser = null;
   try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const body = await req.json();
     const { title, html, pageSettings } = body;
 

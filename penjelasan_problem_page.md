@@ -1,183 +1,299 @@
-Kalau targetmu masih MVP/Beta, saya justru lebih menyarankan Mayar dibanding langsung menggunakan Midtrans atau Xendit, karena implementasinya lebih sederhana.
+Error yang sekarang berbeda dengan error Midtrans tadi. Yang sebelumnya masalah `order_id`, sekarang masalahnya ada di **Supabase Row Level Security (RLS)**.
 
-Arsitektur Payment Docsly
-User
-   │
-   ▼
-Pilih Paket
-   │
-   ▼
-Docsly Backend (Next.js API)
-   │
-   ▼
-Mayar API
-   │
-   ▼
-Checkout Mayar
-   │
-   ▼
-User Melakukan Pembayaran
-   │
-   ▼
-Mayar Webhook
-   │
-   ▼
-Docsly
-   │
-   ▼
-Update Subscription
-   │
-   ▼
-User Premium
-Paket yang Dijual
-Monthly
-Paket	Harga
-Pro	Rp39.000/bulan
-Premium	Rp89.000/bulan
+Pesan utamanya:
 
-Nanti bisa ditambah Annual.
+```
+new row violates row-level security policy for table "payments"
+```
 
-Misalnya
+Artinya:
 
-Pro
+> Backend Docsly mencoba memasukkan data ke tabel `payments`, tetapi Supabase menolak karena aturan keamanan RLS tidak mengizinkan operasi INSERT tersebut.
 
-Rp390.000/tahun
+---
 
-(Hemat 2 bulan)
+## Kenapa ini terjadi?
 
-Premium
+Kemungkinan flow kamu sekarang:
 
-Rp890.000/tahun
+```
+User klik Upgrade
+        |
+        ↓
+POST /api/payment/create
+        |
+        ↓
+Backend membuat transaksi Midtrans
+        |
+        ↓
+Insert ke Supabase table payments
+        |
+        ↓
+DITOLAK RLS ❌
+```
 
-Database yang Saya Sarankan
-users
-id
-email
-full_name
+Supabase memiliki fitur **Row Level Security** yang secara default akan memblokir:
 
-plan
+* INSERT
+* SELECT
+* UPDATE
+* DELETE
 
-plan
+jika belum ada policy yang mengizinkan.
 
-FREE_TRIAL
-FREE
-PRO
-PREMIUM
-subscriptions
-id
+---
 
-user_id
+# Solusi terbaik untuk Docsly
 
-plan
+Karena tabel `payments` adalah tabel **server-side**, saya tidak menyarankan membuka INSERT untuk semua user.
 
-status
+Gunakan:
 
-start_date
+## Supabase Service Role Key di Backend
 
-end_date
+Arsitektur:
 
-renewal
+```
+Frontend
+   |
+   |
+API Route Next.js
+   |
+   |
+Supabase Service Role Client
+   |
+   |
+payments table
+```
 
-payment_provider
+Jadi:
 
-provider_subscription_id
+* user tidak langsung insert payment
+* hanya backend yang boleh insert
 
-provider_invoice_id
+Ini lebih aman.
 
-created_at
+---
 
-status
+# Langkah 1 — Pastikan RLS Aktif
 
-ACTIVE
+Supabase Dashboard:
 
-EXPIRED
-
-CANCELLED
-
-PENDING
+```
+Database
+   ↓
+Tables
+   ↓
 payments
-id
+```
 
-user_id
+Pastikan:
 
-invoice_id
+```
+Enable Row Level Security
+ON
+```
 
-transaction_id
+Biarkan ON.
 
-amount
+---
 
-currency
+# Langkah 2 — Buat Supabase Admin Client
 
-payment_method
+Jangan gunakan client biasa.
 
-status
+Kemungkinan sekarang kamu menggunakan:
 
-provider
+```typescript
+createClient(
+ supabaseUrl,
+ supabaseAnonKey
+)
+```
 
-created_at
+Itu terkena RLS.
 
-status
+Buat file:
 
-pending
+```
+lib/supabase-admin.ts
+```
 
-paid
+Isi:
 
-expired
+```typescript
+import { createClient } from "@supabase/supabase-js";
 
-failed
 
-refunded
-Flow User Baru
-Register
+export const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+```
 
-↓
+---
 
-Status
+# Langkah 3 — Tambahkan Service Role Key
 
-FREE_TRIAL
+Supabase Dashboard:
 
-↓
-
-trial_start
-
-↓
-
-trial_end
-
-30 hari
-
-↓
-
-Semua fitur aktif
-
-↓
-
-AI Credit berjalan
-
-↓
-
-Hari ke-30
-
-↓
-
-Otomatis
-
-FREE
-Flow Upgrade
-
-User
+```
+Project Settings
 
 ↓
 
-Klik
-
-Upgrade
+API
 
 ↓
 
-Pilih
+Project API keys
 
-Pro
+↓
+
+service_role
+```
+
+Copy.
+
+Masukkan:
+
+`.env.local`
+
+```env
+SUPABASE_SERVICE_ROLE_KEY=xxxxxxxx
+```
+
+Restart Next.js:
+
+```
+npm run dev
+```
+
+---
+
+# Langkah 4 — Ubah Insert Payment
+
+Sebelumnya mungkin:
+
+```typescript
+supabase
+.from("payments")
+.insert(paymentData)
+```
+
+Ganti:
+
+```typescript
+supabaseAdmin
+.from("payments")
+.insert(paymentData)
+```
+
+---
+
+Contoh:
+
+```typescript
+const { data, error } = await supabaseAdmin
+  .from("payments")
+  .insert({
+    user_id: user.id,
+    order_id: orderId,
+    plan: "PRO",
+    amount: 39000,
+    status: "pending"
+  });
+
+
+if(error){
+ console.error(error);
+}
+```
+
+---
+
+# Kenapa jangan membuat policy INSERT untuk user?
+
+Misalnya kamu membuat:
+
+```sql
+CREATE POLICY 
+"Allow insert payments"
+ON payments
+FOR INSERT
+WITH CHECK(true);
+```
+
+Ini berbahaya.
+
+Karena user bisa manipulasi:
+
+```
+POST /payments
+
+{
+ plan:"PREMIUM",
+ status:"paid"
+}
+```
+
+Lalu mendapatkan premium gratis.
+
+---
+
+# Struktur yang saya sarankan untuk Docsly
+
+Karena kamu membuat SaaS, pisahkan:
+
+## User table
+
+Dikelola user:
+
+```
+profiles
+```
+
+Boleh:
+
+* select
+* update profile
+
+---
+
+## Payment table
+
+Dikelola server:
+
+```
+payments
+```
+
+Hanya backend:
+
+* insert
+* update
+* webhook
+
+---
+
+## Subscription table
+
+Juga server:
+
+```
+subscriptions
+```
+
+Flow:
+
+```
+Midtrans webhook
 
 ↓
 
@@ -185,203 +301,78 @@ Backend
 
 ↓
 
-Request
-
-Mayar API
+Update subscriptions
 
 ↓
 
-Mayar membuat Checkout
-
-↓
-
-Mengembalikan URL Checkout
-
-↓
-
-Redirect User
-
-↓
-
-Bayar
-
-↓
-
-Webhook
-
-↓
-
-Docsly
-
-↓
-
-Update
-
-PRO
-Setelah Pembayaran Berhasil
-
-Misalnya webhook mengirim
-
-payment.received
-
-Maka backend akan:
-
-Verifikasi webhook.
-Cari user.
-Simpan transaksi.
-Update subscription.
-Aktifkan fitur.
-
-Mayar menyediakan webhook untuk menerima event pembayaran secara real-time.
-
-Ketika Langganan Habis
-
-Cron Job
-
-setiap jam
-
-↓
-
-cek
-
-subscription.end_date
-
-↓
-
-Jika
-
-today > end_date
-
-↓
-
-ubah
-
-FREE
-
-↓
-
-AI Credit ikut berubah
-
-↓
-
-Storage tetap
-
-↓
-
-Dokumen tetap aman
-
-AI Credit
-
-Saat user upgrade
-
-misalnya
-
-Pro
-
-500 Credit
-
-Premium
-
-1500 Credit
-
-Saat downgrade
-
-langsung
-
-10 Credit / hari
-Dashboard Subscription
-
-Saya menyarankan membuat halaman khusus.
-
-Misalnya
-
-Settings
-
-   └── Subscription
-
-Berisi
-
-Current Plan
-
-FREE TRIAL
-
-Sisa Trial
-
-18 Hari
-
-AI Credit
-
-34 / 50
-
-Storage
-
-1.1 GB / 2 GB
-
-Renewal
-
--
-
-Upgrade Button
-
-Kalau Pro
-
-Current Plan
-
-PRO
-
-Renew
-
-12 Agustus
-
-Payment
-
-Mayar
-
-Manage Subscription
-Webhook yang Perlu Dibuat
-
-Saya menyarankan endpoint
-
-POST
-
-/api/payment/mayar/webhook
-
-Flow
-
-Mayar
-
-↓
-
-POST
-
-/api/payment/mayar/webhook
-
-↓
-
-Verify
-
-↓
-
-Update Payment
-
-↓
-
-Update Subscription
-
-↓
-
-Response 200
-Environment Variable
-MAYAR_API_KEY=
-
-MAYAR_BASE_URL=https://api.mayar.id/hl/v1
-
-MAYAR_WEBHOOK_SECRET=
-
-NEXT_PUBLIC_APP_URL=
-
-SUPABASE_URL=
-
-SUPABASE_SERVICE_ROLE=
-
-Mayar menggunakan API Key dengan autentikasi Bearer dan menyediakan base URL untuk production maupun sandbox. API key dapat dibuat dari dashboard Mayar.
+User jadi PRO
+```
+
+---
+
+# Alternatif jika kamu memang ingin pakai RLS policy
+
+Bisa juga membuat policy:
+
+```sql
+CREATE POLICY "Users can insert own payments"
+ON payments
+FOR INSERT
+WITH CHECK (
+ auth.uid() = user_id
+);
+```
+
+Tapi untuk kasus Docsly saya kurang menyarankan.
+
+Kenapa?
+
+Karena payment bukan data milik user yang bebas dibuat.
+
+Payment harus berasal dari:
+
+* Midtrans
+* server
+* webhook
+
+bukan dari browser.
+
+---
+
+# Setelah diperbaiki, flow kamu akan menjadi:
+
+```
+User klik Pro
+        |
+        ↓
+API /payment/create
+        |
+        ↓
+Generate order_id
+        |
+        ↓
+Insert payments
+(using service role)
+        |
+        ↓
+Create Midtrans transaction
+        |
+        ↓
+Return snap_token
+        |
+        ↓
+User bayar
+        |
+        ↓
+Midtrans webhook
+        |
+        ↓
+Update payments status
+        |
+        ↓
+Update subscription
+```
+
+---
+
+Dari error yang muncul, sebenarnya integrasi Midtrans kamu sudah melewati tahap pertama. Sekarang tinggal memperbaiki **arsitektur permission Supabase**. Untuk Docsly, saya sarankan dari sekarang pisahkan mana operasi **client-side** dan mana operasi **server-side**, terutama untuk hal sensitif seperti pembayaran, subscription, dan penggunaan AI.

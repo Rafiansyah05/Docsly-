@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, BookOpen, X, Upload, Link as LinkIcon, Loader2, AlertCircle } from 'lucide-react';
 import { addReference, getReferences } from './extensions/citation';
+import { LimitReachedModal } from '@/components/limit-reached-modal';
 
 export const CitationManager = ({ editor, isOpen, onClose }: any) => {
   const [activeTab, setActiveTab] = useState<'auto' | 'manual'>('auto');
@@ -11,6 +12,11 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Limit States
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitResetAt, setLimitResetAt] = useState<string | null>(null);
+  const [limitPlan, setLimitPlan] = useState<string>('Free');
+
   const [citationStyle, setCitationStyle] = useState<'APA' | 'Harvard'>('APA');
 
   const [formData, setFormData] = useState({
@@ -84,10 +90,21 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
     formData.append('file', file);
 
     try {
-      const res = await fetch('http://localhost:3001/api/citation/extract-file', {
+      const res = await fetch('/api/citation/extract-file', {
         method: 'POST',
         body: formData,
       });
+
+      if (res.status === 429) {
+        const errorData = await res.json();
+        setLimitResetAt(errorData.resetAt);
+        setLimitPlan(errorData.plan || 'Free');
+        setLimitModalOpen(true);
+        setIsLoading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
       const data = await res.json();
       processExtractedData(data);
     } catch (err) {
@@ -247,6 +264,14 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
           </div>
         )}
       </div>
+
+      <LimitReachedModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        resetAt={limitResetAt}
+        plan={limitPlan}
+        type="citation"
+      />
     </div>
   );
 };
