@@ -33,7 +33,7 @@ let AiController = class AiController {
         this.languageCompliance = languageCompliance;
     }
     async execute(body, res) {
-        const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action } = body;
+        const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments } = body;
         if (!prompt) {
             res.status(400).json({ error: 'Prompt is required' });
             return;
@@ -71,7 +71,7 @@ let AiController = class AiController {
                 }
             }
             send('progress', { stage: 'execute', label: 'AI sedang menulis & memproses...', percent: 70 });
-            let result = await this.taskExecutor.execute(intent, prompt, context, action === 'skip_questions');
+            let result = await this.taskExecutor.execute(intent, prompt, context, action === 'skip_questions', attachments);
             if (result.operations && result.operations.length > 0) {
                 send('progress', { stage: 'compliance', label: 'Memeriksa tata bahasa & PUEBI...', percent: 90 });
                 result.operations = await this.languageCompliance.verify(result.operations);

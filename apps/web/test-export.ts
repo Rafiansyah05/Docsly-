@@ -5,6 +5,7 @@ import Text from '@tiptap/extension-text';
 import { TableOfContents } from './src/components/editor/extensions/toc';
 
 const editor = new Editor({
+  // @ts-ignore
   extensions: [Document, Paragraph, Text, TableOfContents],
   content: {
     type: 'doc',

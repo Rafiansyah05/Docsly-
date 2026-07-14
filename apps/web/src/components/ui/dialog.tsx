@@ -62,16 +62,9 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-2 right-2 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100"
-                size="icon-sm"
-              />
-            }
+            className="absolute top-2 right-2 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 inline-flex items-center justify-center size-7 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400"
           >
-            <XIcon
-            />
+            <XIcon className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
@@ -109,7 +102,7 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
+        <DialogPrimitive.Close className="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted hover:text-foreground h-8 px-2.5 text-sm font-medium transition-all focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50">
           Close
         </DialogPrimitive.Close>
       )}

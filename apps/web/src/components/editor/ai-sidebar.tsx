@@ -11,9 +11,16 @@ interface AiSidebarProps {
   documentId: string;
 }
 
+interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  attachments?: MessageAttachment[];
 }
 
 interface PendingSuggestion {
@@ -82,7 +89,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isResizing = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string }[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{ file: File; name: string; type: string }[]>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -201,7 +208,16 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
     if (history && history.length > 0) {
       history.forEach((h) => {
-        loadedMessages.push({ role: 'user', content: h.user_prompt });
+        let promptText = h.user_prompt;
+        let attachments = undefined;
+        const metaMatch = promptText.match(/\[ATTACHMENTS_META\]([\s\S]*?)\[\/ATTACHMENTS_META\]/);
+        if (metaMatch) {
+          try {
+            attachments = JSON.parse(metaMatch[1]);
+            promptText = promptText.replace(metaMatch[0], '').trim();
+          } catch (e) {}
+        }
+        loadedMessages.push({ role: 'user', content: promptText, attachments });
         loadedMessages.push({ role: 'assistant', content: h.ai_response });
       });
     }
@@ -279,7 +295,23 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const mapped = files.map((f) => ({ name: f.name, type: f.type }));
+    
+    // Check max 3 files total
+    if (attachedFiles.length + files.length > 3) {
+      toast.error('Maksimal hanya 3 file dokumen yang dapat diunggah bersamaan.');
+      return;
+    }
+
+    // Check 5MB limit
+    const MAX_SIZE = 5 * 1024 * 1024;
+    for (const f of files) {
+      if (f.size > MAX_SIZE) {
+        toast.error(`Ukuran file ${f.name} terlalu besar. Maksimal 5MB per dokumen.`);
+        return;
+      }
+    }
+
+    const mapped = files.map((f) => ({ file: f, name: f.name, type: f.type }));
     setAttachedFiles((prev) => [...prev, ...mapped]);
     setShowAttachMenu(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -317,14 +349,43 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
 
     const userMessage = input.trim();
     setInput('');
+    const currentFiles = [...attachedFiles];
     setAttachedFiles([]);
-    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
     setProgress(5);
+    setStageLabel('Mengunggah file...');
+
+    // Upload files to Supabase Storage if any
+    const uploadedAttachments: MessageAttachment[] = [];
+    try {
+      for (const item of currentFiles) {
+        const fileExt = item.name.split('.').pop();
+        const fileName = `chat_attachments/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('documents').upload(fileName, item.file);
+        
+        if (uploadError) {
+          console.error("Gagal mengunggah file:", uploadError);
+          toast.error(`Gagal mengunggah ${item.name}`);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(fileName);
+        uploadedAttachments.push({
+          name: item.name,
+          url: publicUrl,
+          type: item.type,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage, attachments: uploadedAttachments }]);
+    setProgress(15);
     setStageLabel('Menghubungi server AI...');
 
     const finalPrompt = selectedContext ? `[Konteks Teks Terpilih: "${selectedContext}"]\n\nPrompt Pengguna: "${userMessage}"` : userMessage;
@@ -373,6 +434,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           prompt: finalPrompt,
           documentJson: editor.getJSON(),
           activeBlockIndex: getActiveBlockIndex(),
+          attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
         }),
       });
 
@@ -440,11 +502,12 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
               // Save to database
               if (activeConversationId && data.intent !== 'ask_questions') {
+                const promptToSave = uploadedAttachments.length > 0 ? userMessage + `\n[ATTACHMENTS_META]${JSON.stringify(uploadedAttachments)}[/ATTACHMENTS_META]` : userMessage;
                 supabase
                   .from('prompt_history')
                   .insert({
                     conversation_id: activeConversationId,
-                    user_prompt: userMessage,
+                    user_prompt: promptToSave,
                     ai_response: responseContent,
                   })
                   .then(); // fire and forget
@@ -886,20 +949,55 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
             </div>
           ) : (
             <>
-              <div className="space-y-4">
-                {messages.map((msg, index) => (
-                  <div key={index} className={`flex gap-2 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'}`}>
-                      {msg.role === 'user' ? <User className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
-                    </div>
+              <div className="space-y-4 pr-1">
+                {messages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-3 flex-shrink-0 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                    )}
                     <div
-                      className={`rounded-xl px-3.5 py-2.5 text-[15px] leading-relaxed border ${msg.role === 'user' ? 'bg-[#006EFF] text-white border-transparent rounded-tr-sm' : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border-transparent rounded-tl-sm'
-                        }`}
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-[14px] leading-relaxed shadow-sm ${
+                        msg.role === 'user' ? 'bg-[#006EFF] text-white border-transparent rounded-tr-sm font-medium' : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 rounded-tl-sm border border-slate-200 dark:border-zinc-800'
+                      }`}
                     >
-                      {formatMessageContent(msg.content)}
+                      {msg.content && formatMessageContent(msg.content)}
+                      
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className={`flex flex-col gap-2 ${msg.content ? 'mt-3 pt-3 border-t border-slate-700/20 dark:border-zinc-300/20' : ''}`}>
+                          {msg.attachments.map((file, i) => (
+                            <a
+                              key={i}
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
+                                msg.role === 'user' 
+                                  ? 'bg-white/20 hover:bg-white/30 text-white' 
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300'
+                              }`}
+                            >
+                              {getFileIcon(file.type)}
+                              <span className="text-xs truncate font-medium flex-1">{file.name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
+                {isLoading && workflowState === 'chat' && (
+                  <div className="flex justify-start">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-3 flex-shrink-0 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3 shadow-sm min-w-[200px]">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                      <span className="text-sm font-medium">{stageLabel}</span>
+                    </div>
+                  </div>
+                )}
 
                 {workflowState === 'asking_questions' && !isLoading && (
                   <div className="bg-white dark:bg-zinc-900 border-2 border-blue-100 dark:border-blue-900/50 rounded-lg p-4 shadow-sm space-y-4 mr-auto w-full max-w-[95%]">
@@ -1039,7 +1137,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
         </div>
 
         <div className="p-3 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex-shrink-0">
-          <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.xlsx,.xls,.pptx,.ppt,.txt,.csv,image/*" className="hidden" onChange={handleFileAttach} />
+          <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx" className="hidden" onChange={handleFileAttach} />
 
           <div className="relative rounded-xl transition-colors duration-200 bg-[#F4F4F5] dark:bg-zinc-900 border border-transparent dark:border-zinc-800">
             {selectedContext && (
@@ -1100,10 +1198,6 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                     {[
                       { label: 'PDF', ext: '.pdf,application/pdf' },
                       { label: 'Word (.docx)', ext: '.doc,.docx' },
-                      { label: 'Excel / CSV', ext: '.xlsx,.xls,.csv' },
-                      { label: 'PowerPoint', ext: '.pptx,.ppt' },
-                      { label: 'Gambar', ext: 'image/*' },
-                      { label: 'File Teks', ext: '.txt' },
                     ].map((item) => (
                       <button
                         key={item.label}

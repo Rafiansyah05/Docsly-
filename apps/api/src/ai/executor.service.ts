@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { UserIntent } from './intent.service';
+const { PDFParse } = require('pdf-parse');
+import * as mammoth from 'mammoth';
 
 export interface ProseMirrorTextNode {
   type: 'text';
@@ -38,19 +40,28 @@ export class TaskExecutor {
     intent: UserIntent,
     prompt: string,
     documentContext: string,
-    isAssuming: boolean = false
+    isAssuming: boolean = false,
+    attachments: any[] = []
   ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
     const anthropicKey = this.configService.get<string>('ANTHROPIC_API_KEY');
     const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
 
+    let fullPrompt = prompt;
+    if (attachments && attachments.length > 0) {
+      const parsedTexts = await this.parseAttachments(attachments);
+      if (parsedTexts) {
+        fullPrompt = `[DOKUMEN LAMPIRAN PENGGUNA]\n${parsedTexts}\n\n[AKHIR LAMPIRAN]\n\n${prompt}`;
+      }
+    }
+
     if (!hasAnthropic) {
-      return this.getMockResponse(intent, prompt);
+      return this.getMockResponse(intent, fullPrompt);
     }
 
     const systemPrompt = this.getSystemPrompt(intent, isAssuming);
 
     try {
-      return await this.executeWithClaude(intent, prompt, documentContext, systemPrompt);
+      return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt);
     } catch (error: any) {
       console.error(`Error in TaskExecutor (Claude):`, error);
       return {
@@ -103,11 +114,54 @@ export class TaskExecutor {
       } catch (parseError: any) {
         console.error('JSON Parse Error:', parseError);
         console.error('Raw Claude Output:', text);
-        throw new Error(`Claude returned malformed JSON: ${parseError.message}`);
+        return {
+          operations: [],
+          explanation: 'Maaf, balasan AI terlalu panjang sehingga terpotong di tengah jalan. Mohon coba persempit instruksi Anda atau mintalah AI untuk meringkas secara bertahap.'
+        };
       }
     }
 
-    throw new Error(`Claude response did not contain valid JSON. Raw text: ${text}`);
+    return {
+      operations: [],
+      explanation: 'Maaf, format balasan AI tidak valid. Mohon ulangi permintaan Anda.'
+    };
+  }
+
+  private async parseAttachments(attachments: any[]): Promise<string> {
+    let combinedText = '';
+    const MAX_CHARS_PER_FILE = 15000;
+
+    for (const file of attachments) {
+      try {
+        const response = await fetch(file.url);
+        if (!response.ok) continue;
+
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        let extractedText = '';
+
+        if (file.name.endsWith('.pdf') || file.type.includes('pdf')) {
+          const parser = new PDFParse({ data: buffer });
+          const data = await parser.getText();
+          extractedText = data.text;
+        } else if (file.name.endsWith('.docx') || file.type.includes('wordprocessingml.document')) {
+          const result = await mammoth.extractRawText({ buffer });
+          extractedText = result.value;
+        } else {
+          // Fallback to plain text for csv, txt, json, html
+          extractedText = buffer.toString('utf-8');
+        }
+
+        if (extractedText.length > MAX_CHARS_PER_FILE) {
+          extractedText = extractedText.substring(0, MAX_CHARS_PER_FILE) + '\n...[TEKS DIPOTONG KARENA TERLALU PANJANG]...';
+        }
+
+        combinedText += `--- Isi File: ${file.name} ---\n${extractedText}\n\n`;
+      } catch (err) {
+        console.error(`Gagal mem-parsing file ${file.name}:`, err);
+      }
+    }
+    return combinedText;
   }
 
   private getSystemPrompt(intent: UserIntent, isAssuming: boolean): string {
@@ -168,13 +222,11 @@ CRITICAL RULES:
 4. Gunakan formatting (bold, bulletList, orderedList) jika struktur konten membutuhkannya. Gunakan indentasi atau node paragraph ekstra jika perlu memberikan jarak/spacing profesional.
 5. The document text color must be default black. Do not add any text color to the nodes.
 6. STRUKTUR ILMIAH & STANDAR INDONESIA (PUEBI/EYD STRICT COMPLIANCE): Anda WAJIB 100% menggunakan Bahasa Indonesia baku sesuai KBBI, PUEBI, dan EYD tanpa terkecuali!
-   - Tanda Baca & Huruf Kapital: Terapkan secara absolut aturan titik, koma, huruf kapital (awal kalimat, nama, tempat, instansi).
-   - Cetak Miring (Italic): ANDA WAJIB MENCETAK MIRING (gunakan mark { "type": "italic" }) untuk SEMUA kata asing, istilah bahasa Inggris, atau bahasa daerah yang belum diserap (misal: *download*, *online*, *database*).
-   - Pastikan struktur dokumen selaras dengan format akademik formal di Indonesia.
 7. HEMAT TOKEN (Token Efficiency): Generate MINIMAL patches. Never rewrite or output unchanged parts of the document. Only generate operations for the exact nodes that are being inserted, replaced, or deleted. Keep your output as concise as possible while fulfilling the prompt.
-8. [TABEL OTOMATIS]: Apabila Anda diinstruksikan untuk membandingkan atribut, menjelaskan jadwal rinci, atau mendeskripsikan data/spesifikasi numerik, Anda WAJIB membuat tabel Tiptap (\`type: "table"\` berisi \`tableRow\`, \`tableHeader\`, \`tableCell\`). Berikan judul tabel sebelumnya dengan paragraf biasa (misal: "Tabel 1.1 Perbandingan...").
-9. [PLACEHOLDER GAMBAR]: Jika Anda diminta membuat arsitektur, diagram alir, atau dokumentasi visual, Anda WAJIB menyisipkan node \`type: "imagePlaceholder"\` dengan atribut \`caption: "Gambar [Bab].[Urutan] [Deskripsi]"\` alih-alih hanya menulis teks placeholder biasa.
-10. [SITASI]: Anda dapat menginsert node sitasi dengan format \`{ "type": "citation", "attrs": { "refId": "id-referensi", "style": "APA" } }\` jika diminta menyisipkan sitasi in-text. Tetapi ini hanya berlaku jika Anda sudah diberi ID referensi.
+8. [FILE ATTACHMENT / LAMPIRAN PENGGUNA]: Jika pengguna mengunggah file [DOKUMEN LAMPIRAN PENGGUNA], pastikan Anda menjawab berdasarkan isinya. Jika diminta membuat "ringkasan" dari file tersebut, buatlah ringkasan secara padat, singkat, dan komprehensif (maksimal 3-4 paragraf) untuk dimasukkan ke editor agar tidak melampaui batas token AI!
+9. [TABEL OTOMATIS]: Apabila Anda diinstruksikan untuk membandingkan atribut, menjelaskan jadwal rinci, atau mendeskripsikan data/spesifikasi numerik, Anda WAJIB membuat tabel Tiptap (\`type: "table"\` berisi \`tableRow\`, \`tableHeader\`, \`tableCell\`).
+10. [PLACEHOLDER GAMBAR]: Jika Anda diminta membuat arsitektur, diagram alir, atau dokumentasi visual, Anda WAJIB menyisipkan node \`type: "imagePlaceholder"\` dengan atribut \`caption: "Gambar [Bab].[Urutan] [Deskripsi]"\` alih-alih hanya menulis teks placeholder biasa.
+11. [SITASI]: Anda dapat menginsert node sitasi dengan format \`{ "type": "citation", "attrs": { "refId": "id-referensi", "style": "APA" } }\` jika diminta menyisipkan sitasi in-text. Tetapi ini hanya berlaku jika Anda sudah diberi ID referensi.
 ${assumptionRule}`;
   }
 

@@ -24,11 +24,12 @@ export declare class TaskExecutor {
     private configService;
     private anthropic;
     constructor(configService: ConfigService);
-    execute(intent: UserIntent, prompt: string, documentContext: string, isAssuming?: boolean): Promise<{
+    execute(intent: UserIntent, prompt: string, documentContext: string, isAssuming?: boolean, attachments?: any[]): Promise<{
         operations: BlockOperation[];
         explanation?: string;
     }>;
     private executeWithClaude;
+    private parseAttachments;
     private getSystemPrompt;
     private getMockResponse;
 }

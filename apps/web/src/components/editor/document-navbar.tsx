@@ -41,9 +41,11 @@ export function DocumentNavbar({ editor, saveState, documentId, initialTitle, wo
   return (
     <div className="flex items-center justify-between px-4 py-1.5 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 h-12">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200 mr-2 h-7 px-2" render={<Link href={`/w/${workspaceId}`} />}>
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Kembali
+        <Button variant="ghost" size="sm" className="text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200 mr-2 h-7 px-0">
+          <Link href={`/w/${workspaceId}`} className="px-2 py-1 flex items-center w-full h-full">
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Kembali
+          </Link>
         </Button>
         <span className="text-sm font-medium text-zinc-400 dark:text-zinc-600">/</span>
         <div className="mr-2">

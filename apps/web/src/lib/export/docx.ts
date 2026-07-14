@@ -54,7 +54,7 @@ export async function convertToDocx(json: TiptapJSON): Promise<Document> {
     let defaultHeader: any = currentHeader ? new Header({ children: [new Paragraph(currentHeader)] }) : undefined;
     let defaultFooter: any = currentFooter ? new Footer({ children: [new Paragraph(currentFooter)] }) : undefined;
     
-    let formatType = NumberFormat.DECIMAL;
+    let formatType: any = NumberFormat.DECIMAL;
     let startNumber = 1;
     let pageNumbersConfig: any = undefined;
     let activeSection = null;

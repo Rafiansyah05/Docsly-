@@ -17,6 +17,7 @@ export declare class AiController {
         activeBlockIndex?: number;
         intent?: string;
         action?: string;
+        attachments?: any[];
     }, res: Response): Promise<void>;
     private getIntentLabel;
 }

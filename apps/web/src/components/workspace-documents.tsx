@@ -175,11 +175,9 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
               >
                 <div className="absolute top-4 right-4 z-10" onClick={(e) => e.preventDefault()}>
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={
-                      <button className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-100 rounded-md hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors opacity-0 group-hover:opacity-100 data-[open]:opacity-100 focus:opacity-100">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    } />
+                    <DropdownMenuTrigger className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-100 rounded-md hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors opacity-0 group-hover:opacity-100 data-[open]:opacity-100 focus:opacity-100">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[160px] bg-white dark:bg-zinc-950 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-800 p-1 z-50">
                       <DropdownMenuItem
                         className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 cursor-pointer text-[13px] rounded-md px-2 py-1.5 flex items-center gap-2"
@@ -253,11 +251,9 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
                     </td>
                     <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
-                        <DropdownMenuTrigger render={
-                          <button className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-100 rounded-md hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors opacity-0 group-hover:opacity-100 data-[open]:opacity-100 focus:opacity-100">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
-                        } />
+                        <DropdownMenuTrigger className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-100 rounded-md hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors opacity-0 group-hover:opacity-100 data-[open]:opacity-100 focus:opacity-100">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[160px] bg-white dark:bg-zinc-950 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-800 p-1 z-50">
                           <DropdownMenuItem
                             className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 cursor-pointer text-[13px] rounded-md px-2 py-1.5 flex items-center gap-2"

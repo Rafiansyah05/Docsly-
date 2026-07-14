@@ -176,6 +176,21 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     
     const fetchLatest = async () => {
       try {
+        // Cek localStorage dulu (untuk template atau import dokumen)
+        const importedHtml = localStorage.getItem(`import_${documentId}`);
+        if (importedHtml) {
+          editor.commands.setContent(importedHtml);
+          localStorage.removeItem(`import_${documentId}`);
+          triggerSave(() => editor.getJSON());
+          
+          // Tetap ambil judul jika diperlukan
+          const { data } = await supabase.from('documents').select('judul').eq('id', documentId).single();
+          if (isMounted && data) {
+            window.dispatchEvent(new CustomEvent('update-title', { detail: data.judul }));
+          }
+          return; // Lewati menimpa konten dengan isi database yang kosong
+        }
+
         const { data, error } = await supabase
           .from('documents')
           .select('konten_json_terkini, judul')
@@ -198,17 +213,6 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     return () => {
       isMounted = false;
     };
-  }, [editor, documentId]);
-
-  useEffect(() => {
-    if (editor && typeof window !== 'undefined') {
-      const importedHtml = localStorage.getItem(`import_${documentId}`);
-      if (importedHtml) {
-        editor.commands.setContent(importedHtml);
-        localStorage.removeItem(`import_${documentId}`);
-        triggerSave(() => editor.getJSON());
-      }
-    }
   }, [editor, documentId, triggerSave]);
 
   useEffect(() => {
