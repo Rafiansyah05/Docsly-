@@ -3,7 +3,6 @@ import { Send, Check, X, Loader2, Sparkles, StopCircle, User, ArrowRight, Plus, 
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Claude } from '@lobehub/icons';
 import { AiRatingModal } from './ai-rating-modal';
 import { LimitReachedModal } from '@/components/limit-reached-modal';
 
@@ -933,13 +932,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
           <div className="flex items-center gap-1.5 ml-1">
             <span className="text-[11px] text-slate-400 dark:text-zinc-500 whitespace-nowrap">
-              Powered by
+              Powered by Claude
             </span>
-
-            <Claude.Color
-              size={18}
-
-            />
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
