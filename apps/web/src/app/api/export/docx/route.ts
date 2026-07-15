@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { Packer } from 'docx';
 import { convertToDocx } from '@/lib/export/docx';
