@@ -288,7 +288,7 @@ Setelah kursor berada di dalam tabel, sebuah **menu tabel** akan muncul di bawah
 
 ## 10. Menyisipkan Gambar
 
-### Cara Upload Gambar
+### Cara Upload Gambar halo
 1. Klik tombol **"Gambar"** di navbar dokumen (atau toolbar).
 2. Pilih file gambar dari komputer kamu (JPG, PNG, WebP, dll.).
 3. **Modal Crop Gambar** akan muncul — kamu bisa memotong gambar sesuai kebutuhan.
