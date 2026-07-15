@@ -61,7 +61,8 @@ export function Hero({ avgRating }: { avgRating: string }) {
               <div className="flex items-center gap-2">
                 <div className="flex">
                   {[1, 2, 3, 4, 5].map((star) => {
-                    const ratingValue = parseFloat(avgRating) || 5.0;
+                    const parsedRating = parseFloat(avgRating);
+                    const ratingValue = isNaN(parsedRating) ? 0.0 : parsedRating;
                     if (ratingValue >= star) {
                       return <Star key={star} className="w-5 h-5 fill-[#F59E0B] text-[#F59E0B]" />;
                     } else if (ratingValue >= star - 0.5) {

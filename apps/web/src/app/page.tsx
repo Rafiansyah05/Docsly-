@@ -9,6 +9,8 @@ import { Faq } from '@/components/landing/faq';
 import { Footer } from '@/components/landing/footer';
 import { LandingLayout } from '@/components/landing/landing-layout';
 
+export const revalidate = 60; // Revalidate the page every 60 seconds
+
 export default async function Home() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,14 +20,17 @@ export default async function Home() {
   }
 
   // Fetch AI Ratings from database for the Hero section
-  let avgRating = '5.0';
+  let avgRating = '0.0';
   try {
-    const { data: ratings, error } = await supabase.from('ai_ratings').select('rating');
-    if (ratings && ratings.length > 0) {
-      const sum = ratings.reduce((acc: number, curr: any) => acc + curr.rating, 0);
-      avgRating = (sum / ratings.length).toFixed(1);
+    const { data: ratingData, error } = await supabase.rpc('get_average_ai_rating');
+    if (ratingData) {
+      // Data might be a number or string depending on postgres numeric type mapping
+      const num = parseFloat(ratingData);
+      if (!isNaN(num)) {
+        avgRating = num.toFixed(1);
+      }
     } else if (error) {
-      console.error('Failed to fetch ratings:', error);
+      console.error('Failed to fetch ratings RPC:', error);
     }
   } catch (error) {
     console.error('Error in ratings fetch:', error);

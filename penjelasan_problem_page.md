@@ -1,378 +1,395 @@
-Error yang sekarang berbeda dengan error Midtrans tadi. Yang sebelumnya masalah `order_id`, sekarang masalahnya ada di **Supabase Row Level Security (RLS)**.
+Dari log yang kamu kirim, sebenarnya ada satu petunjuk yang sangat penting:
 
-Pesan utamanya:
-
-```
-new row violates row-level security policy for table "payments"
+```text
+POST /auth/register 200 in 2465ms
 ```
 
-Artinya:
+Artinya **proses registrasi berhasil**. Endpoint `/auth/register` tidak mengalami error.
 
-> Backend Docsly mencoba memasukkan data ke tabel `payments`, tetapi Supabase menolak karena aturan keamanan RLS tidak mengizinkan operasi INSERT tersebut.
+Error baru muncul setelahnya:
+
+```text
+Element type is invalid:
+expected a string (for built-in components)
+or a class/function (for composite components)
+but got: undefined.
+```
+
+Lalu diikuti
+
+```text
+GET /w 500
+```
+
+Jadi kemungkinan besar **bukan masalah Supabase atau register**, tetapi **halaman yang dibuka setelah register** (`/w`) gagal dirender.
 
 ---
 
-## Kenapa ini terjadi?
+# Penyebab paling umum
 
-Kemungkinan flow kamu sekarang:
+React hanya bisa merender:
 
-```
-User klik Upgrade
-        |
-        ↓
-POST /api/payment/create
-        |
-        ↓
-Backend membuat transaksi Midtrans
-        |
-        ↓
-Insert ke Supabase table payments
-        |
-        ↓
-DITOLAK RLS ❌
+```tsx
+<div />
+<Button />
+<MyComponent />
 ```
 
-Supabase memiliki fitur **Row Level Security** yang secara default akan memblokir:
+tetapi jika yang dirender ternyata
 
-* INSERT
-* SELECT
-* UPDATE
-* DELETE
+```tsx
+undefined
+```
 
-jika belum ada policy yang mengizinkan.
+maka akan muncul error persis seperti ini.
+
+Misalnya
+
+```tsx
+<MyComponent />
+```
+
+padahal
+
+```tsx
+const MyComponent = undefined
+```
+
+hasilnya
+
+```
+Element type is invalid
+```
 
 ---
 
-# Solusi terbaik untuk Docsly
+# Kemungkinan 1 (Paling sering)
 
-Karena tabel `payments` adalah tabel **server-side**, saya tidak menyarankan membuka INSERT untuk semua user.
+## Salah export/import component
 
-Gunakan:
+Misalnya file
 
-## Supabase Service Role Key di Backend
+```tsx
+components/Navbar.tsx
 
-Arsitektur:
-
-```
-Frontend
-   |
-   |
-API Route Next.js
-   |
-   |
-Supabase Service Role Client
-   |
-   |
-payments table
+export default function Navbar() {}
 ```
 
-Jadi:
+tetapi dipanggil
 
-* user tidak langsung insert payment
-* hanya backend yang boleh insert
+```tsx
+import { Navbar } from "@/components/Navbar"
+```
 
-Ini lebih aman.
+Karena dia default export, maka harus
+
+```tsx
+import Navbar from "@/components/Navbar"
+```
+
+Sebaliknya
+
+```tsx
+export function Navbar(){}
+```
+
+harus
+
+```tsx
+import { Navbar } from "@/components/Navbar"
+```
+
+Bukan
+
+```tsx
+import Navbar from ...
+```
+
+Ini adalah penyebab nomor satu dari error tersebut.
 
 ---
 
-# Langkah 1 — Pastikan RLS Aktif
+# Kemungkinan 2
 
-Supabase Dashboard:
+## Salah import icon lucide/react-icons
 
-```
-Database
-   ↓
-Tables
-   ↓
-payments
-```
+Misalnya
 
-Pastikan:
-
-```
-Enable Row Level Security
-ON
+```tsx
+import {
+    Google,
+    Github
+} from "lucide-react"
 ```
 
-Biarkan ON.
+Padahal
+
+`Google` tidak ada.
+
+Akibatnya
+
+```tsx
+<Google />
+```
+
+=
+
+```tsx
+undefined
+```
+
+Error langsung muncul.
+
+Coba cek semua icon yang baru kamu tambahkan.
 
 ---
 
-# Langkah 2 — Buat Supabase Admin Client
+# Kemungkinan 3
 
-Jangan gunakan client biasa.
+## Salah import UI Component
 
-Kemungkinan sekarang kamu menggunakan:
+Misalnya
 
-```typescript
-createClient(
- supabaseUrl,
- supabaseAnonKey
+```tsx
+import {
+    DialogContent,
+    DialogTitle,
+    DialogDescription
+} from "@/components/ui/dialog"
+```
+
+padahal file dialog hanya export
+
+```tsx
+Dialog
+DialogTrigger
+DialogContent
+```
+
+sedangkan
+
+```tsx
+DialogDescription
+```
+
+tidak ada.
+
+Saat dirender
+
+```tsx
+<DialogDescription />
+```
+
+langsung error.
+
+---
+
+# Kemungkinan 4
+
+## Menggunakan dynamic import yang salah
+
+Misalnya
+
+```tsx
+const Editor = dynamic(() => import("./Editor"))
+```
+
+Padahal file
+
+```tsx
+export const Editor = ...
+```
+
+bukan default export.
+
+Harusnya
+
+```tsx
+dynamic(() =>
+    import("./Editor").then(mod => mod.Editor)
 )
 ```
 
-Itu terkena RLS.
+---
 
-Buat file:
+# Kemungkinan 5
+
+## Salah import SVG
+
+Misalnya
+
+```tsx
+import Logo from "./logo.svg"
+```
+
+Padahal project belum memakai SVGR.
+
+Yang didapat
 
 ```
-lib/supabase-admin.ts
+Logo = undefined
 ```
 
-Isi:
+Lalu
 
-```typescript
-import { createClient } from "@supabase/supabase-js";
-
-
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+```tsx
+<Logo />
 ```
+
+Error.
 
 ---
 
-# Langkah 3 — Tambahkan Service Role Key
+# Kemungkinan 6
 
-Supabase Dashboard:
+## Komponen di halaman `/w`
 
-```
-Project Settings
-
-↓
-
-API
-
-↓
-
-Project API keys
-
-↓
-
-service_role
-```
-
-Copy.
-
-Masukkan:
-
-`.env.local`
-
-```env
-SUPABASE_SERVICE_ROLE_KEY=xxxxxxxx
-```
-
-Restart Next.js:
+Karena log mengatakan
 
 ```
-npm run dev
+GET /w 500
 ```
+
+berarti error terjadi ketika Next.js mencoba merender
+
+```
+app/w/page.tsx
+```
+
+atau
+
+```
+app/w/layout.tsx
+```
+
+atau salah satu component yang dipakai di sana.
 
 ---
 
-# Langkah 4 — Ubah Insert Payment
+# Cara menemukan komponen yang rusak
 
-Sebelumnya mungkin:
+Cara tercepat.
 
-```typescript
-supabase
-.from("payments")
-.insert(paymentData)
+Di file
+
+```
+app/w/page.tsx
 ```
 
-Ganti:
+sementara ubah menjadi
 
-```typescript
-supabaseAdmin
-.from("payments")
-.insert(paymentData)
-```
-
----
-
-Contoh:
-
-```typescript
-const { data, error } = await supabaseAdmin
-  .from("payments")
-  .insert({
-    user_id: user.id,
-    order_id: orderId,
-    plan: "PRO",
-    amount: 39000,
-    status: "pending"
-  });
-
-
-if(error){
- console.error(error);
+```tsx
+export default function Page() {
+    return <div>test</div>;
 }
 ```
 
+Kalau sekarang
+
+```
+GET /w
+```
+
+berhasil
+
+berarti masalah memang berasal dari salah satu component yang dipakai di halaman itu.
+
 ---
 
-# Kenapa jangan membuat policy INSERT untuk user?
+Lalu tambahkan satu-satu
 
-Misalnya kamu membuat:
-
-```sql
-CREATE POLICY 
-"Allow insert payments"
-ON payments
-FOR INSERT
-WITH CHECK(true);
+```tsx
+return (
+<>
+    <Sidebar />
+</>
+)
 ```
 
-Ini berbahaya.
+Kalau error muncul
 
-Karena user bisa manipulasi:
+berarti Sidebar.
 
+Kalau tidak
+
+```tsx
+<>
+    <Sidebar />
+    <Navbar />
+</>
 ```
-POST /payments
 
+Terus begitu.
+
+Biasanya dalam 2–5 menit sudah ketemu komponen yang `undefined`.
+
+---
+
+# Cara debug lebih cepat
+
+Tambahkan log sebelum `return`.
+
+Misalnya
+
+```tsx
+console.log({
+    Sidebar,
+    Navbar,
+    Editor,
+    Toolbar,
+});
+```
+
+Kalau hasilnya
+
+```text
 {
- plan:"PREMIUM",
- status:"paid"
+ Sidebar: ƒ
+ Navbar: ƒ
+ Editor: undefined
+ Toolbar: ƒ
 }
 ```
 
-Lalu mendapatkan premium gratis.
+langsung ketahuan.
 
 ---
 
-# Struktur yang saya sarankan untuk Docsly
+# Hal lain yang perlu diperhatikan
 
-Karena kamu membuat SaaS, pisahkan:
+Karena error muncul **setelah** `POST /auth/register` sukses, coba cek apakah setelah registrasi kamu melakukan:
 
-## User table
-
-Dikelola user:
-
-```
-profiles
+```tsx
+router.push("/w")
 ```
 
-Boleh:
+atau
 
-* select
-* update profile
+```tsx
+redirect("/w")
+```
+
+Kalau iya, fokuskan pemeriksaan pada:
+
+* `app/w/page.tsx`
+* `app/w/layout.tsx`
+* semua komponen yang di-import oleh kedua file tersebut
+* provider atau layout yang membungkus route `/w`
 
 ---
 
-## Payment table
+## Dari pengalaman, saya akan memberi probabilitas penyebab seperti ini:
 
-Dikelola server:
+1. **Default vs named import/export salah** → **≈60%**
+2. **Ada komponen UI atau icon yang tidak diekspor tetapi tetap di-import** → **≈20%**
+3. **Dynamic import salah** → **≈10%**
+4. **SVG atau asset di-render sebagai komponen React** → **≈5%**
+5. **Penyebab lain** → **≈5%**
 
-```
-payments
-```
+Kalau kamu bisa kirim isi dari:
 
-Hanya backend:
+* `app/w/page.tsx`
+* `app/w/layout.tsx` (jika ada)
+* atau komponen utama yang baru saja kamu ubah sebelum error muncul,
 
-* insert
-* update
-* webhook
-
----
-
-## Subscription table
-
-Juga server:
-
-```
-subscriptions
-```
-
-Flow:
-
-```
-Midtrans webhook
-
-↓
-
-Backend
-
-↓
-
-Update subscriptions
-
-↓
-
-User jadi PRO
-```
-
----
-
-# Alternatif jika kamu memang ingin pakai RLS policy
-
-Bisa juga membuat policy:
-
-```sql
-CREATE POLICY "Users can insert own payments"
-ON payments
-FOR INSERT
-WITH CHECK (
- auth.uid() = user_id
-);
-```
-
-Tapi untuk kasus Docsly saya kurang menyarankan.
-
-Kenapa?
-
-Karena payment bukan data milik user yang bebas dibuat.
-
-Payment harus berasal dari:
-
-* Midtrans
-* server
-* webhook
-
-bukan dari browser.
-
----
-
-# Setelah diperbaiki, flow kamu akan menjadi:
-
-```
-User klik Pro
-        |
-        ↓
-API /payment/create
-        |
-        ↓
-Generate order_id
-        |
-        ↓
-Insert payments
-(using service role)
-        |
-        ↓
-Create Midtrans transaction
-        |
-        ↓
-Return snap_token
-        |
-        ↓
-User bayar
-        |
-        ↓
-Midtrans webhook
-        |
-        ↓
-Update payments status
-        |
-        ↓
-Update subscription
-```
-
----
-
-Dari error yang muncul, sebenarnya integrasi Midtrans kamu sudah melewati tahap pertama. Sekarang tinggal memperbaiki **arsitektur permission Supabase**. Untuk Docsly, saya sarankan dari sekarang pisahkan mana operasi **client-side** dan mana operasi **server-side**, terutama untuk hal sensitif seperti pembayaran, subscription, dan penggunaan AI.
+saya bisa menunjukkan **baris kode yang kemungkinan besar menyebabkan `Element type is invalid`**, bukan hanya menjelaskan penyebab umumnya.

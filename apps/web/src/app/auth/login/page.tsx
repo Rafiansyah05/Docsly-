@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { login, signInWithGoogle } from '@/lib/actions/auth';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -26,6 +27,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'account_deleted') {
+      setError('Akun Anda telah dihapus. Silakan daftar ulang.');
+    }
+  }, [searchParams]);
 
   async function clientAction(formData: FormData) {
     const result = await login(formData);
