@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import type { Request } from 'express';
 import { PaymentService } from './payment.service';
 export declare class PaymentController {
     private readonly paymentService;

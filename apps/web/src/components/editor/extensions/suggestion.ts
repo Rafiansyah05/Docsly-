@@ -114,6 +114,21 @@ export const Suggestion = Extension.create({
               });
               tr.insert(targetPos + targetNode.nodeSize, newNode);
             }
+          } else if (op.op === 'setDocumentSettings' && op.settings) {
+            // Apply Document Level Settings directly
+            if (op.settings.margin) {
+              const currentLayout = tr.doc.attrs.layout || { top: 96, bottom: 96, left: 96, right: 96 };
+              tr.setDocAttribute('layout', { ...currentLayout, ...op.settings.margin });
+            }
+            if (op.settings.pageSettings) {
+              const currentPageSettings = tr.doc.attrs.pageSettings || {};
+              const defaultSections = [{ startPage: 1, format: 'arabic', startNumber: 1 }];
+              tr.setDocAttribute('pageSettings', { 
+                ...currentPageSettings, 
+                ...op.settings.pageSettings,
+                sections: op.settings.pageSettings.sections || currentPageSettings.sections || defaultSections
+              });
+            }
           }
         });
 

@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+
 import { createClient } from '@/lib/supabase/server';
 import React from 'react';
 import { TemplateList } from '@/components/template-list';

@@ -1,4 +1,4 @@
-import { Response, Request } from 'express';
+import type { Response, Request } from 'express';
 import { ExportService } from './export.service';
 export declare class ExportController {
     private readonly exportService;

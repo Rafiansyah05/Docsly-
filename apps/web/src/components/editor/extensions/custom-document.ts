@@ -25,6 +25,28 @@ export const CustomDocument = Document.extend({
             'data-page-settings': JSON.stringify(attributes.pageSettings)
           };
         }
+      },
+      layout: {
+        default: { top: 96, bottom: 96, left: 96, right: 96 },
+        parseHTML: element => {
+          const layoutStr = element.getAttribute('data-layout');
+          if (layoutStr) {
+            try {
+              return JSON.parse(layoutStr);
+            } catch (e) {
+              return { top: 96, bottom: 96, left: 96, right: 96 };
+            }
+          }
+          return { top: 96, bottom: 96, left: 96, right: 96 };
+        },
+        renderHTML: attributes => {
+          if (!attributes.layout) {
+            return {};
+          }
+          return {
+            'data-layout': JSON.stringify(attributes.layout)
+          };
+        }
       }
     };
   }

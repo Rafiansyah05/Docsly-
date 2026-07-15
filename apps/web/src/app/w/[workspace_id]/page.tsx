@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+
 import { createClient } from '@/lib/supabase/server';
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';

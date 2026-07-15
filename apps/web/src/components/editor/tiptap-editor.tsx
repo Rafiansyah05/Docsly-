@@ -76,12 +76,31 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [layout, setLayout] = useState<DocumentLayout>({
-    top: 96,
-    bottom: 96,
-    left: 96,
-    right: 96,
+  const [layout, setLayout] = useState<DocumentLayout>(() => {
+    if (initialContent?.attrs?.layout) {
+      return initialContent.attrs.layout;
+    }
+    return {
+      top: 96,
+      bottom: 96,
+      left: 96,
+      right: 96,
+    };
   });
+
+  const handleLayoutChange = (newLayout: DocumentLayout) => {
+    setLayout(newLayout);
+    if (editor) {
+      let tr = editor.state.tr;
+      if (typeof tr.setDocAttribute === 'function') {
+        tr = tr.setDocAttribute('layout', newLayout);
+      } else {
+        editor.commands.updateAttributes('doc', { layout: newLayout });
+        return;
+      }
+      editor.view.dispatch(tr);
+    }
+  };
 
   // @ts-ignore - Bypass duplicate Tiptap type definitions in monorepo
   const editor = useEditor({
@@ -221,6 +240,27 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       editor.view.dispatch(editor.state.tr.setMeta('layoutUpdate', layout));
     }
   }, [editor, layout.top, layout.bottom, layout.left, layout.right]);
+
+  // Sync React layout state with Tiptap doc state (if AI changes it)
+  useEffect(() => {
+    if (!editor) return;
+    const syncLayout = () => {
+      const docLayout = editor.state.doc.attrs.layout;
+      if (
+        docLayout &&
+        (docLayout.top !== layout.top ||
+          docLayout.bottom !== layout.bottom ||
+          docLayout.left !== layout.left ||
+          docLayout.right !== layout.right)
+      ) {
+        setLayout(docLayout);
+      }
+    };
+    editor.on('update', syncLayout);
+    return () => {
+      editor.off('update', syncLayout);
+    };
+  }, [editor, layout]);
 
   useEffect(() => {
     if (!editor) return;
@@ -507,7 +547,28 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     }
   };
 
-  const pageSettings = editor?.state?.doc?.attrs?.pageSettings as PageSettings | null;
+  const [pageSettings, setPageSettings] = useState<PageSettings | null>(
+    initialContent?.attrs?.pageSettings as PageSettings | null || null
+  );
+
+  // Sync React pageSettings state with Tiptap doc state
+  useEffect(() => {
+    if (!editor) return;
+    const syncPageSettings = () => {
+      const docSettings = editor.state.doc.attrs.pageSettings;
+      setPageSettings(prev => JSON.stringify(prev) !== JSON.stringify(docSettings) ? docSettings : prev);
+    };
+    editor.on('update', syncPageSettings);
+    editor.on('transaction', syncPageSettings);
+    
+    // Initial sync
+    syncPageSettings();
+    
+    return () => {
+      editor.off('update', syncPageSettings);
+      editor.off('transaction', syncPageSettings);
+    };
+  }, [editor]);
 
   return (
     <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-zinc-950">
@@ -535,14 +596,14 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
           {/* Horizontal Ruler (Sticky Top) */}
           <div className="sticky top-0 z-30 mb-4 flex w-full justify-center bg-white dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800 py-1.5 shadow-sm">
             <div style={{ marginLeft: '24px' }}>
-              <HorizontalRuler layout={layout} onChange={setLayout} />
+              <HorizontalRuler layout={layout} onChange={handleLayoutChange} />
             </div>
           </div>
 
           <div className="flex flex-row items-start">
             {/* Vertical Ruler */}
             <div>
-              <VerticalRuler layout={layout} onChange={setLayout} totalPages={totalPages} />
+              <VerticalRuler layout={layout} onChange={handleLayoutChange} totalPages={totalPages} />
             </div>
 
             <div
@@ -566,25 +627,8 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
               {/* Background DOM Pages */}
               <div className="absolute inset-0 z-0 flex flex-col gap-[40px] pointer-events-none w-full">
                 {Array.from({ length: totalPages }).map((_, i) => {
-                  const pNumStr = formatPageNumber(i + 1, pageSettings);
-                  const alignClass = {
-                    left: 'text-left',
-                    center: 'text-center',
-                    right: 'text-right',
-                  }[pageSettings?.align || 'center'];
-
                   return (
-                    <div key={i} className="relative w-full h-[1123px] bg-white shadow-sm flex-shrink-0 pointer-events-auto group">
-                      {pageSettings?.enabled && pNumStr && (
-                        <div
-                          className={`absolute w-full px-12 ${pageSettings.position === 'top' ? 'top-8' : 'bottom-8'} ${alignClass} font-['Times_New_Roman',Times,serif] text-sm text-black cursor-pointer hover:bg-blue-50/50 transition-colors`}
-                          onDoubleClick={() => setShowPageNumberModal(true)}
-                          title="Klik Ganda untuk mengedit penomoran halaman"
-                        >
-                          {pNumStr}
-                        </div>
-                      )}
-                    </div>
+                    <div key={i} className="relative w-full h-[1123px] bg-white shadow-sm flex-shrink-0" />
                   );
                 })}
               </div>
@@ -602,6 +646,32 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
                 >
                   <EditorContent editor={editor} className="min-h-full" />
                 </div>
+              </div>
+
+              {/* Foreground Page Numbers Overlay */}
+              <div className="absolute inset-0 z-20 flex flex-col gap-[40px] pointer-events-none w-full">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const pNumStr = formatPageNumber(i + 1, pageSettings);
+                  const alignClass = {
+                    left: 'text-left',
+                    center: 'text-center',
+                    right: 'text-right',
+                  }[pageSettings?.align || 'center'];
+
+                  return (
+                    <div key={i} className="relative w-full h-[1123px] flex-shrink-0 pointer-events-none">
+                      {pageSettings?.enabled && pNumStr && (
+                        <div
+                          className={`absolute w-full px-12 ${pageSettings.position === 'top' ? 'top-8' : 'bottom-8'} ${alignClass} font-['Times_New_Roman',Times,serif] text-sm text-black cursor-pointer hover:bg-blue-50/50 transition-colors pointer-events-auto`}
+                          onDoubleClick={() => setShowPageNumberModal(true)}
+                          title="Klik Ganda untuk mengedit penomoran halaman"
+                        >
+                          {pNumStr}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

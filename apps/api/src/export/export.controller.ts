@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Res, Req, UnauthorizedException, BadRequestException, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response, Request } from 'express';
+import type { Response, Request } from 'express';
 import { ExportService } from './export.service';
 import { createClient } from '@supabase/supabase-js';
 
