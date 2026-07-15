@@ -11,6 +11,7 @@
     "lint": "npm run lint -w apps/web && npm run lint -w apps/api"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
     "@types/aws-lambda": "^8.10.162",
     "concurrently": "^8.2.2"
   },

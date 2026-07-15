@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Sparkles, CheckCircle2, Loader2, XCircle, ArrowRight, Bot } from 'lucide-react';
+import { Sparkles, CheckCircle2, Loader2, XCircle, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import Script from 'next/script';
+import { Claude } from '@lobehub/icons';
 
 export function PremiumModal({ compact = false, className = '', currentPlan = 'Free Plan' }: { compact?: boolean; className?: string; currentPlan?: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -273,7 +274,7 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
             {/* Footer Powered By Claude */}
             <div className="bg-slate-50/50 dark:bg-zinc-900/50 py-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-center gap-2 text-slate-500 dark:text-zinc-400 text-[12px]">
               <span>Powered by</span>
-              <Bot size={18} className="text-indigo-500" />
+              <Claude.Color size={18} />
               <span className="font-semibold text-slate-700 dark:text-zinc-300">Claude</span>
             </div>
           </>
