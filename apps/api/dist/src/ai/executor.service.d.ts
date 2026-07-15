@@ -16,9 +16,27 @@ export interface ProseMirrorBlockNode {
     content?: Array<ProseMirrorTextNode | ProseMirrorBlockNode>;
 }
 export interface BlockOperation {
-    op: 'insert' | 'replace' | 'delete';
-    index: number;
+    op: 'insert' | 'replace' | 'delete' | 'setDocumentSettings';
+    index?: number;
     node?: ProseMirrorBlockNode;
+    settings?: {
+        margin?: {
+            top?: number;
+            bottom?: number;
+            left?: number;
+            right?: number;
+        };
+        pageSettings?: {
+            enabled: boolean;
+            position?: 'top' | 'bottom';
+            align?: 'left' | 'center' | 'right';
+            sections?: Array<{
+                startPage: number;
+                format: 'arabic' | 'roman_lower' | 'roman_upper';
+                startNumber: number;
+            }>;
+        };
+    };
 }
 export declare class TaskExecutor {
     private configService;

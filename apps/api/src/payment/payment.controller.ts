@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Req, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { PaymentService } from './payment.service';
 import { createClient } from '@supabase/supabase-js';
 

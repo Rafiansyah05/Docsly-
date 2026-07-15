@@ -163,7 +163,18 @@ export async function sendOtp(email: string, fullName: string) {
 
     if (emailError) {
       console.error('Failed to send email:', emailError);
-      return { error: 'Gagal mengirim email OTP. Pastikan email yang Anda masukkan valid.' };
+      
+      // Fallback: If in development, bypass the email failure and print the OTP to console
+      // This ensures local testing of the authentication flow never blocks the developer.
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('\n=============================================');
+        console.warn(`[DEVELOPMENT MODE] Bypassing email send failure.`);
+        console.warn(`[DEVELOPMENT MODE] OTP for ${email} is: ${otp}`);
+        console.warn('=============================================\n');
+        return { success: true };
+      }
+
+      return { error: 'Gagal mengirim email OTP. Pastikan konfigurasi email atau API Key Anda valid.' };
     }
 
     return { success: true };

@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
 import { LandingLayout } from '@/components/landing/landing-layout';

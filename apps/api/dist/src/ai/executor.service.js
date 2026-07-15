@@ -186,9 +186,10 @@ Each operation MUST follow this JSON schema exactly:
 {
   "operations": [
     {
-      "op": "insert" | "replace" | "delete",
-      "index": number, // 0-indexed position in the document content array
-      "node": { // Required for "insert" and "replace"
+      "op": "insert" | "replace" | "delete" | "setDocumentSettings",
+      "index": number, // 0-indexed position in the document content array (Not needed for setDocumentSettings)
+      // "node" is required for "insert" and "replace"
+      "node": { 
         "type": "paragraph" | "heading" | "bulletList" | "orderedList" | "listItem" | "imagePlaceholder" | "table" | "tableRow" | "tableHeader" | "tableCell",
         "attrs": { 
           "level": number, 
@@ -203,6 +204,16 @@ Each operation MUST follow this JSON schema exactly:
             "marks": [ { "type": "bold" | "italic" | "underline" | "strike" } ]
           }
         ]
+      },
+      // "settings" is required ONLY for "setDocumentSettings"
+      "settings": {
+        "margin": { "top": 96, "bottom": 96, "left": 96, "right": 96 },
+        "pageSettings": {
+          "enabled": true,
+          "position": "bottom", // "top" | "bottom"
+          "align": "center", // "left" | "center" | "right"
+          "sections": [ { "startPage": 1, "format": "arabic", "startNumber": 1 } ] // format: "arabic" | "roman_lower" | "roman_upper"
+        }
       }
     }
   ],
@@ -221,6 +232,7 @@ CRITICAL RULES:
 9. [TABEL OTOMATIS]: Apabila Anda diinstruksikan untuk membandingkan atribut, menjelaskan jadwal rinci, atau mendeskripsikan data/spesifikasi numerik, Anda WAJIB membuat tabel Tiptap (\`type: "table"\` berisi \`tableRow\`, \`tableHeader\`, \`tableCell\`).
 10. [PLACEHOLDER GAMBAR]: Jika Anda diminta membuat arsitektur, diagram alir, atau dokumentasi visual, Anda WAJIB menyisipkan node \`type: "imagePlaceholder"\` dengan atribut \`caption: "Gambar [Bab].[Urutan] [Deskripsi]"\` alih-alih hanya menulis teks placeholder biasa.
 11. [SITASI]: Anda dapat menginsert node sitasi dengan format \`{ "type": "citation", "attrs": { "refId": "id-referensi", "style": "APA" } }\` jika diminta menyisipkan sitasi in-text. Tetapi ini hanya berlaku jika Anda sudah diberi ID referensi.
+12. [PENGATURAN HALAMAN & MARGIN]: Anda dapat mengubah nomor halaman dan margin melalui operasi \`setDocumentSettings\`. PENTING: Satuan di dalam JSON adalah PIXEL. 1 cm = 38 px, 1 inci = 96 px. Jika user meminta margin 3 cm, konversikan menjadi \`3 * 38 = 114\`. Jika perintah mengenai pengaturan halaman bersifat AMBIGU (misal: "atur margin" tanpa menyebut atas/bawah/angka pastinya), JANGAN keluarkan operasi apapun! Sebaliknya, ajukan pertanyaan klarifikasi melalui field \`explanation\`.
 ${assumptionRule}`;
     }
     getMockResponse(intent, prompt) {
