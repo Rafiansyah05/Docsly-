@@ -22,7 +22,9 @@ function SubmitButton() {
   );
 }
 
-export default function LoginPage() {
+import { Suspense } from 'react';
+
+function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -47,18 +49,7 @@ export default function LoginPage() {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full font-sans"
-    >
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Masuk</h2>
-        <p className="text-sm text-slate-500 mt-2">
-          Silakan masuk ke akun Anda untuk melanjutkan.
-        </p>
-      </div>
+    <>
       
       <form action={clientAction} className="space-y-5">
         {error && (
@@ -150,6 +141,28 @@ export default function LoginPage() {
           Daftar sekarang
         </Link>
       </p>
+    </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="w-full font-sans"
+    >
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Masuk</h2>
+        <p className="text-sm text-slate-500 mt-2">
+          Silakan masuk ke akun Anda untuk melanjutkan.
+        </p>
+      </div>
+      
+      <Suspense fallback={<div className="h-64 flex items-center justify-center text-sm text-slate-500">Memuat...</div>}>
+        <LoginForm />
+      </Suspense>
     </motion.div>
   );
 }
