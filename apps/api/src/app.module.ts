@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AiAgentModule } from './ai/ai.module';
 import { CitationModule } from './citation/citation.module';
+import { ExportModule } from './export/export.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { CitationModule } from './citation/citation.module';
     }),
     AiAgentModule,
     CitationModule,
+    ExportModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

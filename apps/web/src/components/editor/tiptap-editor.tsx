@@ -440,9 +440,15 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       } catch (e) {
         console.warn('Failed to inject page breaks for DOCX', e);
       }
-      const response = await fetch('/api/export/docx', {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/export/docx`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
         body: JSON.stringify({ title, content: jsonDoc }),
       });
       if (!response.ok) throw new Error('Export failed');
@@ -468,9 +474,15 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     try {
       const titleInput = document.querySelector('input[placeholder="Ketik judul dokumen..."]') as HTMLInputElement;
       const title = titleInput && titleInput.value.trim() !== '' ? titleInput.value : 'Dokumen';
-      const response = await fetch('/api/export/pdf', {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/export/pdf`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
         body: JSON.stringify({
           title,
           html: editor.getHTML(),

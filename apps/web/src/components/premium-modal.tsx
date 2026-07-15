@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Sparkles, CheckCircle2, Loader2, XCircle, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 import Script from 'next/script';
 export function PremiumModal({ compact = false, className = '', currentPlan = 'Free Plan' }: { compact?: boolean; className?: string; currentPlan?: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,9 +34,15 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
     try {
       setLoadingPlan(plan);
 
-      const response = await fetch('/api/payment/create', {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/payment/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
         body: JSON.stringify({ plan })
       });
 
@@ -53,9 +60,15 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
             // Sinkronisasi status manual
             if (result.order_id) {
               try {
-                await fetch('/api/payment/sync-status', {
+                const supabase = createClient();
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/payment/sync-status`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token || ''}`
+                  },
                   body: JSON.stringify({ order_id: result.order_id })
                 });
               } catch (e) {

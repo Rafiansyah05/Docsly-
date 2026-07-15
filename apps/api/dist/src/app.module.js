@@ -13,6 +13,8 @@ const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const ai_module_1 = require("./ai/ai.module");
 const citation_module_1 = require("./citation/citation.module");
+const export_module_1 = require("./export/export.module");
+const payment_module_1 = require("./payment/payment.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -25,6 +27,8 @@ exports.AppModule = AppModule = __decorate([
             }),
             ai_module_1.AiAgentModule,
             citation_module_1.CitationModule,
+            export_module_1.ExportModule,
+            payment_module_1.PaymentModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
