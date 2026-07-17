@@ -1,395 +1,502 @@
-Dari log yang kamu kirim, sebenarnya ada satu petunjuk yang sangat penting:
+Saya sudah analisis seluruh log build Vercel yang Anda kirim. Error ini **bukan berasal dari Vercel**, melainkan berasal dari kode Next.js di project Docsly. Vercel hanya menjadi tempat pertama yang menjalankan production build sehingga error tersebut muncul.
 
-```text
-POST /auth/register 200 in 2465ms
-```
-
-Artinya **proses registrasi berhasil**. Endpoint `/auth/register` tidak mengalami error.
-
-Error baru muncul setelahnya:
-
-```text
-Element type is invalid:
-expected a string (for built-in components)
-or a class/function (for composite components)
-but got: undefined.
-```
-
-Lalu diikuti
-
-```text
-GET /w 500
-```
-
-Jadi kemungkinan besar **bukan masalah Supabase atau register**, tetapi **halaman yang dibuka setelah register** (`/w`) gagal dirender.
+Berikut analisisnya berdasarkan prioritas.
 
 ---
 
-# Penyebab paling umum
+# Ringkasan Hasil Analisis
 
-React hanya bisa merender:
-
-```tsx
-<div />
-<Button />
-<MyComponent />
-```
-
-tetapi jika yang dirender ternyata
-
-```tsx
-undefined
-```
-
-maka akan muncul error persis seperti ini.
-
-Misalnya
-
-```tsx
-<MyComponent />
-```
-
-padahal
-
-```tsx
-const MyComponent = undefined
-```
-
-hasilnya
+Status build:
 
 ```
-Element type is invalid
+✅ Install dependency berhasil
+✅ Compile berhasil
+✅ Type check berhasil
+❌ Gagal saat prerendering static pages
 ```
+
+Artinya:
+
+* dependency bukan masalah
+* package.json bukan masalah
+* TypeScript bukan masalah
+* build webpack bukan masalah
+
+Masalah muncul ketika Next.js mencoba melakukan:
+
+```
+Collecting page data
+↓
+Generating static pages
+↓
+Prerender 404
+Prerender 500
+Prerender _not-found
+↓
+FAIL
+```
+
+Jadi error terjadi ketika rendering halaman.
 
 ---
 
-# Kemungkinan 1 (Paling sering)
+# PRIORITAS 1 (Penyebab paling besar)
 
-## Salah export/import component
+## Error
 
-Misalnya file
+```
+Error:
 
-```tsx
-components/Navbar.tsx
-
-export default function Navbar() {}
+<Html> should not be imported outside of pages/_document
 ```
 
-tetapi dipanggil
+ini adalah penyebab utama.
 
-```tsx
-import { Navbar } from "@/components/Navbar"
+Log:
+
+```
+Error occurred prerendering page "/404"
+
+Error occurred prerendering page "/500"
+
+Error occurred prerendering page "/_not-found"
 ```
 
-Karena dia default export, maka harus
-
-```tsx
-import Navbar from "@/components/Navbar"
-```
-
-Sebaliknya
-
-```tsx
-export function Navbar(){}
-```
-
-harus
-
-```tsx
-import { Navbar } from "@/components/Navbar"
-```
-
-Bukan
-
-```tsx
-import Navbar from ...
-```
-
-Ini adalah penyebab nomor satu dari error tersebut.
-
----
-
-# Kemungkinan 2
-
-## Salah import icon lucide/react-icons
-
-Misalnya
+Artinya ada file yang mengimpor
 
 ```tsx
 import {
-    Google,
-    Github
-} from "lucide-react"
+Html,
+Head,
+Main,
+NextScript
+} from "next/document"
 ```
 
-Padahal
+padahal file tersebut **BUKAN**
 
-`Google` tidak ada.
-
-Akibatnya
-
-```tsx
-<Google />
 ```
-
-=
-
-```tsx
-undefined
-```
-
-Error langsung muncul.
-
-Coba cek semua icon yang baru kamu tambahkan.
-
----
-
-# Kemungkinan 3
-
-## Salah import UI Component
-
-Misalnya
-
-```tsx
-import {
-    DialogContent,
-    DialogTitle,
-    DialogDescription
-} from "@/components/ui/dialog"
-```
-
-padahal file dialog hanya export
-
-```tsx
-Dialog
-DialogTrigger
-DialogContent
-```
-
-sedangkan
-
-```tsx
-DialogDescription
-```
-
-tidak ada.
-
-Saat dirender
-
-```tsx
-<DialogDescription />
-```
-
-langsung error.
-
----
-
-# Kemungkinan 4
-
-## Menggunakan dynamic import yang salah
-
-Misalnya
-
-```tsx
-const Editor = dynamic(() => import("./Editor"))
-```
-
-Padahal file
-
-```tsx
-export const Editor = ...
-```
-
-bukan default export.
-
-Harusnya
-
-```tsx
-dynamic(() =>
-    import("./Editor").then(mod => mod.Editor)
-)
+pages/_document.tsx
 ```
 
 ---
 
-# Kemungkinan 5
+## Yang harus dicek AI
 
-## Salah import SVG
-
-Misalnya
-
-```tsx
-import Logo from "./logo.svg"
-```
-
-Padahal project belum memakai SVGR.
-
-Yang didapat
+Cari seluruh project:
 
 ```
-Logo = undefined
-```
-
-Lalu
-
-```tsx
-<Logo />
-```
-
-Error.
-
----
-
-# Kemungkinan 6
-
-## Komponen di halaman `/w`
-
-Karena log mengatakan
-
-```
-GET /w 500
-```
-
-berarti error terjadi ketika Next.js mencoba merender
-
-```
-app/w/page.tsx
+import { Html
 ```
 
 atau
 
 ```
-app/w/layout.tsx
+from "next/document"
 ```
 
-atau salah satu component yang dipakai di sana.
-
----
-
-# Cara menemukan komponen yang rusak
-
-Cara tercepat.
-
-Di file
+Kemungkinan ditemukan di:
 
 ```
-app/w/page.tsx
-```
-
-sementara ubah menjadi
-
-```tsx
-export default function Page() {
-    return <div>test</div>;
-}
-```
-
-Kalau sekarang
-
-```
-GET /w
-```
-
-berhasil
-
-berarti masalah memang berasal dari salah satu component yang dipakai di halaman itu.
-
----
-
-Lalu tambahkan satu-satu
-
-```tsx
-return (
-<>
-    <Sidebar />
-</>
-)
-```
-
-Kalau error muncul
-
-berarti Sidebar.
-
-Kalau tidak
-
-```tsx
-<>
-    <Sidebar />
-    <Navbar />
-</>
-```
-
-Terus begitu.
-
-Biasanya dalam 2–5 menit sudah ketemu komponen yang `undefined`.
-
----
-
-# Cara debug lebih cepat
-
-Tambahkan log sebelum `return`.
-
-Misalnya
-
-```tsx
-console.log({
-    Sidebar,
-    Navbar,
-    Editor,
-    Toolbar,
-});
-```
-
-Kalau hasilnya
-
-```text
-{
- Sidebar: ƒ
- Navbar: ƒ
- Editor: undefined
- Toolbar: ƒ
-}
-```
-
-langsung ketahuan.
-
----
-
-# Hal lain yang perlu diperhatikan
-
-Karena error muncul **setelah** `POST /auth/register` sukses, coba cek apakah setelah registrasi kamu melakukan:
-
-```tsx
-router.push("/w")
+app/layout.tsx
 ```
 
 atau
 
-```tsx
-redirect("/w")
+```
+app/not-found.tsx
 ```
 
-Kalau iya, fokuskan pemeriksaan pada:
+atau
 
-* `app/w/page.tsx`
-* `app/w/layout.tsx`
-* semua komponen yang di-import oleh kedua file tersebut
-* provider atau layout yang membungkus route `/w`
+```
+app/error.tsx
+```
+
+atau
+
+```
+components/*
+```
+
+atau
+
+```
+404.tsx
+```
+
+Semua harus dihapus.
 
 ---
 
-## Dari pengalaman, saya akan memberi probabilitas penyebab seperti ini:
+Yang BENAR
 
-1. **Default vs named import/export salah** → **≈60%**
-2. **Ada komponen UI atau icon yang tidak diekspor tetapi tetap di-import** → **≈20%**
-3. **Dynamic import salah** → **≈10%**
-4. **SVG atau asset di-render sebagai komponen React** → **≈5%**
-5. **Penyebab lain** → **≈5%**
+Untuk App Router
 
-Kalau kamu bisa kirim isi dari:
+gunakan
 
-* `app/w/page.tsx`
-* `app/w/layout.tsx` (jika ada)
-* atau komponen utama yang baru saja kamu ubah sebelum error muncul,
+```tsx
+<html lang="en">
+<body>
+```
 
-saya bisa menunjukkan **baris kode yang kemungkinan besar menyebabkan `Element type is invalid`**, bukan hanya menjelaskan penyebab umumnya.
+bukan
+
+```tsx
+<Html>
+<Head>
+```
+
+---
+
+# PRIORITAS 2
+
+## Error
+
+```
+Cannot read properties of null
+(reading 'useContext')
+```
+
+ini error kedua.
+
+Biasanya berasal dari:
+
+```
+React Context
+```
+
+yang dipanggil saat prerender.
+
+Misalnya
+
+```tsx
+const auth = useContext(AuthContext)
+```
+
+tetapi
+
+```
+<AuthProvider>
+```
+
+belum membungkus halaman tersebut.
+
+---
+
+Kemungkinan:
+
+```
+ThemeProvider
+
+SupabaseProvider
+
+EditorProvider
+
+SidebarProvider
+
+TooltipProvider
+
+QueryClientProvider
+
+SessionProvider
+```
+
+salah satu tidak tersedia ketika
+
+```
+404
+500
+not-found
+```
+
+dirender.
+
+---
+
+AI harus mencari
+
+```
+useContext(
+```
+
+dan memastikan seluruh provider sudah membungkus
+
+```
+app/layout.tsx
+```
+
+---
+
+# PRIORITAS 3
+
+## Error
+
+```
+404
+500
+_not-found
+```
+
+seluruh halaman gagal dirender.
+
+Artinya kemungkinan besar
+
+```
+app/not-found.tsx
+```
+
+atau
+
+```
+app/error.tsx
+```
+
+menggunakan
+
+```
+EditorContext
+
+ThemeContext
+
+SupabaseContext
+
+AuthContext
+```
+
+padahal provider belum ada.
+
+---
+
+# PRIORITAS 4
+
+Ada warning
+
+```
+A Node.js API is used
+
+process.version
+
+not supported in Edge Runtime
+```
+
+berasal dari
+
+```
+@supabase/supabase-js
+```
+
+Import trace
+
+```
+@supabase/supabase-js
+
+↓
+
+@supabase/ssr
+
+↓
+
+createBrowserClient
+```
+
+Kalau middleware memakai
+
+```
+runtime = edge
+```
+
+sementara ada library Node
+
+maka nanti deployment bisa gagal.
+
+AI perlu mengecek
+
+```
+middleware.ts
+```
+
+dan
+
+```
+export const runtime = 'edge'
+```
+
+atau
+
+```
+export const runtime = 'experimental-edge'
+```
+
+---
+
+# PRIORITAS 5
+
+Ada warning
+
+```
+NODE_ENV non-standard
+```
+
+Artinya di Environment Variable mungkin ada
+
+```
+NODE_ENV=development
+```
+
+atau
+
+```
+NODE_ENV=local
+```
+
+di Vercel.
+
+Seharusnya
+
+```
+production
+```
+
+atau
+
+tidak perlu di-set sama sekali.
+
+Ini bukan penyebab build gagal tetapi perlu dibersihkan.
+
+---
+
+# PRIORITAS 6
+
+Ada banyak dependency deprecated
+
+Contohnya
+
+```
+glob
+
+eslint
+
+rimraf
+
+whatwg
+
+next-on-pages
+```
+
+Tidak menyebabkan build gagal.
+
+Bisa diabaikan sementara.
+
+---
+
+# PRIORITAS 7
+
+Compile berhasil
+
+Log:
+
+```
+Compiled successfully
+```
+
+Berarti
+
+Semua
+
+```
+syntax
+
+typescript
+
+jsx
+
+tailwind
+
+webpack
+```
+
+sudah benar.
+
+Jadi AI tidak perlu mencari syntax error.
+
+---
+
+# PRIORITAS 8
+
+Type Checking berhasil
+
+```
+Checking validity of types
+```
+
+selesai tanpa error.
+
+Berarti
+
+```
+TypeScript
+
+Props
+
+Interfaces
+
+Generics
+```
+
+semuanya lolos.
+
+---
+
+# PRIORITAS 9
+
+Install dependency berhasil
+
+```
+added 1381 packages
+```
+
+Artinya
+
+```
+package.json
+
+package-lock.json
+
+workspace
+
+npm install
+```
+
+semuanya normal.
+
+---
+
+# Kemungkinan Lokasi Error
+
+Saya urutkan berdasarkan probabilitas.
+
+| Prioritas | Lokasi                   | Kemungkinan          |
+| --------- | ------------------------ | -------------------- |
+| ⭐⭐⭐⭐⭐     | app/layout.tsx           | Sangat tinggi        |
+| ⭐⭐⭐⭐⭐     | app/not-found.tsx        | Sangat tinggi        |
+| ⭐⭐⭐⭐⭐     | app/error.tsx            | Sangat tinggi        |
+| ⭐⭐⭐⭐⭐     | components/Layout.tsx    | Sangat tinggi        |
+| ⭐⭐⭐⭐      | components/Providers.tsx | Tinggi               |
+| ⭐⭐⭐⭐      | middleware.ts            | Tinggi               |
+| ⭐⭐⭐       | AuthProvider             | Sedang               |
+| ⭐⭐⭐       | ThemeProvider            | Sedang               |
+| ⭐⭐        | SupabaseProvider         | Rendah               |
+| ⭐         | package.json             | Hampir tidak mungkin |
+
+---
+
+# Perintah yang bisa diberikan ke AI Agent
+
+Berikut prompt yang dapat langsung Anda berikan ke AI Agent:
+
+> Analisis seluruh project Next.js (App Router) untuk menemukan penyebab kegagalan build di Vercel. Fokus utama pada error `<Html> should not be imported outside of pages/_document`. Cari seluruh import dari `next/document` di semua file selain `pages/_document.tsx`, lalu ganti dengan struktur App Router (`<html>` dan `<body>`) atau hapus jika tidak diperlukan. Setelah itu analisis seluruh penggunaan `useContext()` yang menyebabkan `Cannot read properties of null (reading 'useContext')`, terutama pada `app/layout.tsx`, `app/error.tsx`, `app/not-found.tsx`, `Providers`, `AuthProvider`, `ThemeProvider`, `EditorProvider`, dan provider global lainnya. Pastikan semua context dibungkus oleh provider sebelum dipakai, termasuk saat prerender halaman `/404`, `/500`, dan `/_not-found`. Selanjutnya periksa `middleware.ts` serta penggunaan `@supabase/ssr` agar tidak menjalankan API Node.js (`process.version`) pada Edge Runtime. Verifikasi juga bahwa tidak ada `NODE_ENV` non-standar di konfigurasi Vercel. Setelah seluruh perbaikan selesai, jalankan `npm run build` secara lokal hingga build berhasil tanpa warning kritis maupun error prerender, sehingga deployment ke Vercel dapat berjalan sukses.
+
+## Satu hal yang paling penting
+
+Dari seluruh log, **90% kemungkinan penyebab build gagal adalah adanya import `Html` dari `next/document` di lokasi yang tidak semestinya**. Error ini muncul lebih dulu, lalu memicu kegagalan prerender halaman `404`, `500`, dan `_not-found`. Setelah masalah tersebut diperbaiki, barulah jika masih ada error, fokus berikutnya adalah `useContext()` yang dijalankan tanpa provider saat proses prerender. 
