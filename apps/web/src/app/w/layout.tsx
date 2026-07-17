@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation';
 import React from 'react';
 import { WorkspaceShell } from '@/components/workspace-shell';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
   const {
