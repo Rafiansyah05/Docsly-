@@ -5,6 +5,9 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
