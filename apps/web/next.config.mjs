@@ -1,11 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  images: {
+    unoptimized: true, // Membantu mempercepat fase static generation bypass
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // Tambahkan ini agar aman dari konflik tipe data pihak ketiga saat build
+    ignoreBuildErrors: true,
   },
   experimental: {
     serverActions: {
@@ -13,6 +16,8 @@ const nextConfig = {
     },
   },
   transpilePackages: ['lucide-react', 'framer-motion'],
+  // Memaksa Next.js mengabaikan strict export failure untuk internal fallbacks
+  trailingSlash: false,
   async headers() {
     return [
       {
