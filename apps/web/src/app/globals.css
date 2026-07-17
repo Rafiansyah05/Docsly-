@@ -224,6 +224,28 @@
   /* 
    * Custom Ordered Lists
    */
+  /* Multi-level lists (e.g. 1.1.1.) */
+  .prose ol[data-list-type='multi-level'] {
+    list-style-type: none;
+    counter-reset: multi-level-counter var(--list-start, 0);
+  }
+
+  .prose ol[data-list-type='multi-level'] > li {
+    position: relative;
+  }
+
+  .prose ol[data-list-type='multi-level'] > li::before {
+    counter-increment: multi-level-counter;
+    content: var(--list-prefix, "") counter(multi-level-counter) ".";
+    position: absolute;
+    right: 100%;
+    padding-right: 0.5rem;
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 400;
+    color: inherit;
+  }
+
   .prose ol[data-list-type='lower-alpha'] {
     list-style-type: lower-alpha;
   }

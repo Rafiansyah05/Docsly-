@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { CheckCircle2, Copy, Loader2, RefreshCcw, Wallet, Building2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function PaymentStatusPage() {
+function PaymentStatusContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('order_id');
@@ -285,5 +285,20 @@ export default function PaymentStatusPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function PaymentStatusPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-slate-500 flex flex-col items-center">
+          <Loader2 className="w-8 h-8 animate-spin mb-4" />
+          <p>Memuat status pembayaran...</p>
+        </div>
+      </div>
+    }>
+      <PaymentStatusContent />
+    </Suspense>
   );
 }
