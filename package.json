@@ -7,12 +7,11 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w apps/web\" \"npm run start:dev -w apps/api\"",
-    "build": "npm run build -w apps/web && npm run build -w apps/api",
+    "build": "npm run build -w apps/web",
     "build:pages": "cd apps/web && next-on-pages",
     "lint": "npm run lint -w apps/web && npm run lint -w apps/api"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
     "@types/aws-lambda": "^8.10.162",
     "concurrently": "^8.2.2"
   },

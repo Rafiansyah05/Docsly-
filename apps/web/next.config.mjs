@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
   experimental: {
+    missingSuspenseWithCSRBypass: true,
     serverActions: {
       bodySizeLimit: '20mb',
     },
