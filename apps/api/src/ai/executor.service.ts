@@ -90,46 +90,58 @@ export class TaskExecutor {
     documentContext: string,
     systemPrompt: string,
   ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
-    // Model Selection for Cost Efficiency
-    // Light tasks use Haiku (very fast, very cheap)
-    // Complex tasks use Sonnet 5 (powerful for coding/writing)
     const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
-    const model = isLightTask 
-      ? 'claude-haiku-4-5' 
-      : 'claude-sonnet-5';
-      
-    // Limit max_tokens to prevent billing spikes, but give enough for JSON
+    const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
     const maxTokens = isLightTask ? 4096 : 8192;
 
-    const response = await this.anthropic.messages.create({
-      model,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Document Current State:\n${documentContext}\n\nUser Request: ${prompt}`,
-        },
-      ],
-    });
+    const messages: any[] = [
+      {
+        role: 'user',
+        content: `Document Current State:\n${documentContext}\n\nUser Request: ${prompt}`,
+      },
+    ];
 
-    const textBlock = response.content.find((c: any) => c.type === 'text');
-    const text = textBlock ? (textBlock as any).text : '';
-    
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}') + 1;
+    let fullText = '';
+    let isComplete = false;
+    let loops = 0;
+    const MAX_LOOPS = 4; // Boleh sampai ~32k output tokens
+
+    while (!isComplete && loops < MAX_LOOPS) {
+      loops++;
+      const response = await this.anthropic.messages.create({
+        model,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: messages,
+      });
+
+      const textBlock = response.content.find((c: any) => c.type === 'text');
+      const text = textBlock ? (textBlock as any).text : '';
+      fullText += text;
+
+      if (response.stop_reason === 'max_tokens') {
+        messages.push({ role: 'assistant', content: text });
+        messages.push({ 
+          role: 'user', 
+          content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.' 
+        });
+      } else {
+        isComplete = true;
+      }
+    }
+
+    const jsonStart = fullText.indexOf('{');
+    const jsonEnd = fullText.lastIndexOf('}') + 1;
     if (jsonStart !== -1 && jsonEnd !== -1) {
-      let jsonStr = text.substring(jsonStart, jsonEnd);
-      // Clean up common Claude JSON issues like unescaped newlines in text
-      // jsonStr = jsonStr.replace(/\n/g, '\\n');
+      let jsonStr = fullText.substring(jsonStart, jsonEnd);
       try {
         return JSON.parse(jsonStr);
       } catch (parseError: any) {
         console.error('JSON Parse Error:', parseError);
-        console.error('Raw Claude Output:', text);
+        console.error('Raw Claude Output:', fullText);
         return {
           operations: [],
-          explanation: 'Maaf, balasan AI terlalu panjang sehingga terpotong di tengah jalan. Mohon coba persempit instruksi Anda atau mintalah AI untuk meringkas secara bertahap.'
+          explanation: 'Maaf, balasan AI terlalu panjang atau memiliki format yang salah sehingga gagal diproses secara sempurna. Mohon persempit instruksi Anda.'
         };
       }
     }

@@ -8,6 +8,20 @@ const nextConfig = {
       bodySizeLimit: '20mb',
     },
   },
+  transpilePackages: ['lucide-react', 'framer-motion'],
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://snap-assets.midtrans.com https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://pay.google.com;"
+          }
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

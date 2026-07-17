@@ -5,29 +5,29 @@ export type PlanType = 'free' | 'pro' | 'premium' | 'trial';
 
 export const PLAN_LIMITS = {
   free: {
-    ai_credits: 10,
-    ai_cooldown_hours: 8,
-    citations: 10, // Not explicitly mentioned, assume 10 for free, or limit AI credits
-    citations_cooldown_hours: 8,
+    ai_credits: 25,
+    ai_cooldown_hours: 3,
+    citations: 25, 
+    citations_cooldown_hours: 3,
     storage_mb: 100,
   },
   pro: {
     ai_credits: 500,
-    ai_cooldown_hours: 4,
+    ai_cooldown_hours: 1,
     citations: 50,
-    citations_cooldown_hours: 4,
+    citations_cooldown_hours: 1,
     storage_mb: 2000,
   },
   premium: {
     ai_credits: 1500,
-    ai_cooldown_hours: 1,
+    ai_cooldown_hours: 0.5,
     citations: -1, // -1 means unlimited
     citations_cooldown_hours: 0,
     storage_mb: 20000,
   },
   trial: {
-    ai_credits: 10,
-    ai_cooldown_hours: 8,
+    ai_credits: 25,
+    ai_cooldown_hours: 3,
     citations: -1, // Hak akses penuh untuk fitur
     citations_cooldown_hours: 0,
     storage_mb: 20000,

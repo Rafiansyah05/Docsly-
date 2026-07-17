@@ -30,71 +30,10 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
     }
   }, []);
 
-  const handleUpgrade = async (plan: string) => {
-    try {
-      setLoadingPlan(plan);
-
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/payment/create`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({ plan })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Terjadi kesalahan saat memproses pembayaran');
-      }
-
-      // @ts-ignore
-      if (window.snap) {
-        // @ts-ignore
-        window.snap.pay(data.token, {
-          onSuccess: async function (result: any) {
-            // Sinkronisasi status manual
-            if (result.order_id) {
-              try {
-                const supabase = createClient();
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/payment/sync-status`, {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token || ''}`
-                  },
-                  body: JSON.stringify({ order_id: result.order_id })
-                });
-              } catch (e) {
-                console.error("Gagal sinkronisasi manual", e);
-              }
-            }
-            setPaymentResult({ status: 'success' });
-          },
-          onPending: function (result: any) {
-            toast.info('Menunggu pembayaran diselesaikan.');
-          },
-          onError: function (result: any) {
-            setPaymentResult({ status: 'failed', message: 'Pembayaran gagal atau ditolak. Silakan coba lagi.' });
-          },
-          onClose: function () {
-            setLoadingPlan(null);
-          }
-        });
-      } else {
-        toast.error('Sistem pembayaran belum siap, silakan muat ulang halaman.');
-        setLoadingPlan(null);
-      }
-    } catch (error: any) {
-      toast.error(error.message);
-      setLoadingPlan(null);
-    }
+  const handleUpgrade = (plan: string) => {
+    setLoadingPlan(plan);
+    // Redirect ke custom payment page
+    window.location.href = `/payment/checkout?plan=${plan}`;
   };
 
   const isPro = currentPlan.includes('Pro');

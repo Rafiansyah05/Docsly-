@@ -22,7 +22,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   ] = await Promise.all([
     supabase.from('workspaces').select('*').eq('user_id', user.id).order('dibuat_pada', { ascending: false }),
     supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('subscriptions').select('*').eq('user_id', user.id).single(),
+    supabase.from('subscriptions').select('*').eq('user_id', user.id).eq('status', 'active').maybeSingle(),
     supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false)
   ]);
 

@@ -42,10 +42,10 @@ let PaymentController = class PaymentController {
     }
     async createTransaction(req, body) {
         const user = await this.verifyAuth(req);
-        const { plan } = body;
+        const { plan, paymentMethod } = body;
         if (!plan)
             throw new common_1.BadRequestException('Plan is required');
-        return this.paymentService.createTransaction(user, plan);
+        return this.paymentService.createTransaction(user, plan, paymentMethod || 'bca_va');
     }
     async syncStatus(req, body) {
         const user = await this.verifyAuth(req);
@@ -53,6 +53,12 @@ let PaymentController = class PaymentController {
         if (!order_id)
             throw new common_1.BadRequestException('Order ID is required');
         return this.paymentService.syncStatus(user.id, order_id);
+    }
+    async webhook(body) {
+        const { order_id } = body;
+        if (!order_id)
+            return { success: false, message: 'No order_id' };
+        return this.paymentService.syncStatus(null, order_id);
     }
 };
 exports.PaymentController = PaymentController;
@@ -72,6 +78,13 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], PaymentController.prototype, "syncStatus", null);
+__decorate([
+    (0, common_1.Post)('webhook'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], PaymentController.prototype, "webhook", null);
 exports.PaymentController = PaymentController = __decorate([
     (0, common_1.Controller)('api/payment'),
     __metadata("design:paramtypes", [payment_service_1.PaymentService])

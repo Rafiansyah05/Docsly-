@@ -49,17 +49,20 @@ const supabase_js_1 = require("@supabase/supabase-js");
 const midtransClient = require('midtrans-client');
 let PaymentService = class PaymentService {
     snap;
+    coreApi;
     constructor() {
-        this.snap = new midtransClient.Snap({
+        const config = {
             isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
             serverKey: process.env.MIDTRANS_SERVER_KEY || '',
             clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
-        });
+        };
+        this.snap = new midtransClient.Snap(config);
+        this.coreApi = new midtransClient.CoreApi(config);
     }
     getSupabaseAdmin() {
         return (0, supabase_js_1.createClient)(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     }
-    async createTransaction(user, plan) {
+    async createTransaction(user, plan, paymentMethod = 'bca_va') {
         if (plan !== 'Pro' && plan !== 'Premium') {
             throw new Error('Invalid plan selected');
         }
@@ -97,19 +100,52 @@ let PaymentService = class PaymentService {
                 }
             ]
         };
-        const transaction = await this.snap.createTransaction(parameter);
-        return {
-            token: transaction.token,
-            redirect_url: transaction.redirect_url
-        };
+        if (paymentMethod === 'bca_va') {
+            parameter.payment_type = 'bank_transfer';
+            parameter.bank_transfer = { bank: 'bca' };
+        }
+        else if (paymentMethod === 'mandiri_va') {
+            parameter.payment_type = 'echannel';
+            parameter.echannel = { bill_info1: 'Payment For:', bill_info2: 'Docsly Subscription' };
+        }
+        else if (paymentMethod === 'bni_va') {
+            parameter.payment_type = 'bank_transfer';
+            parameter.bank_transfer = { bank: 'bni' };
+        }
+        else if (paymentMethod === 'qris') {
+            parameter.payment_type = 'qris';
+        }
+        else if (paymentMethod === 'gopay') {
+            parameter.payment_type = 'gopay';
+        }
+        else {
+            parameter.payment_type = 'bank_transfer';
+            parameter.bank_transfer = { bank: 'bca' };
+        }
+        try {
+            const transaction = await this.coreApi.charge(parameter);
+            return {
+                order_id: orderId,
+                payment_type: paymentMethod,
+                transaction_status: transaction.transaction_status,
+                va_numbers: transaction.va_numbers,
+                bill_key: transaction.bill_key,
+                biller_code: transaction.biller_code,
+                actions: transaction.actions,
+            };
+        }
+        catch (err) {
+            console.error("CoreAPI charge failed:", err?.message || err);
+            throw new Error('Failed to process payment with Midtrans');
+        }
     }
     async syncStatus(userId, orderId) {
         const adminSupabase = this.getSupabaseAdmin();
-        const { data: orderInfo } = await this.snap.transaction.status(orderId).catch(() => ({ data: null }));
+        const orderInfo = await this.coreApi.transaction.status(orderId).catch(() => null);
+        let paymentStatus = 'pending';
         if (orderInfo) {
             const transactionStatus = orderInfo.transaction_status;
             const fraudStatus = orderInfo.fraud_status;
-            let paymentStatus = 'pending';
             if (transactionStatus === 'capture') {
                 paymentStatus = fraudStatus === 'challenge' ? 'challenge' : 'success';
             }
@@ -128,14 +164,39 @@ let PaymentService = class PaymentService {
                 if (paymentRecord && paymentRecord.status !== 'success') {
                     await adminSupabase
                         .from('payments')
-                        .update({ status: 'success', payment_method: orderInfo.payment_type })
+                        .update({ status: 'success' })
                         .eq('order_id', orderId);
+                    const targetUserId = userId || paymentRecord.user_id;
                     const planType = paymentRecord.plan_type === 'pro' ? 'Pro Plan' : 'Premium Plan';
-                    await adminSupabase.from('profiles').update({ subscription_plan: planType }).eq('id', userId);
+                    if (targetUserId) {
+                        await adminSupabase.from('profiles').update({ subscription_plan: planType }).eq('id', targetUserId);
+                        const expiryDate = new Date();
+                        expiryDate.setMonth(expiryDate.getMonth() + 1);
+                        await adminSupabase
+                            .from('subscriptions')
+                            .update({ status: 'expired' })
+                            .eq('user_id', targetUserId)
+                            .eq('status', 'active');
+                        await adminSupabase.from('subscriptions').insert({
+                            user_id: targetUserId,
+                            plan_type: paymentRecord.plan_type,
+                            status: 'active',
+                            berlaku_sampai: expiryDate.toISOString()
+                        });
+                        await adminSupabase
+                            .from('user_limits')
+                            .update({
+                            ai_credits_used: 0,
+                            ai_limit_reset_at: null,
+                            citations_used: 0,
+                            citations_limit_reset_at: null
+                        })
+                            .eq('user_id', targetUserId);
+                    }
                 }
             }
         }
-        return { success: true };
+        return { success: true, status: paymentStatus };
     }
 };
 exports.PaymentService = PaymentService;

@@ -18,6 +18,7 @@ import { PageLayout } from './extensions/page-layout';
 import { FontSize } from './extensions/font-size';
 import { FoldableHeading } from './extensions/foldable-heading';
 import { CustomOrderedList } from './extensions/custom-ordered-list';
+import { CustomListItem } from './extensions/custom-list-item';
 import { LineHeight } from './extensions/line-height';
 import { Indent } from './extensions/indent';
 import Superscript from '@tiptap/extension-superscript';
@@ -110,9 +111,11 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         document: false,
         heading: false,
         orderedList: false,
+        listItem: false,
       }),
       FoldableHeading,
       CustomOrderedList,
+      CustomListItem,
       Underline,
       Suggestion,
       Table.configure({
@@ -483,7 +486,8 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/export/docx`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${baseUrl}/api/export/docx`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -517,7 +521,8 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/export/pdf`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${baseUrl}/api/export/pdf`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

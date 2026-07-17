@@ -87,36 +87,53 @@ let TaskExecutor = class TaskExecutor {
     }
     async executeWithClaude(intent, prompt, documentContext, systemPrompt) {
         const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
-        const model = isLightTask
-            ? 'claude-haiku-4-5'
-            : 'claude-sonnet-5';
+        const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
         const maxTokens = isLightTask ? 4096 : 8192;
-        const response = await this.anthropic.messages.create({
-            model,
-            max_tokens: maxTokens,
-            system: systemPrompt,
-            messages: [
-                {
+        const messages = [
+            {
+                role: 'user',
+                content: `Document Current State:\n${documentContext}\n\nUser Request: ${prompt}`,
+            },
+        ];
+        let fullText = '';
+        let isComplete = false;
+        let loops = 0;
+        const MAX_LOOPS = 4;
+        while (!isComplete && loops < MAX_LOOPS) {
+            loops++;
+            const response = await this.anthropic.messages.create({
+                model,
+                max_tokens: maxTokens,
+                system: systemPrompt,
+                messages: messages,
+            });
+            const textBlock = response.content.find((c) => c.type === 'text');
+            const text = textBlock ? textBlock.text : '';
+            fullText += text;
+            if (response.stop_reason === 'max_tokens') {
+                messages.push({ role: 'assistant', content: text });
+                messages.push({
                     role: 'user',
-                    content: `Document Current State:\n${documentContext}\n\nUser Request: ${prompt}`,
-                },
-            ],
-        });
-        const textBlock = response.content.find((c) => c.type === 'text');
-        const text = textBlock ? textBlock.text : '';
-        const jsonStart = text.indexOf('{');
-        const jsonEnd = text.lastIndexOf('}') + 1;
+                    content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.'
+                });
+            }
+            else {
+                isComplete = true;
+            }
+        }
+        const jsonStart = fullText.indexOf('{');
+        const jsonEnd = fullText.lastIndexOf('}') + 1;
         if (jsonStart !== -1 && jsonEnd !== -1) {
-            let jsonStr = text.substring(jsonStart, jsonEnd);
+            let jsonStr = fullText.substring(jsonStart, jsonEnd);
             try {
                 return JSON.parse(jsonStr);
             }
             catch (parseError) {
                 console.error('JSON Parse Error:', parseError);
-                console.error('Raw Claude Output:', text);
+                console.error('Raw Claude Output:', fullText);
                 return {
                     operations: [],
-                    explanation: 'Maaf, balasan AI terlalu panjang sehingga terpotong di tengah jalan. Mohon coba persempit instruksi Anda atau mintalah AI untuk meringkas secara bertahap.'
+                    explanation: 'Maaf, balasan AI terlalu panjang atau memiliki format yang salah sehingga gagal diproses secara sempurna. Mohon persempit instruksi Anda.'
                 };
             }
         }

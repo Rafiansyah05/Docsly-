@@ -1,5 +1,5 @@
 'use client';
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 
 import React, { useState } from 'react';
@@ -28,6 +28,7 @@ import { Suspense } from 'react';
 
 function LoginForm() {
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
@@ -35,8 +36,12 @@ function LoginForm() {
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
+    const resetSuccessParam = searchParams.get('reset_success');
+    
     if (errorParam === 'account_deleted') {
       setError('Akun Anda telah dihapus. Silakan daftar ulang.');
+    } else if (resetSuccessParam === '1') {
+      setSuccess('Password berhasil diubah. Silakan login dengan password baru Anda.');
     }
   }, [searchParams]);
 
@@ -55,8 +60,13 @@ function LoginForm() {
       
       <form action={clientAction} className="space-y-5">
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-100 font-medium">
+          <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-100 font-medium leading-relaxed">
             {error}
+          </div>
+        )}
+        {success && (
+          <div className="p-3 text-sm text-emerald-700 bg-emerald-50 rounded-md border border-emerald-200 font-medium leading-relaxed">
+            {success}
           </div>
         )}
         <div className="space-y-2">
@@ -73,7 +83,7 @@ function LoginForm() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="font-medium text-slate-700">Password</Label>
-            <Link href="#" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
+            <Link href="/auth/forgot-password" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
               Lupa Password?
             </Link>
           </div>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PremiumModal } from '@/components/premium-modal';
 import { SearchBar } from '@/components/search-bar';
+import { createClient } from '@/lib/supabase/client';
 
 /** Peta label + ikon untuk setiap tab nav */
 const PAGE_META: Record<string, { label: string; Icon: React.ElementType }> = {
@@ -35,9 +36,63 @@ export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName, cur
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
+  const [limitResetAt, setLimitResetAt] = useState<Date | null>(null);
+  const [countdownText, setCountdownText] = useState<string>('');
+
   useEffect(() => {
     setMounted(true);
+    
+    const fetchLimit = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: limits } = await supabase
+        .from('user_limits')
+        .select('ai_limit_reset_at, ai_credits_used')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (limits?.ai_limit_reset_at) {
+        // Cek kapasitas asli
+        const plan = (currentPlan || 'free').toLowerCase();
+        const maxCredits = plan === 'premium' ? 1500 : plan === 'pro' ? 500 : 25;
+        
+        if ((limits.ai_credits_used || 0) >= maxCredits) {
+          const resetDate = new Date(limits.ai_limit_reset_at);
+          if (resetDate.getTime() > Date.now()) {
+            setLimitResetAt(resetDate);
+            return;
+          }
+        }
+      }
+      setLimitResetAt(null);
+    };
+    
+    fetchLimit();
   }, []);
+
+  useEffect(() => {
+    if (!limitResetAt) return;
+    
+    const interval = setInterval(() => {
+      const now = new Date();
+      const diff = limitResetAt.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        setLimitResetAt(null);
+        setCountdownText('');
+        clearInterval(interval);
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdownText(`${h}j ${m}m ${s}s`);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [limitResetAt]);
 
   const isFixed = variant === 'fixed';
 
@@ -116,6 +171,18 @@ export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName, cur
 
       {/* Kanan: searchbar + upgrade + theme */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Countdown */}
+        {countdownText && (
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full text-xs font-medium text-amber-700 dark:text-amber-400 mr-2 shadow-sm transition-all duration-300">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span className="hidden lg:inline">Limit AI pulih dalam: </span>
+            <span className="font-bold w-[65px]">{countdownText}</span>
+          </div>
+        )}
+
         {/* Search */}
         <SearchBar />
 

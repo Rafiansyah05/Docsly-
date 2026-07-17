@@ -35,18 +35,18 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     a: "Docsly dilengkapi dengan Smart Question Engine. AI hanya akan bertanya (maksimal 3-5 pertanyaan) jika informasi penting dari prompt Anda sangat kurang (contoh: di bawah 40% kelengkapan). Jika prompt Anda sudah cukup detail, AI akan langsung membuatkan kerangka outline tanpa bertanya."
   },
   {
-    q: "Apakah riwayat chat AI saya dapat dilihat pengguna lain?",
+    q: "Apakah dokumen saya aman di dalam server Docsly?",
     a: (
       <div className="space-y-4">
-        <p>Tidak. Seluruh riwayat percakapan AI Anda dengan Docsly bersifat 100% privat dan terenkripsi hanya untuk akun Anda sendiri.</p>
-        <p>Docsly menjamin kerahasiaan interaksi Anda dengan AI. Ketentuan privasi kami mencakup:</p>
+        <p>Sangat aman. Infrastruktur Docsly dibangun dengan standar keamanan tingkat tinggi untuk memastikan data Anda terlindungi dengan maksimal.</p>
+        <p>Praktik keamanan kami mencakup:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>Percakapan Anda dengan AI tidak akan pernah muncul, bocor, atau dapat diakses oleh pengguna mana pun.</li>
-          <li>Riwayat instruksi (prompt), data yang Anda masukkan ke dalam chat, dan teks yang dihasilkan oleh AI dijamin hanya tersimpan di dalam akun Anda.</li>
-          <li>Setiap sesi dokumen yang Anda kerjakan memiliki ruang obrolan AI-nya sendiri yang terisolasi dengan aman.</li>
-          <li>Tim Docsly tidak memantau atau membaca isi percakapan Anda dengan AI untuk menjaga kerahasiaan ide, rancangan, dan dokumen Anda.</li>
+          <li>Setiap akun memiliki isolasi ruang kerja (workspace) yang ketat sehingga dokumen tidak mungkin bercampur dengan pengguna lain.</li>
+          <li>Seluruh koneksi antara perangkat Anda dan server kami dilindungi menggunakan protokol SSL/TLS yang kokoh.</li>
+          <li>Akses terhadap basis data dibatasi oleh lapisan autentikasi ganda dan kebijakan firewall modern.</li>
+          <li>Tim internal kami tidak memiliki akses langsung untuk membaca isi dokumen Anda demi menjaga kerahasiaan penuh ide dan riset Anda.</li>
         </ul>
-        <p>Anda dapat berdiskusi dengan leluasa bersama AI Docsly tanpa perlu khawatir privasi dan kerahasiaan dokumen Anda terkompromi.</p>
+        <p>Anda dapat berfokus menyusun dokumen berkualitas tanpa perlu khawatir mengenai integritas maupun keamanan data Anda di ekosistem kami.</p>
       </div>
     )
   },

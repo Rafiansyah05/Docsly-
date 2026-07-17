@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -30,7 +30,8 @@ export async function POST(req: Request) {
     }
 
     // Forward to NestJS AI Microservice
-    const aiResponse = await fetch('http://localhost:3001/ai/execute', {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const aiResponse = await fetch(`${baseUrl}/ai/execute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

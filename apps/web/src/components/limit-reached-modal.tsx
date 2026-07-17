@@ -27,7 +27,7 @@ export function LimitReachedModal({ isOpen, onClose, resetAt, plan, type }: Limi
     ? formatDistanceToNow(new Date(resetAt), { addSuffix: true, locale: id })
     : 'segera';
 
-  const isFree = plan === 'Free';
+  const isFreeOrTrial = plan.toLowerCase() === 'free' || plan.toLowerCase() === 'trial';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -53,19 +53,25 @@ export function LimitReachedModal({ isOpen, onClose, resetAt, plan, type }: Limi
         </div>
 
         <div className="flex flex-col gap-3 mt-2">
-          {isFree && (
-            <Button
-              onClick={() => {
-                onClose();
-                // We don't have a direct route for premium modal if it's on navbar, 
-                // but usually user can upgrade from header. We can just tell them to upgrade.
-                router.push('/w/settings'); // Adjust route if needed, or emit event
-              }}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-            >
-              <Sparkles className="w-4 h-4" />
-              Upgrade ke Pro
-            </Button>
+          {isFreeOrTrial && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 mb-2">
+              <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-1">
+                Butuh kuota lebih banyak tanpa menunggu?
+              </h4>
+              <p className="text-xs text-blue-700 dark:text-blue-400 mb-3">
+                Upgrade ke Pro atau Premium sekarang untuk mendapatkan kapasitas hingga 1500 request AI dan menghilangkan cooldown.
+              </p>
+              <Button
+                onClick={() => {
+                  onClose();
+                  router.push('/w/settings');
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Upgrade Paket Sekarang
+              </Button>
+            </div>
           )}
           <Button
             variant="outline"

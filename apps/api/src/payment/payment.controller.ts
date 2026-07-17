@@ -33,10 +33,10 @@ export class PaymentController {
   @Post('create')
   async createTransaction(@Req() req: Request, @Body() body: any) {
     const user = await this.verifyAuth(req);
-    const { plan } = body;
+    const { plan, paymentMethod } = body;
     if (!plan) throw new BadRequestException('Plan is required');
 
-    return this.paymentService.createTransaction(user, plan);
+    return this.paymentService.createTransaction(user, plan, paymentMethod || 'bca_va');
   }
 
   @Post('sync-status')
@@ -46,5 +46,17 @@ export class PaymentController {
     if (!order_id) throw new BadRequestException('Order ID is required');
 
     return this.paymentService.syncStatus(user.id, order_id);
+  }
+
+  @Post('webhook')
+  async webhook(@Body() body: any) {
+    // Midtrans sends webhook (notification) with order_id
+    const { order_id } = body;
+    if (!order_id) return { success: false, message: 'No order_id' };
+
+    // We can call syncStatus without userId since webhook is server-to-server.
+    // Let's modify syncStatus internally or just pass null for userId if we fetch it from DB.
+    // For now, we will just call syncStatus to let it check Midtrans status directly.
+    return this.paymentService.syncStatus(null as any, order_id);
   }
 }

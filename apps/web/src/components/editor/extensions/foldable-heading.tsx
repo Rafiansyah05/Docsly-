@@ -29,7 +29,7 @@ const FoldableHeadingComponent = (props: any) => {
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
         </div>
       )}
-      <NodeViewContent as={Tag} className="w-full m-0" style={{ textAlign }} />
+      <NodeViewContent as={Tag} className="w-full m-0 !font-normal !text-base !leading-normal !text-inherit" style={{ textAlign }} />
     </NodeViewWrapper>
   );
 };

@@ -81,6 +81,35 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
     };
   }, [editor]);
 
+  const applyIndependentHeading = (level: 1 | 2 | 3 | 4 | 5 | 6) => {
+    if (!editor) return;
+    const { from, to, empty } = editor.state.selection;
+    
+    if (empty) {
+      editor.chain().focus().toggleHeading({ level }).run();
+      return;
+    }
+    
+    const state = editor.state;
+    const $from = state.doc.resolve(from);
+    const $to = state.doc.resolve(to);
+    
+    const isWholeBlock = $from.parentOffset === 0 && $to.parentOffset === $to.parent.content.size;
+    
+    if (isWholeBlock || $from.parent.type.name === 'heading') {
+      editor.chain().focus().toggleHeading({ level }).run();
+    } else {
+      const tr = state.tr;
+      if ($to.parentOffset < $to.parent.content.size) tr.split(to);
+      if ($from.parentOffset > 0) tr.split(from);
+      editor.view.dispatch(tr);
+      
+      setTimeout(() => {
+        editor.chain().focus().toggleHeading({ level }).run();
+      }, 10);
+    }
+  };
+
   if (!editor) {
     return null;
   }
@@ -200,7 +229,8 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/export/docx`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${baseUrl}/api/export/docx`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -240,7 +270,8 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/export/pdf`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${baseUrl}/api/export/pdf`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -341,7 +372,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           variant="ghost"
           size="sm"
           className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 1 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          onClick={() => applyIndependentHeading(1)}
         >
           <Heading1 className="h-4 w-4" />
         </Button>
@@ -349,7 +380,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           variant="ghost"
           size="sm"
           className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 2 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() => applyIndependentHeading(2)}
         >
           <Heading2 className="h-4 w-4" />
         </Button>
@@ -357,7 +388,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           variant="ghost"
           size="sm"
           className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 3 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          onClick={() => applyIndependentHeading(3)}
         >
           <Heading3 className="h-4 w-4" />
         </Button>

@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
@@ -59,7 +59,7 @@ export default function PrivacyPolicyPage() {
                     <ul className="list-disc pl-5 mt-2 space-y-1">
                       <li>Menyediakan dan memelihara Layanan (termasuk fitur pembuatan dokumen berbasis AI).</li>
                       <li>Memberitahu Anda tentang perubahan pada Layanan kami.</li>
-                      <li>Memungkinkan Anda berpartisipasi dalam fitur interaktif Layanan kami (seperti manajemen langganan melalui Mayar.id).</li>
+                      <li>Memungkinkan Anda berpartisipasi dalam fitur interaktif Layanan kami (seperti manajemen langganan melalui Midtrans).</li>
                       <li>Memberikan dukungan pelanggan.</li>
                       <li>Mendeteksi, mencegah, dan menangani masalah teknis.</li>
                     </ul>
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
                   <section>
                     <h2 className="text-xl font-semibold text-slate-900 mb-3">4. Kebijakan Keamanan dan AI</h2>
                     <p>
-                      Keamanan dokumen Anda adalah prioritas utama kami. Kami menggunakan penyedia layanan model bahasa besar (LLM) untuk memproses teks Anda. Kami memastikan bahwa model AI yang kami gunakan <strong>tidak menggunakan dokumen pribadi atau rahasia Anda untuk melatih ulang (retrain) model mereka secara publik</strong>. Data yang diproses diisolasi dan dienkripsi saat transit.
+                      Keamanan dokumen dan privasi Anda adalah prioritas utama kami. Meskipun riwayat percakapan Anda dengan AI tidak dienkripsi secara khusus (end-to-end), kami menerapkan kontrol akses dan standar keamanan server yang ketat untuk menjaga kerahasiaan data Anda. Kami juga memastikan bahwa mitra penyedia layanan model bahasa (LLM) yang kami gunakan <strong>tidak menggunakan dokumen pribadi atau rahasia Anda untuk melatih ulang (retrain) model mereka secara publik</strong>. Data Anda hanya diproses untuk merespons instruksi yang Anda berikan.
                     </p>
                   </section>
 
@@ -79,7 +79,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                     <ul className="list-disc pl-5 mt-2 space-y-1">
                       <li><strong>Supabase:</strong> Digunakan untuk autentikasi dan penyimpanan database terenkripsi.</li>
-                      <li><strong>Mayar.id:</strong> Digunakan secara aman untuk memproses pembayaran dan langganan (kami tidak menyimpan data kartu kredit Anda).</li>
+                      <li><strong>Midtrans:</strong> Digunakan secara aman untuk memproses pembayaran dan langganan (kami tidak menyimpan data kartu kredit atau rincian pembayaran Anda).</li>
                       <li><strong>Layanan Model AI:</strong> Digunakan murni untuk mengeksekusi instruksi perbaikan dan penyusunan dokumen.</li>
                     </ul>
                   </section>

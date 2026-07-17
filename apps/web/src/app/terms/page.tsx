@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
@@ -59,7 +59,7 @@ export default function TermsOfServicePage() {
                       Docsly menawarkan fitur dasar gratis dan fitur premium yang memerlukan biaya langganan. 
                     </p>
                     <ul className="list-disc pl-5 mt-2 space-y-1">
-                      <li>Pembayaran berlangganan diproses dengan aman melalui mitra pembayaran resmi kami (<strong>Mayar.id</strong>).</li>
+                      <li>Pembayaran berlangganan diproses dengan aman melalui mitra pembayaran resmi kami (<strong>Midtrans</strong>).</li>
                       <li>Anda dapat membatalkan perpanjangan langganan otomatis kapan saja melalui halaman Pengaturan Akun.</li>
                       <li>Kecuali diwajibkan oleh hukum, semua biaya yang telah dibayarkan bersifat <em>non-refundable</em> (tidak dapat dikembalikan).</li>
                     </ul>
