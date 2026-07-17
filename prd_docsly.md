@@ -719,7 +719,7 @@ Bagian ini merangkum elemen minimum yang wajib tersedia pada enam halaman inti D
 7.8 Aksesibilitas
 ●	Kontras warna teks-latar mengikuti standar WCAG AA minimum untuk keterbacaan, termasuk pada mode gelap (Bab 7.5).
 ●	Seluruh elemen interaktif dapat diakses melalui keyboard (tab order logis) dan dilengkapi label ARIA dasar, khususnya pada toolbar editor yang padat ikon.
- 
+
 7.6 Dark Mode dan Light Mode — Theme System
 Docsly menyediakan opsi Dark Mode dan Light Mode yang dapat dipilih pengguna di halaman Settings → Tema. Kedua mode berlaku untuk seluruh UI aplikasi (navigation, toolbar, panel, card, modal) namun BUKAN untuk konten dokumen area editor yang tetap putih seperti kertas, selaras prinsip Bab 2.12.
 Light Mode (Default)
