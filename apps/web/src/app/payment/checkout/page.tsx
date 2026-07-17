@@ -95,7 +95,7 @@ function CheckoutContent() {
   }, [router]);
 
   const handlePayment = async () => {
-    if (!user) return;
+    if (typeof window === 'undefined' || !user) return;
     
     setIsProcessing(true);
     try {
@@ -124,7 +124,7 @@ function CheckoutContent() {
 
       // Backend now returns the Midtrans CoreAPI charge response.
       // We will save it to session storage to display on the next page (or pass via URL).
-      sessionStorage.setItem('pending_payment', JSON.stringify(data));
+      window.sessionStorage.setItem('pending_payment', JSON.stringify(data));
       
       router.push(`/payment/status?order_id=${data.order_id}`);
       

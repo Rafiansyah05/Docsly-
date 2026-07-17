@@ -17,15 +17,17 @@ function PaymentStatusContent() {
 
   useEffect(() => {
     // Load payment data from sessionStorage
-    const stored = sessionStorage.getItem('pending_payment');
-    if (stored) {
-      try {
-        setPaymentData(JSON.parse(stored));
-      } catch (e) {
-        console.error("Gagal memparsing data pembayaran", e);
+    if (typeof window !== 'undefined') {
+      const stored = window.sessionStorage.getItem('pending_payment');
+      if (stored) {
+        try {
+          setPaymentData(JSON.parse(stored));
+        } catch (e) {
+          console.error("Gagal memparsing data pembayaran", e);
+        }
+      } else if (!orderId) {
+        router.push('/payment/checkout');
       }
-    } else if (!orderId) {
-      router.push('/payment/checkout');
     }
   }, [router, orderId]);
 
