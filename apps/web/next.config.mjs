@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    unoptimized: true, // Membantu mempercepat fase static generation bypass
+    unoptimized: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -16,8 +16,6 @@ const nextConfig = {
     },
   },
   transpilePackages: ['lucide-react', 'framer-motion'],
-  // Memaksa Next.js mengabaikan strict export failure untuk internal fallbacks
-  trailingSlash: false,
   async headers() {
     return [
       {
