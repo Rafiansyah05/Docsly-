@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "node scripts/edge-toggler.js remove",
     "dev": "next dev -p 3000",
-    "prebuild": "node scripts/edge-toggler.js add",
+    "prebuild": "",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
