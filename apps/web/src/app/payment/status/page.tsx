@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 function PaymentStatusContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const orderId = searchParams.get('order_id');
+  const orderId = searchParams ? searchParams.get('order_id') : null;
   
   const [paymentData, setPaymentData] = useState<any>(null);
   const [status, setStatus] = useState<'pending' | 'success' | 'failed'>('pending');

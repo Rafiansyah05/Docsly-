@@ -112,7 +112,7 @@ export function TemplateList({ workspaces }: { workspaces: any[] }) {
                     {selectedWorkspace ? workspaces.find(w => w.id === selectedWorkspace)?.nama_workspace : 'Pilih Workspace...'}
                   </span>
                 </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} className="w-[var(--anchor-width)] rounded-lg border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm z-50 text-slate-900 dark:text-zinc-100">
+                <SelectContent className="w-[var(--anchor-width)] rounded-lg border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm z-50 text-slate-900 dark:text-zinc-100">
                   {workspaces.map((workspace) => (
                     <SelectItem key={workspace.id} value={workspace.id} className="focus:bg-slate-100 dark:focus:bg-zinc-800">
                       {workspace.nama_workspace}

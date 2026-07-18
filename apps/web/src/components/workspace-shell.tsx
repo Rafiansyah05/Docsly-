@@ -21,7 +21,7 @@ const navItems = [
 export function WorkspaceShell({ user, profile, workspaces, subscription, unreadNotificationCount = 0, children }: { user: any; profile: any; workspaces: any[]; subscription?: any; unreadNotificationCount?: number; children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const isEditor = /^\/w\/[^/]+\/d\/[^/]+/.test(pathname);
+  const isEditor = /^\/w\/[^/]+\/d\/[^/]+/.test(pathname || '');
 
   const profileName = profile?.nama_lengkap || user.email || 'Pengguna';
   const profileEmail = user.email || '';
@@ -36,7 +36,7 @@ export function WorkspaceShell({ user, profile, workspaces, subscription, unread
   }
 
   // Ekstrak workspace_id dari pathname (format: /w/<workspace_id> atau /w/<workspace_id>/...)
-  const workspaceMatch = pathname.match(/^\/w\/([^/]+)/);
+  const workspaceMatch = pathname ? pathname.match(/^\/w\/([^/]+)/) : null;
   const activeWorkspaceId = workspaceMatch ? workspaceMatch[1] : null;
   const activeWorkspace = activeWorkspaceId ? workspaces.find((ws) => ws.id === activeWorkspaceId) : null;
   const activeWorkspaceName = activeWorkspace?.nama_workspace ?? undefined;
@@ -101,7 +101,7 @@ export function WorkspaceShell({ user, profile, workspaces, subscription, unread
             {navItems.map((item) => {
               const Icon = item.icon;
               // Make Home ('/w') exact-match only to avoid always matching other '/w/*' routes.
-              const active = item.href === '/w' ? pathname === '/w' : pathname === item.href || pathname.startsWith(item.href + '/');
+              const active = pathname ? (item.href === '/w' ? pathname === '/w' : pathname === item.href || pathname.startsWith(item.href + '/')) : false;
 
               // When collapsed: center icons with consistent height and no bg highlight.
               // When expanded: show label and active background per PRD.
@@ -151,7 +151,7 @@ export function WorkspaceShell({ user, profile, workspaces, subscription, unread
         {/* Navbar inline — hanya mengisi area di sebelah kanan sidebar */}
         <HeaderNav
           variant="inline"
-          pathname={pathname}
+          pathname={pathname || undefined}
           workspaceName={activeWorkspaceName}
           currentPlan={accountStatus}
         />

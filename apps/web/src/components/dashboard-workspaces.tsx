@@ -156,7 +156,7 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
                         'Urutkan'}
               </span>
             </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} align="end" sideOffset={4} className="rounded-lg border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm text-slate-900 dark:text-zinc-100">
+            <SelectContent align="end" sideOffset={4} className="rounded-lg border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm text-slate-900 dark:text-zinc-100">
               <SelectItem value="updated_desc" className="focus:bg-slate-100 dark:focus:bg-zinc-800">Terbaru</SelectItem>
               <SelectItem value="updated_asc" className="focus:bg-slate-100 dark:focus:bg-zinc-800">Terlama</SelectItem>
               <SelectItem value="name_asc" className="focus:bg-slate-100 dark:focus:bg-zinc-800">Nama (A - Z)</SelectItem>

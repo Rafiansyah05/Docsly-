@@ -69,7 +69,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  const plan = searchParams.get('plan') || 'Pro'; // Default to Pro if not specified
+  const plan = searchParams ? (searchParams.get('plan') || 'Pro') : 'Pro'; // Default to Pro if not specified
   const isPremium = plan === 'Premium';
   
   const price = isPremium ? 89000 : 39000;

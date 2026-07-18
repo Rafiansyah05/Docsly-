@@ -35,6 +35,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    if (!searchParams) return;
     const errorParam = searchParams.get('error');
     const resetSuccessParam = searchParams.get('reset_success');
     
