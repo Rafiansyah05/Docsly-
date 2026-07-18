@@ -13,7 +13,11 @@ import { LandingLayout } from '@/components/landing/landing-layout';
 
 export const revalidate = 60; // Revalidate the page every 60 seconds
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams?: { code?: string } }) {
+  if (searchParams?.code) {
+    redirect(`/auth/callback?code=${searchParams.code}`);
+  }
+
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
