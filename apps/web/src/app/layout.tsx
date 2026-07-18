@@ -29,7 +29,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{__html: `
           if (typeof window !== 'undefined' && window.location.hash) {
             var params = new URLSearchParams(window.location.hash.substring(1));
-            if (params.has('error_description') || params.has('error')) {
+            if (params.get('type') === 'recovery' && window.location.pathname !== '/auth/reset-password') {
+              window.location.href = '/auth/reset-password' + window.location.hash;
+            } else if (params.has('error_description') || params.has('error')) {
               var errorMsg = params.get('error_description') || params.get('error') || '';
               window.location.href = '/auth/login?error=' + encodeURIComponent(errorMsg);
             }
