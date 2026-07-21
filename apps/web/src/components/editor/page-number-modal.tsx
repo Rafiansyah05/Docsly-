@@ -99,29 +99,43 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
 
   const handleUpdateSection = (index: number, field: keyof PageNumberSection, value: any) => {
     const newSettings = { ...currentSettings };
-    newSettings.sections[index] = {
-      ...newSettings.sections[index],
-      [field]: value
-    };
-    // Ensure it stays sorted
+    
+    // Validasi khusus untuk startPage agar tidak terjadi duplikasi
     if (field === 'startPage') {
-      newSettings.sections.sort((a, b) => a.startPage - b.startPage);
+      const pageVal = Math.max(1, parseInt(value as string) || 1);
+      const isDuplicate = newSettings.sections.some((sec, idx) => idx !== index && sec.startPage === pageVal);
+      if (isDuplicate) {
+        return; // Jangan update jika halaman sudah dipakai oleh section lain
+      }
+      newSettings.sections[index] = {
+        ...newSettings.sections[index],
+        startPage: pageVal
+      };
+    } else {
+      newSettings.sections[index] = {
+        ...newSettings.sections[index],
+        [field]: value
+      };
     }
+    
+    // Menghapus live sort di sini agar card tidak bertukar posisi saat di-edit
     setCurrentSettings(newSettings);
   };
 
   const handleAddSection = () => {
     const newSettings = { ...currentSettings };
-    const lastPage = newSettings.sections.length > 0 
-      ? newSettings.sections[newSettings.sections.length - 1].startPage 
-      : 0;
+    let newPage = 1;
+    if (newSettings.sections.length > 0) {
+       const maxPage = Math.max(...newSettings.sections.map(s => s.startPage));
+       newPage = maxPage + 1;
+    }
     
     newSettings.sections.push({
-      startPage: lastPage + 1,
+      startPage: newPage,
       format: 'arabic',
       startNumber: 1
     });
-    newSettings.sections.sort((a, b) => a.startPage - b.startPage);
+    // Menghapus live sort agar urutan penambahan natural
     setCurrentSettings(newSettings);
   };
 
@@ -133,7 +147,12 @@ export function PageNumberModal({ isOpen, onClose, settings, onSave }: PageNumbe
   };
 
   const handleSave = () => {
-    onSave(currentSettings);
+    // Sort sections just before saving so the background engine gets it ordered
+    const finalSettings = {
+      ...currentSettings,
+      sections: [...currentSettings.sections].sort((a, b) => a.startPage - b.startPage)
+    };
+    onSave(finalSettings);
     onClose();
   };
 

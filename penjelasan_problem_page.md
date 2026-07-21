@@ -1,502 +1,242 @@
-Saya sudah analisis seluruh log build Vercel yang Anda kirim. Error ini **bukan berasal dari Vercel**, melainkan berasal dari kode Next.js di project Docsly. Vercel hanya menjadi tempat pertama yang menjalankan production build sehingga error tersebut muncul.
+Problem 1
+Floating Toolbar Masih Tertutup oleh Code Block
 
-Berikut analisisnya berdasarkan prioritas.
+Dari screenshot terlihat bahwa popup tiga tombol (Left, Center, Right) masih berada di belakang Code Block.
 
----
+Secara visual sekarang seperti ini.
 
-# Ringkasan Hasil Analisis
+Layer saat ini
 
-Status build:
+Code Block
+████████████████████████
 
-```
-✅ Install dependency berhasil
-✅ Compile berhasil
-✅ Type check berhasil
-❌ Gagal saat prerendering static pages
-```
+Floating Toolbar
+    ███
 
-Artinya:
+Hasil:
+Toolbar tertutup
 
-* dependency bukan masalah
-* package.json bukan masalah
-* TypeScript bukan masalah
-* build webpack bukan masalah
+Artinya toolbar masih menjadi bagian dari area editor atau masih berada pada layer yang sama dengan node dokumen.
 
-Masalah muncul ketika Next.js mencoba melakukan:
+Kemungkinan implementasinya masih seperti berikut.
 
-```
-Collecting page data
-↓
-Generating static pages
-↓
-Prerender 404
-Prerender 500
-Prerender _not-found
-↓
-FAIL
-```
+Editor
 
-Jadi error terjadi ketika rendering halaman.
+├── Paragraph
+├── Image
+│    └── Floating Toolbar
+├── Code Block
 
----
+Karena toolbar adalah child dari node editor, maka ketika ada Code Block yang memiliki stacking context lebih tinggi, toolbar akan ikut tertutup.
 
-# PRIORITAS 1 (Penyebab paling besar)
+Padahal Microsoft Word tidak bekerja seperti itu.
 
-## Error
+Cara Microsoft Word
 
-```
-Error:
+Di Microsoft Word, toolbar kecil yang muncul ketika gambar dipilih bukan bagian dari gambar.
 
-<Html> should not be imported outside of pages/_document
-```
+Toolbar berada pada UI Overlay Layer.
 
-ini adalah penyebab utama.
+Secara konsep.
 
-Log:
+Window
 
-```
-Error occurred prerendering page "/404"
+├── Document Layer
+│      Paragraph
+│      Heading
+│      Table
+│      Image
+│      Code Block
+│
+├── Selection Layer
+│      Resize Handle
+│
+├── Floating Toolbar Layer
+│      Align Left
+│      Align Center
+│      Align Right
+│
+└── Modal Layer
 
-Error occurred prerendering page "/500"
+Perhatikan.
 
-Error occurred prerendering page "/_not-found"
-```
+Toolbar berada di luar document tree.
 
-Artinya ada file yang mengimpor
+Karena itu tidak pernah tertutup oleh apa pun.
 
-```tsx
-import {
-Html,
-Head,
-Main,
-NextScript
-} from "next/document"
-```
+Yang Harus Diubah
 
-padahal file tersebut **BUKAN**
+Jangan lagi membuat toolbar seperti ini.
 
-```
-pages/_document.tsx
-```
+<ImageNode>
 
----
+   FloatingToolbar
 
-## Yang harus dicek AI
+</ImageNode>
 
-Cari seluruh project:
+Tetapi buat seperti ini.
 
-```
-import { Html
-```
+<Editor>
+
+   Document
+
+   Overlay
+
+      FloatingToolbar
+
+</Editor>
+
+Kemudian posisi toolbar dihitung berdasarkan posisi gambar.
+
+Misalnya.
+
+Toolbar X
+
+=
+
+Image Rect Center
+
+Toolbar Y
+
+=
+
+Image Top
+
+- Toolbar Height
+
+Jadi toolbar hanya membaca koordinat gambar.
+
+Tetapi tidak menjadi child gambar.
+
+Rule Baru
+
+Floating Toolbar harus memenuhi aturan berikut.
+
+Selalu berada pada Overlay Layer.
+Tidak boleh menjadi child dari Image, Table, atau Code Block.
+Selalu menggunakan z-index paling tinggi di area editor.
+Tidak boleh ikut terkena clipping halaman.
+Tidak boleh ikut terkena overflow editor.
+Selalu muncul di depan seluruh elemen dokumen.
+Problem 2
+PNG Transparan Berubah Menjadi Hitam
+
+Ini sebenarnya masalah yang sangat umum pada editor.
+
+Saya hampir yakin masalahnya bukan pada file PNG.
+
+Melainkan pada cara Image Node dirender.
+
+Kemungkinan sekarang Image Container mempunyai CSS seperti ini.
+
+background: black;
 
 atau
 
-```
-from "next/document"
-```
+background-color: #000;
 
-Kemungkinan ditemukan di:
+Ketika PNG transparan masuk.
 
-```
-app/layout.tsx
-```
+Yang terlihat adalah warna background container.
 
-atau
+Bukan transparansi PNG.
 
-```
-app/not-found.tsx
-```
+Yang Benar
 
-atau
+Container gambar tidak boleh mempunyai background.
 
-```
-app/error.tsx
-```
+background: transparent;
 
-atau
+Kemudian renderer mempertahankan alpha channel PNG.
 
-```
-components/*
-```
+Flow yang benar.
 
-atau
-
-```
-404.tsx
-```
-
-Semua harus dihapus.
-
----
-
-Yang BENAR
-
-Untuk App Router
-
-gunakan
-
-```tsx
-<html lang="en">
-<body>
-```
-
-bukan
-
-```tsx
-<Html>
-<Head>
-```
-
----
-
-# PRIORITAS 2
-
-## Error
-
-```
-Cannot read properties of null
-(reading 'useContext')
-```
-
-ini error kedua.
-
-Biasanya berasal dari:
-
-```
-React Context
-```
-
-yang dipanggil saat prerender.
-
-Misalnya
-
-```tsx
-const auth = useContext(AuthContext)
-```
-
-tetapi
-
-```
-<AuthProvider>
-```
-
-belum membungkus halaman tersebut.
-
----
-
-Kemungkinan:
-
-```
-ThemeProvider
-
-SupabaseProvider
-
-EditorProvider
-
-SidebarProvider
-
-TooltipProvider
-
-QueryClientProvider
-
-SessionProvider
-```
-
-salah satu tidak tersedia ketika
-
-```
-404
-500
-not-found
-```
-
-dirender.
-
----
-
-AI harus mencari
-
-```
-useContext(
-```
-
-dan memastikan seluruh provider sudah membungkus
-
-```
-app/layout.tsx
-```
-
----
-
-# PRIORITAS 3
-
-## Error
-
-```
-404
-500
-_not-found
-```
-
-seluruh halaman gagal dirender.
-
-Artinya kemungkinan besar
-
-```
-app/not-found.tsx
-```
-
-atau
-
-```
-app/error.tsx
-```
-
-menggunakan
-
-```
-EditorContext
-
-ThemeContext
-
-SupabaseContext
-
-AuthContext
-```
-
-padahal provider belum ada.
-
----
-
-# PRIORITAS 4
-
-Ada warning
-
-```
-A Node.js API is used
-
-process.version
-
-not supported in Edge Runtime
-```
-
-berasal dari
-
-```
-@supabase/supabase-js
-```
-
-Import trace
-
-```
-@supabase/supabase-js
+PNG
 
 ↓
 
-@supabase/ssr
+Decode RGBA
 
 ↓
 
-createBrowserClient
-```
+Keep Alpha
 
-Kalau middleware memakai
+↓
 
-```
-runtime = edge
-```
+Render
 
-sementara ada library Node
+Jangan melakukan.
 
-maka nanti deployment bisa gagal.
+PNG
 
-AI perlu mengecek
+↓
 
-```
-middleware.ts
-```
+Convert RGB
 
-dan
+↓
 
-```
-export const runtime = 'edge'
-```
+Fill Black
 
-atau
+↓
 
-```
-export const runtime = 'experimental-edge'
-```
+Render
 
----
+Karena itu yang menyebabkan area transparan berubah menjadi hitam.
 
-# PRIORITAS 5
+Jika Ingin Mirip Microsoft Word
 
-Ada warning
+Microsoft Word sebenarnya tidak menampilkan kotak hitam.
 
-```
-NODE_ENV non-standard
-```
+Yang dilakukan Word adalah.
 
-Artinya di Environment Variable mungkin ada
+Canvas Putih
 
-```
-NODE_ENV=development
-```
+↓
 
-atau
+PNG Transparan
 
-```
-NODE_ENV=local
-```
+↓
 
-di Vercel.
+Render
 
-Seharusnya
+Akibatnya.
 
-```
-production
-```
+Area transparan terlihat putih.
 
-atau
+Bukan karena diberi warna putih.
 
-tidak perlu di-set sama sekali.
+Tetapi karena background halaman memang putih.
 
-Ini bukan penyebab build gagal tetapi perlu dibersihkan.
+Jadi sebenarnya.
 
----
+PNG
 
-# PRIORITAS 6
+↓
 
-Ada banyak dependency deprecated
+Transparent
 
-Contohnya
+↓
 
-```
-glob
+Page White
 
-eslint
+Bukan.
 
-rimraf
+PNG
 
-whatwg
+↓
 
-next-on-pages
-```
+Black Background
+Rule Rendering PNG
 
-Tidak menyebabkan build gagal.
+Image Node harus mengikuti aturan berikut.
 
-Bisa diabaikan sementara.
+Jangan pernah memberi background default pada Image Container.
+Background container harus transparent.
+Pertahankan seluruh alpha channel PNG.
+Jangan melakukan flatten image.
+Jangan mengubah PNG menjadi JPEG.
+Jangan mengisi area transparan dengan warna hitam.
+Area transparan harus memperlihatkan warna halaman dokumen (putih).
+Instruksi Lengkap untuk AI Agent
 
----
-
-# PRIORITAS 7
-
-Compile berhasil
-
-Log:
-
-```
-Compiled successfully
-```
-
-Berarti
-
-Semua
-
-```
-syntax
-
-typescript
-
-jsx
-
-tailwind
-
-webpack
-```
-
-sudah benar.
-
-Jadi AI tidak perlu mencari syntax error.
-
----
-
-# PRIORITAS 8
-
-Type Checking berhasil
-
-```
-Checking validity of types
-```
-
-selesai tanpa error.
-
-Berarti
-
-```
-TypeScript
-
-Props
-
-Interfaces
-
-Generics
-```
-
-semuanya lolos.
-
----
-
-# PRIORITAS 9
-
-Install dependency berhasil
-
-```
-added 1381 packages
-```
-
-Artinya
-
-```
-package.json
-
-package-lock.json
-
-workspace
-
-npm install
-```
-
-semuanya normal.
-
----
-
-# Kemungkinan Lokasi Error
-
-Saya urutkan berdasarkan probabilitas.
-
-| Prioritas | Lokasi                   | Kemungkinan          |
-| --------- | ------------------------ | -------------------- |
-| ⭐⭐⭐⭐⭐     | app/layout.tsx           | Sangat tinggi        |
-| ⭐⭐⭐⭐⭐     | app/not-found.tsx        | Sangat tinggi        |
-| ⭐⭐⭐⭐⭐     | app/error.tsx            | Sangat tinggi        |
-| ⭐⭐⭐⭐⭐     | components/Layout.tsx    | Sangat tinggi        |
-| ⭐⭐⭐⭐      | components/Providers.tsx | Tinggi               |
-| ⭐⭐⭐⭐      | middleware.ts            | Tinggi               |
-| ⭐⭐⭐       | AuthProvider             | Sedang               |
-| ⭐⭐⭐       | ThemeProvider            | Sedang               |
-| ⭐⭐        | SupabaseProvider         | Rendah               |
-| ⭐         | package.json             | Hampir tidak mungkin |
-
----
-
-# Perintah yang bisa diberikan ke AI Agent
-
-Berikut prompt yang dapat langsung Anda berikan ke AI Agent:
-
-> Analisis seluruh project Next.js (App Router) untuk menemukan penyebab kegagalan build di Vercel. Fokus utama pada error `<Html> should not be imported outside of pages/_document`. Cari seluruh import dari `next/document` di semua file selain `pages/_document.tsx`, lalu ganti dengan struktur App Router (`<html>` dan `<body>`) atau hapus jika tidak diperlukan. Setelah itu analisis seluruh penggunaan `useContext()` yang menyebabkan `Cannot read properties of null (reading 'useContext')`, terutama pada `app/layout.tsx`, `app/error.tsx`, `app/not-found.tsx`, `Providers`, `AuthProvider`, `ThemeProvider`, `EditorProvider`, dan provider global lainnya. Pastikan semua context dibungkus oleh provider sebelum dipakai, termasuk saat prerender halaman `/404`, `/500`, dan `/_not-found`. Selanjutnya periksa `middleware.ts` serta penggunaan `@supabase/ssr` agar tidak menjalankan API Node.js (`process.version`) pada Edge Runtime. Verifikasi juga bahwa tidak ada `NODE_ENV` non-standar di konfigurasi Vercel. Setelah seluruh perbaikan selesai, jalankan `npm run build` secara lokal hingga build berhasil tanpa warning kritis maupun error prerender, sehingga deployment ke Vercel dapat berjalan sukses.
-
-## Satu hal yang paling penting
-
-Dari seluruh log, **90% kemungkinan penyebab build gagal adalah adanya import `Html` dari `next/document` di lokasi yang tidak semestinya**. Error ini muncul lebih dulu, lalu memicu kegagalan prerender halaman `404`, `500`, dan `_not-found`. Setelah masalah tersebut diperbaiki, barulah jika masih ada error, fokus berikutnya adalah `useContext()` yang dijalankan tanpa provider saat proses prerender. 
+Perbaiki dua sistem editor yang masih bermasalah. Pertama, Floating Toolbar yang muncul saat gambar dipilih harus dipindahkan ke Overlay Layer editor dan tidak boleh lagi menjadi child dari Image Node maupun node dokumen lainnya. Toolbar hanya menggunakan koordinat gambar sebagai acuan posisi, tetapi secara struktur berada di luar Document Layer sehingga selalu dirender di atas seluruh elemen editor, termasuk Code Block, Table, dan Image. Floating Toolbar wajib memiliki z-index tertinggi pada area editor, tidak boleh terkena clipping, overflow, ataupun stacking context dari node dokumen. Kedua, perbaiki Image Rendering Engine agar mendukung PNG transparan dengan benar. Image Container tidak boleh memiliki background hitam ataupun warna default lainnya. Background container harus transparan sehingga area alpha pada PNG memperlihatkan warna halaman dokumen yang berwarna putih. Jangan melakukan flatten image, jangan mengubah PNG menjadi JPEG, dan jangan mengisi area transparan dengan warna hitam. Seluruh alpha channel PNG harus dipertahankan hingga proses rendering selesai sehingga hasil tampilannya identik dengan Microsoft Word dan Google Docs ketika menyisipkan gambar PNG transparan.

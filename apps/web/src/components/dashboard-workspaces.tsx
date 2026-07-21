@@ -28,6 +28,7 @@ function CreateButton() {
 }
 
 export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWorkspaces: any[], userId: string }) {
+  const [workspaces, setWorkspaces] = useState(initialWorkspaces);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('updated_desc');
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -37,7 +38,12 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
-  const filteredWorkspaces = initialWorkspaces
+  // Sync prop changes to state
+  React.useEffect(() => {
+    setWorkspaces(initialWorkspaces);
+  }, [initialWorkspaces]);
+
+  const filteredWorkspaces = workspaces
     .filter(ws => (ws.nama_workspace || '').toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (sort === 'updated_desc') {
@@ -70,6 +76,7 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
   const handleDelete = async () => {
     if (!workspaceToDelete) return;
     setIsDeleting(true);
+    
     try {
       const result = await deleteWorkspace(workspaceToDelete.id);
       if (result?.error) {
@@ -78,7 +85,7 @@ export function DashboardWorkspaces({ initialWorkspaces, userId }: { initialWork
         toast.success('Workspace berhasil dihapus');
         setIsDeleteDialogOpen(false);
         setWorkspaceToDelete(null);
-        router.refresh();
+        // Do NOT call router.refresh() here. Server action with revalidatePath handles UI updates automatically.
       }
     } catch (err) {
       toast.error('Terjadi kesalahan saat menghapus workspace');

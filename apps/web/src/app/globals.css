@@ -48,6 +48,7 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+    --workspace-bg: #e2e8f0;
   }
   .dark {
     --background: oklch(0.145 0 0);
@@ -81,6 +82,7 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    --workspace-bg: #18181b;
   }
 
   html,
@@ -110,10 +112,12 @@
 
   .prose table {
     border-collapse: collapse;
-    table-layout: fixed;
-    width: 100%;
+    table-layout: fixed !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0;
     overflow: hidden;
+    word-break: break-word !important;
   }
   .prose table td,
   .prose table th {
@@ -161,11 +165,117 @@
     margin: 0 !important;
     overflow-wrap: break-word !important;
     word-break: break-word !important;
+    /* Tiptap default is pre-wrap, but we ensure it here */
+    white-space: pre-wrap !important;
+    
+    /* Strict Container Boundaries to prevent any page overflow */
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Anti-Overflow Aggressive Rules for Pasted Content (e.g. from Excel, Web, Word) */
+  .prose * {
+    max-width: 100%;
+  }
+
+  /* Hancurkan semua inline nowrap yang sering terbawa dari hasil paste */
+  .prose [style*="nowrap"] {
+    white-space: pre-wrap !important;
+  }
+
+  /* Paksa semua elemen dengan inline width (kecuali resize handle) agar tidak melebihi kertas */
+  .prose [style*="width"]:not(.column-resize-handle) {
+    max-width: 100% !important;
+  }
+
+  .prose a {
+    word-break: break-all !important;
   }
 
   .prose p {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+  }
+
+  /* Hancurkan border tabel luar yang menyebabkan garis lurus saat page break */
+  .prose table {
+    border: none !important;
+  }
+  
+  /* Pastikan spacer td menghapus semua border bawaan agar tidak ada garis vertikal yang bocor */
+  .prose table tr.page-break-spacer td {
+    border: hidden !important;
+    background: transparent !important;
+    position: relative !important;
+  }
+
+  /* Gambar garis penutup tabel halaman sebelumnya (mensimulasikan bottom border) */
+  .prose table tr.page-break-spacer td::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #cbd5e1;
+    z-index: 10;
+  }
+
+  /* Gambar garis pembuka tabel halaman berikutnya (mensimulasikan top border) */
+  .prose table tr.page-break-spacer td::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #cbd5e1;
+    z-index: 10;
+  }
+  
+  /* Architectural Pagination Fragments for Code Blocks */
+  .prose pre {
+    background: transparent !important;
+    position: relative;
+    z-index: 10; /* Supaya text di atas fragment latar */
+  }
+
+  .code-block-bg-container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+  
+  .code-block-bg-fragment {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background-color: #1e293b !important; /* Force render */
+    border-radius: 0;
+  }
+  
+  .dark .code-block-bg-fragment {
+    background-color: #1e293b !important;
+  }
+
+  .code-block-bg-fragment.first-frag {
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+  }
+  
+  .code-block-bg-fragment.last-frag {
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+  }
+  
+  .code-block-bg-fragment.single-frag {
+    border-radius: 0.5rem;
   }
 
   /* PDF Export / Print Rules */
@@ -195,16 +305,36 @@
     break-after: avoid; /* Keep with Next */
   }
 
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+  }
+
   .prose h1 {
     font-size: 16pt !important;
-    margin-top: 24pt !important;
-    margin-bottom: 12pt !important;
   }
 
   .prose h2 {
     font-size: 14pt !important;
-    margin-top: 18pt !important;
-    margin-bottom: 8pt !important;
+  }
+
+  .prose h1[data-preserve-format="true"],
+  .prose h2[data-preserve-format="true"],
+  .prose h3[data-preserve-format="true"],
+  .prose h4[data-preserve-format="true"],
+  .prose h5[data-preserve-format="true"],
+  .prose h6[data-preserve-format="true"] {
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+    margin-top: inherit !important;
+    margin-bottom: inherit !important;
   }
 
   /* 
@@ -222,33 +352,26 @@
   }
 
   /* 
-   * Custom Ordered Lists
+   * Flat List Architecture Numbering & Bullets
    */
-  /* Multi-level lists (e.g. 1.1.1.) */
-  .prose ol[data-list-type='multi-level'] {
-    list-style-type: none;
-    counter-reset: multi-level-counter var(--list-start, 0);
-  }
-
-  .prose ol[data-list-type='multi-level'] > li {
+  .prose [data-list-type]:not([data-list-type='none']) {
     position: relative;
+    padding-left: 32px;
   }
-
-  .prose ol[data-list-type='multi-level'] > li::before {
-    counter-increment: multi-level-counter;
-    content: var(--list-prefix, "") counter(multi-level-counter) ".";
+  
+  .prose [data-list-type]:not([data-list-type='none'])::before {
+    content: attr(data-list-prefix);
     position: absolute;
-    right: 100%;
-    padding-right: 0.5rem;
-    text-align: right;
+    left: 0;
+    top: 0;
+    width: 28px;
+    padding-right: 4px;
     white-space: nowrap;
+    text-align: right;
     font-weight: 400;
     color: inherit;
   }
 
-  .prose ol[data-list-type='lower-alpha'] {
-    list-style-type: lower-alpha;
-  }
 
   /* 
    * Foldable Heading Hidden Blocks
@@ -280,25 +403,67 @@
   }
 
   /* 
-   * Fix Image Selection Bounding Box (MS Word Style)
+   * Image styling & alignment (MS Word Style)
    */
   .prose img {
-    display: block !important;
-    max-width: 100% !important;
-    height: auto !important;
-    margin: 0 !important;
+    display: block;
+    max-width: 100%;
+    height: auto;
     padding: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    background-color: transparent !important;
   }
 
-  /* Reset spacing on any wrapper around the image (e.g., Tiptap node views or resize wrappers) */
+  /* Support for Image Alignment applied by TextAlign extension */
+  .prose img[style*="text-align: center"],
+  .prose [data-type="image"][style*="text-align: center"],
+  .prose [data-type="imagePlaceholder"][style*="text-align: center"],
+  .prose [data-type="imageResize"][style*="text-align: center"] {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .prose img[style*="text-align: right"],
+  .prose [data-type="image"][style*="text-align: right"],
+  .prose [data-type="imagePlaceholder"][style*="text-align: right"],
+  .prose [data-type="imageResize"][style*="text-align: right"] {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+
+  .prose img[style*="text-align: left"],
+  .prose [data-type="image"][style*="text-align: left"],
+  .prose [data-type="imagePlaceholder"][style*="text-align: left"],
+  .prose [data-type="imageResize"][style*="text-align: left"] {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+  }
+
+  /* Fix spacing for wrappers without overriding alignment margins */
   .prose [data-type='image'],
-  .prose .image-resizer,
-  .prose .ProseMirror-selectednode {
-    display: inline-block;
+  .prose [data-type='imagePlaceholder'],
+  .prose [data-type='imageResize'],
+  .prose .image-resizer {
+    display: block;
     width: fit-content;
     height: fit-content;
     padding: 0 !important;
-    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
     line-height: 0 !important;
+    background-color: transparent !important;
+  }
+
+  /* Do NOT force margin: 0 on selected nodes, it causes them to jump! */
+  /* Remove blue outline on images to match MS Word style (only show resize handles) */
+  .prose .ProseMirror-selectednode:not([data-type='image']):not([data-type='imageResize']):not(.image-resizer) {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px;
+  }
+
+  /* Sembunyikan kontrol posisi bawaan tiptap-extension-resize-image karena kita menggunakan BubbleMenu */
+  [data-resize-image-ui="position-controller"] {
+    display: none !important;
   }
 }

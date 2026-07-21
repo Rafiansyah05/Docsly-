@@ -14,9 +14,10 @@ export function TableBubbleMenu({ editor }: { editor: Editor | null }) {
   return (
     <BubbleMenu
       editor={editor}
+      pluginKey="tableBubbleMenu"
       shouldShow={shouldShow}
       // @ts-expect-error Tiptap type mismatch for tippyOptions
-      tippyOptions={{ duration: 100, placement: 'top' as const }}
+      tippyOptions={{ duration: 100, placement: 'top' as const, zIndex: 999999, appendTo: () => document.body }}
       className="flex items-center gap-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-md p-1 rounded-lg"
     >
       <Button variant="ghost" size="sm" onClick={() => editor.chain().focus().addColumnBefore().run()} title="Tambah Kolom Kiri" className="h-8 w-8 p-0 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800">

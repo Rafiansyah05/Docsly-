@@ -34,6 +34,7 @@ import {
   ArrowUpDown,
   Loader2,
   Paperclip,
+  Wand2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageCropModal } from './image-crop-modal';
@@ -43,6 +44,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { analyzeDocument } from '@/lib/editor/heading-engine';
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -67,6 +69,9 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [isExportingPdf, setIsExportingPdf] = React.useState(false);
   const [isExportingDocx, setIsExportingDocx] = React.useState(false);
+  const [isFontFamilyOpen, setIsFontFamilyOpen] = React.useState(false);
+  const [isAnalyzing, setIsAnalyzing] = React.useState(false);
+  const [isAnalysisDone, setIsAnalysisDone] = React.useState(false);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const supabase = createClient();
@@ -393,7 +398,56 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           <Heading3 className="h-4 w-4" />
         </Button>
 
-        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
+        {/* Auto Heading Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isAnalyzing || isAnalysisDone}
+          className={`h-8 ml-2 px-2 border-zinc-200 dark:border-zinc-700 transition-colors ${
+            isAnalysisDone 
+              ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800' 
+              : 'text-zinc-700 dark:text-zinc-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400'
+          }`}
+          onClick={() => {
+            if (!editor) return;
+            setIsAnalyzing(true);
+            
+            // Allow UI to show loading state before heavy processing
+            setTimeout(() => {
+              try {
+                const res = analyzeDocument(editor);
+                if (res.totalFound > 0) {
+                  toast.success(`Berhasil membuat ${res.totalFound} Heading otomatis! Daftar isi dapat diperbarui.`);
+                } else {
+                  toast.info('Tidak ada teks yang terdeteksi sebagai heading. Pastikan kalimat cukup pendek dan jelas.');
+                }
+              } catch (e) {
+                console.error(e);
+                toast.error('Gagal menganalisis dokumen.');
+              } finally {
+                setIsAnalyzing(false);
+                setIsAnalysisDone(true);
+                setTimeout(() => {
+                  setIsAnalysisDone(false);
+                }, 2000); // Reset after 2 seconds
+              }
+            }, 100); // slight delay for React to render loading state
+          }}
+          title="Auto Heading (Rule-Based Analyzer)"
+        >
+          {isAnalyzing ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : isAnalysisDone ? (
+            <Check className="h-4 w-4 mr-1.5" />
+          ) : (
+            <Wand2 className="h-4 w-4 mr-1.5" />
+          )}
+          <span className="text-xs font-medium">
+            {isAnalyzing ? 'Memproses...' : isAnalysisDone ? 'Selesai' : 'Auto Heading'}
+          </span>
+        </Button>
+
+        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1 ml-2"></div>
 
         {/* Basic Marks */}
         <Button
@@ -460,7 +514,15 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           variant="ghost"
           size="sm"
           className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'left' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => (editor.chain().focus() as any).setTextAlign('left').run()}
+          onClick={() => {
+            const chain = (editor.chain().focus() as any).setTextAlign('left');
+            if (editor.isActive('image') || editor.isActive('imageResize') || editor.isActive('imagePlaceholder')) {
+              chain.updateAttributes('image', { containerStyle: 'margin: 0 auto 0 0' })
+                   .updateAttributes('imageResize', { containerStyle: 'margin: 0 auto 0 0' })
+                   .updateAttributes('imagePlaceholder', { containerStyle: 'margin: 0 auto 0 0' });
+            }
+            chain.run();
+          }}
         >
           <AlignLeft className="h-4 w-4" />
         </Button>
@@ -468,7 +530,15 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           variant="ghost"
           size="sm"
           className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'center' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => (editor.chain().focus() as any).setTextAlign('center').run()}
+          onClick={() => {
+            const chain = (editor.chain().focus() as any).setTextAlign('center');
+            if (editor.isActive('image') || editor.isActive('imageResize') || editor.isActive('imagePlaceholder')) {
+              chain.updateAttributes('image', { containerStyle: 'margin: 0 auto' })
+                   .updateAttributes('imageResize', { containerStyle: 'margin: 0 auto' })
+                   .updateAttributes('imagePlaceholder', { containerStyle: 'margin: 0 auto' });
+            }
+            chain.run();
+          }}
         >
           <AlignCenter className="h-4 w-4" />
         </Button>
@@ -476,7 +546,15 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
           variant="ghost"
           size="sm"
           className={`h-8 w-8 p-0 ${editor.isActive({ textAlign: 'right' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => (editor.chain().focus() as any).setTextAlign('right').run()}
+          onClick={() => {
+            const chain = (editor.chain().focus() as any).setTextAlign('right');
+            if (editor.isActive('image') || editor.isActive('imageResize') || editor.isActive('imagePlaceholder')) {
+              chain.updateAttributes('image', { containerStyle: 'margin: 0 0 0 auto' })
+                   .updateAttributes('imageResize', { containerStyle: 'margin: 0 0 0 auto' })
+                   .updateAttributes('imagePlaceholder', { containerStyle: 'margin: 0 0 0 auto' });
+            }
+            chain.run();
+          }}
         >
           <AlignRight className="h-4 w-4" />
         </Button>
@@ -526,16 +604,16 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('bulletList') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={`h-8 w-8 p-0 ${editor.isActive({ listType: 'bullet' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
+          onClick={() => (editor.chain().focus() as any).toggleFlatList('bullet', '• ').run()}
         >
           <List className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('orderedList') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={`h-8 w-8 p-0 ${editor.isActive({ listType: 'decimal' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
+          onClick={() => (editor.chain().focus() as any).toggleFlatList('decimal', '1. ').run()}
         >
           <ListOrdered className="h-4 w-4" />
         </Button>

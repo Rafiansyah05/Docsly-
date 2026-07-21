@@ -72,7 +72,7 @@ export function formatPageNumber(absolutePage: number, settings: PageSettings | 
   // Array sections harus diurutkan berdasarkan startPage (dari kecil ke besar)
   const sortedSections = [...settings.sections].sort((a, b) => a.startPage - b.startPage);
   
-  let currentSection = sortedSections[0];
+  let currentSection: PageNumberSection | null = null;
   for (const sec of sortedSections) {
     if (absolutePage >= sec.startPage) {
       currentSection = sec;
@@ -81,7 +81,7 @@ export function formatPageNumber(absolutePage: number, settings: PageSettings | 
     }
   }
 
-  if (!currentSection) return null; // Jika entah bagaimana halaman berada sebelum section pertama, kembalikan null atau asumsikan section pertama
+  if (!currentSection) return null; // Jika halaman berada sebelum section pertama, maka kosongkan (tanpa nomor)
 
   // Hitung nomor relatif di dalam section ini
   // absolutePage: 4, section startPage: 4, startNumber: 1 => relNumber: 1

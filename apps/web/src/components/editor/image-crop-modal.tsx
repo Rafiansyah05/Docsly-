@@ -76,7 +76,7 @@ export function ImageCropModal({ isOpen, onClose, file: imageFile, onConfirm }: 
       } else {
         onConfirm(imageFile, imgSrc);
       }
-    }, 'image/jpeg', 0.9);
+    }, imageFile?.type || 'image/jpeg', 0.9);
   };
 
   const modalContent = (

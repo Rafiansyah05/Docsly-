@@ -19,7 +19,11 @@ const FoldableHeadingComponent = (props: any) => {
   const textAlign = node.attrs.textAlign || 'left';
 
   return (
-    <NodeViewWrapper className={`group relative heading-level-${node.attrs.level}`} style={{ textAlign }}>
+    <NodeViewWrapper 
+      className={`group relative heading-level-${node.attrs.level}`} 
+      style={{ textAlign }}
+      data-preserve-format={node.attrs.preserveFormat ? 'true' : undefined}
+    >
       {isEditable && (
         <div 
           contentEditable={false} 
@@ -115,6 +119,14 @@ export const FoldableHeading = Heading.extend({
         renderHTML: attributes => {
           if (!attributes.collapsed) return {};
           return { 'data-collapsed': 'true' };
+        },
+      },
+      preserveFormat: {
+        default: false,
+        parseHTML: element => element.getAttribute('data-preserve-format') === 'true',
+        renderHTML: attributes => {
+          if (!attributes.preserveFormat) return {};
+          return { 'data-preserve-format': 'true' };
         },
       },
     };

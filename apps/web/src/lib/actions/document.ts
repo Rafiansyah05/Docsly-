@@ -106,6 +106,26 @@ export async function updateDocumentTitle(documentId: string, judul: string) {
 export async function deleteDocument(documentId: string, workspaceId: string) {
   const supabase = createClient();
   
+  // 1. ai_conversations (and prompt_history)
+  const { data: convs } = await supabase.from('ai_conversations').select('id').eq('document_id', documentId);
+  if (convs && convs.length > 0) {
+    const convIds = convs.map(c => c.id);
+    await supabase.from('prompt_history').delete().in('conversation_id', convIds);
+    await supabase.from('ai_conversations').delete().in('id', convIds);
+  }
+  
+  // 2. document_versions
+  await supabase.from('document_versions').delete().eq('document_id', documentId);
+  
+  // 3. attachments
+  await supabase.from('attachments').delete().eq('document_id', documentId);
+  
+  // 4. image_placeholders
+  await supabase.from('image_placeholders').delete().eq('document_id', documentId);
+  
+  // 5. bibliography_entries
+  await supabase.from('bibliography_entries').delete().eq('document_id', documentId);
+  
   const { error } = await supabase
     .from('documents')
     .delete()
@@ -116,6 +136,8 @@ export async function deleteDocument(documentId: string, workspaceId: string) {
   }
   
   revalidatePath(`/w/${workspaceId}`);
+  revalidatePath('/w');
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 export async function getVersions(documentId: string) {

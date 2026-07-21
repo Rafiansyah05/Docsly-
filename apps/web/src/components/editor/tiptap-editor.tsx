@@ -17,8 +17,8 @@ import { Color } from '@tiptap/extension-color';
 import { PageLayout } from './extensions/page-layout';
 import { FontSize } from './extensions/font-size';
 import { FoldableHeading } from './extensions/foldable-heading';
-import { CustomOrderedList } from './extensions/custom-ordered-list';
-import { CustomListItem } from './extensions/custom-list-item';
+import { LayoutAttributes } from './extensions/layout-attributes';
+import { FlatListEngine } from './extensions/flat-list-engine';
 import { LineHeight } from './extensions/line-height';
 import { Indent } from './extensions/indent';
 import Superscript from '@tiptap/extension-superscript';
@@ -41,6 +41,7 @@ import { TableBubbleMenu } from './table-bubble-menu';
 import { SuggestionBubbleMenu } from './suggestion-bubble-menu';
 import { AiSidebar } from './ai-sidebar';
 import { ImageCropModal } from './image-crop-modal';
+import { ImageBubbleMenu } from './image-bubble-menu';
 import { updateDocumentTitle } from '@/lib/actions/document';
 import { useAutosave } from '@/hooks/use-autosave';
 import { HorizontalRuler, VerticalRuler, DocumentLayout } from './document-ruler';
@@ -111,11 +112,12 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         document: false,
         heading: false,
         orderedList: false,
+        bulletList: false,
         listItem: false,
       }),
+      LayoutAttributes,
+      FlatListEngine,
       FoldableHeading,
-      CustomOrderedList,
-      CustomListItem,
       Underline,
       Suggestion,
       Table.configure({
@@ -125,7 +127,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       TableHeader,
       TableCell,
       TextAlign.configure({
-        types: ['heading', 'paragraph'],
+        types: ['heading', 'paragraph', 'image', 'imageResize', 'imagePlaceholder'],
       }),
       TextStyle,
       Color,
@@ -249,21 +251,25 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     if (!editor) return;
     const syncLayout = () => {
       const docLayout = editor.state.doc.attrs.layout;
-      if (
-        docLayout &&
-        (docLayout.top !== layout.top ||
-          docLayout.bottom !== layout.bottom ||
-          docLayout.left !== layout.left ||
-          docLayout.right !== layout.right)
-      ) {
-        setLayout(docLayout);
-      }
+      if (!docLayout) return;
+      
+      setLayout(prev => {
+        if (
+          prev.top === docLayout.top &&
+          prev.bottom === docLayout.bottom &&
+          prev.left === docLayout.left &&
+          prev.right === docLayout.right
+        ) {
+          return prev; // Prevents re-render if values are identical
+        }
+        return docLayout;
+      });
     };
-    editor.on('update', syncLayout);
+    editor.on('transaction', syncLayout);
     return () => {
-      editor.off('update', syncLayout);
+      editor.off('transaction', syncLayout);
     };
-  }, [editor, layout]);
+  }, [editor]); // Removed `layout` dependency to avoid re-binding loops
 
   useEffect(() => {
     if (!editor) return;
@@ -271,31 +277,20 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     const updatePagination = () => {
       const dom = editor.view.dom;
       if (dom) {
-        let contentHeight = 0;
-
-        // Find the last actual block node that is not a spacer
-        let lastRealNode: HTMLElement | null = null;
-        for (let i = dom.children.length - 1; i >= 0; i--) {
-          const child = dom.children[i] as HTMLElement;
-          if (child && !child.classList.contains('page-break-spacer') && !child.classList.contains('ProseMirror-widget')) {
-            lastRealNode = child;
-            break;
-          }
-        }
-
-        if (lastRealNode) {
-          const parentRect = dom.getBoundingClientRect();
-          const childRect = lastRealNode.getBoundingClientRect();
-          contentHeight = childRect.bottom - parentRect.top;
-        }
+        // Reset minHeight temporarily to get true natural scrollHeight
+        const prevMinHeight = dom.style.minHeight;
+        dom.style.minHeight = 'auto';
+        
+        const contentHeight = dom.scrollHeight;
+        dom.style.minHeight = prevMinHeight; // Restore it immediately
 
         const FULL_STEP = 1163; // 1123px height + 40px gap
         const UNPRINTABLE_GAP = layout.bottom + 40 + layout.top;
+        
         // total pages calculation
         const total = Math.max(1, Math.ceil((contentHeight + UNPRINTABLE_GAP) / FULL_STEP));
         totalPagesRef.current = total;
         setTotalPages(total);
-        dom.style.minHeight = 'auto';
 
         if (savedTotalPages.current !== total) {
           savedTotalPages.current = total;
@@ -319,20 +314,34 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       }
     };
 
+    let rAF: number;
     const handleTransaction = () => {
-      // Delay to allow ProseMirror DOM to render before measuring
-      setTimeout(updatePagination, 0);
+      cancelAnimationFrame(rAF);
+      rAF = requestAnimationFrame(updatePagination);
     };
 
     editor.on('transaction', handleTransaction);
-    editor.on('selectionUpdate', updatePagination);
+    editor.on('selectionUpdate', handleTransaction);
     updatePagination();
     window.addEventListener('resize', updatePagination);
 
+    let resizeObserver: ResizeObserver | null = null;
+    if (editor.view.dom) {
+      resizeObserver = new ResizeObserver(() => {
+        cancelAnimationFrame(rAF);
+        rAF = requestAnimationFrame(updatePagination);
+      });
+      resizeObserver.observe(editor.view.dom);
+    }
+
     return () => {
       editor.off('transaction', handleTransaction);
-      editor.off('selectionUpdate', updatePagination);
+      editor.off('selectionUpdate', handleTransaction);
       window.removeEventListener('resize', updatePagination);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      cancelAnimationFrame(rAF);
     };
   }, [editor, layout.top, layout.bottom]);
 
@@ -595,6 +604,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       <EditorToolbar editor={editor} onUploadImage={triggerImageUpload} />
       <TableBubbleMenu editor={editor} />
       <SuggestionBubbleMenu editor={editor} />
+      <ImageBubbleMenu editor={editor} />
 
       <div className="flex-1 flex flex-row min-h-0 h-full overflow-hidden">
         <div className="flex-1 min-h-0 overflow-y-auto pb-4 md:pb-8 flex flex-col items-center bg-slate-200 dark:bg-zinc-900" onClick={() => setContextMenu(null)}>

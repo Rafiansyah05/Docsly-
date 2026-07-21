@@ -19,7 +19,7 @@ export const LineHeight = Extension.create<LineHeightOptions>({
 
   addOptions() {
     return {
-      types: ['paragraph', 'heading'],
+      types: ['paragraph', 'heading', 'orderedList', 'bulletList', 'listItem', 'blockquote', 'tableCell'],
       defaultLineHeight: '1.5',
     };
   },

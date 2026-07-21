@@ -53,15 +53,43 @@ export async function deleteWorkspace(workspaceId: string) {
 
   if (!user) return { error: 'Unauthorized' };
 
-  // First delete all documents inside the workspace
-  const { error: docsError } = await supabase
+  // First fetch all documents in the workspace
+  const { data: workspaceDocs } = await supabase
     .from('documents')
-    .delete()
+    .select('id')
     .eq('workspace_id', workspaceId);
 
-  if (docsError) return { error: docsError.message };
+  if (workspaceDocs && workspaceDocs.length > 0) {
+    const docIds = workspaceDocs.map(d => d.id);
+    
+    // 1. ai_conversations (and prompt_history)
+    const { data: convs } = await supabase.from('ai_conversations').select('id').in('document_id', docIds);
+    if (convs && convs.length > 0) {
+      const convIds = convs.map(c => c.id);
+      await supabase.from('prompt_history').delete().in('conversation_id', convIds);
+      await supabase.from('ai_conversations').delete().in('id', convIds);
+    }
+    
+    // 2. document_versions
+    await supabase.from('document_versions').delete().in('document_id', docIds);
+    
+    // 3. attachments
+    await supabase.from('attachments').delete().in('document_id', docIds);
+    
+    // 4. image_placeholders
+    await supabase.from('image_placeholders').delete().in('document_id', docIds);
+    
+    // 5. bibliography_entries
+    await supabase.from('bibliography_entries').delete().in('document_id', docIds);
+    
+    // 6. Delete documents
+    await supabase.from('documents').delete().in('id', docIds);
+  }
 
-  // Then delete the workspace
+  // 7. Delete references (workspace level)
+  await supabase.from('references').delete().eq('workspace_id', workspaceId);
+
+  // 8. Then delete the workspace
   const { error } = await supabase
     .from('workspaces')
     .delete()
@@ -71,5 +99,6 @@ export async function deleteWorkspace(workspaceId: string) {
   if (error) return { error: error.message };
 
   revalidatePath('/w');
+  revalidatePath('/', 'layout');
   return { success: true };
 }

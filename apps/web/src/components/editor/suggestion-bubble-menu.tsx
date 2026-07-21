@@ -39,9 +39,10 @@ export function SuggestionBubbleMenu({ editor }: { editor: Editor | null }) {
   return (
     <BubbleMenu
       editor={editor}
+      pluginKey="suggestionBubbleMenu"
       shouldShow={shouldShow}
       // @ts-expect-error Tiptap type mismatch for tippyOptions
-      tippyOptions={{ duration: 100, placement: 'top' as const }}
+      tippyOptions={{ duration: 100, placement: 'top' as const, zIndex: 999999, appendTo: () => document.body }}
       className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-md px-1.5 py-1 rounded-lg"
     >
       <Button 

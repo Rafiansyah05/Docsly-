@@ -1,591 +1,617 @@
-Menurut saya keputusan menggunakan **Midtrans** untuk Docsly cukup masuk akal, terutama kalau kamu melihat Docsly sebagai produk SaaS yang kemungkinan berkembang ke skala lebih besar. Dan pendekatan yang kamu mau (**frontend checkout buatan sendiri, backend/payment processing menggunakan Midtrans**) justru adalah pendekatan yang banyak dipakai produk profesional.
+Ya, sangat bisa. Bahkan menurut saya **untuk Docsly, pendekatan rule-based lebih tepat dibanding AI** untuk fitur heading otomatis.
 
-Namun ada beberapa hal yang perlu kamu pahami: kamu **tidak membuat sistem pembayaran sendiri sepenuhnya**, tetapi membuat **custom payment experience** di atas infrastruktur Midtrans.
+Alasannya sederhana:
 
----
+* **Lebih cepat** (real-time, tanpa API).
+* **Konsisten** (hasilnya sama setiap saat).
+* **Gratis** (tidak ada biaya inference AI).
+* **Mudah di-override** jika sistem salah.
 
-# Konsep Arsitektur Docsly + Midtrans
+Namun, saya tidak menyarankan hanya menggunakan satu rule sederhana seperti "baris pendek = heading". Itu akan menghasilkan banyak false positive.
 
-Flow sederhananya:
-
-```
-User Docsly
-    |
-    |
-Klik "Upgrade Pro"
-    |
-    ↓
-Halaman Pricing / Checkout Docsly
-    |
-    ↓
-Pilih Paket
-(Pro / Premium)
-    |
-    ↓
-Klik Bayar
-    |
-    ↓
-Backend Docsly membuat transaksi Midtrans
-    |
-    ↓
-Midtrans memberikan payment token
-    |
-    ↓
-Frontend menampilkan metode pembayaran
-    |
-    ↓
-User membayar
-    |
-    ↓
-Midtrans kirim webhook
-    |
-    ↓
-Backend Docsly update subscription
-    |
-    ↓
-User menjadi Pro/Premium
-```
+Yang lebih baik adalah membuat **Hierarchical Heading Detection Engine**, yaitu sekumpulan aturan yang bekerja bersama untuk menghitung skor apakah suatu paragraf merupakan heading.
 
 ---
 
-# 1. Frontend Payment Page Docsly
+# Konsep Sistem
 
-Kamu tetap bisa membuat desain sendiri.
-
-Contoh:
+Alih-alih user memilih
 
 ```
-----------------------------------
-
-Upgrade Your Docsly Experience
-
-
-Current Plan:
-Free
-
-
-Choose Plan:
-
-┌──────────────┐
-│ Pro          │
-│ Rp39.000/mo  │
-│              │
-│ ✓ AI lebih banyak
-│ ✓ Template premium
-│ ✓ Export
-│              │
-│ [Choose Pro]
-└──────────────┘
-
-
-┌──────────────┐
-│ Premium      │
-│ Rp79.000/mo  │
-│              │
-│ ✓ Semua fitur
-│ ✓ Collaboration
-│ ✓ Priority AI
-│              │
-│ [Choose Premium]
-└──────────────┘
-
-
-----------------------------------
+Normal
+Heading 1
+Heading 2
+Heading 3
 ```
 
-Setelah klik:
+User cukup mengetik
 
 ```
-Continue Payment
+BAB I
+PENDAHULUAN
+
+Latar Belakang
+
+Perkembangan AI...
+
+Rumusan Masalah
+
+...
+
+1. Tujuan Penelitian
+
+1.1 Tujuan Umum
+
+1.1.1 Tujuan Khusus
 ```
 
-baru membuka payment modal Midtrans.
+Maka editor otomatis mengubah menjadi
+
+```
+Heading 1
+Heading 2
+Normal
+
+Heading 2
+Normal
+
+Heading 2
+
+Heading 3
+
+Heading 4
+```
+
+Tanpa klik apa pun.
 
 ---
 
-# 2. Jangan Gunakan Redirect Payment Default Midtrans
+# Sistem membaca setiap paragraf
 
-Midtrans menyediakan:
-
-## Snap Redirect
-
-Contoh:
+Misalnya setiap Enter menghasilkan ParagraphNode.
 
 ```
-docsly.com/payment
-
-↓
-
-midtrans.com/payment-page
-
-↓
-
-kembali ke docsly
-```
-
-Ini paling mudah.
-
-Tapi untuk Docsly saya lebih menyarankan:
-
-## Snap Embed
-
-Karena:
-
-* user tetap merasa berada di Docsly
-* UX lebih premium
-* brand Docsly tetap terlihat
-
-Flow:
-
-```
-Docsly Checkout Page
-
-        ↓
-
-Midtrans Payment Popup
-
-        ↓
-
-Selesai
-
-        ↓
-
-Kembali Docsly
-```
-
----
-
-# 3. Backend Docsly yang Dibutuhkan
-
-Kamu membutuhkan beberapa endpoint.
-
-Contoh Next.js API:
-
-```
-app/api/payment/
-
-create/
-    route.ts
-
-notification/
-    route.ts
-
-status/
-    route.ts
-```
-
----
-
-## Create Transaction
-
-Ketika user klik bayar:
-
-Frontend:
-
-```
-POST /api/payment/create
-```
-
-Body:
-
-```json
-{
-  "plan":"PRO"
+Paragraph {
+   text
+   bold
+   italic
+   alignment
+   fontSize
+   previousParagraph
+   nextParagraph
 }
 ```
 
-Backend:
-
-1. cek user
-2. buat order ID
-3. request Midtrans
-
-Contoh:
+Setiap paragraph langsung diproses.
 
 ```
-DOCSLY-PRO-USER123-20260714
-```
-
-Kemudian Midtrans memberikan:
-
-```
-snap_token
-```
-
-Token ini dikirim kembali ke frontend.
-
----
-
-# 4. Database Subscription Docsly
-
-Saya sarankan jangan menyimpan status hanya di user.
-
-Buat tabel:
-
-## subscriptions
-
-```sql
-id
-
-user_id
-
-plan
-
-status
-
-midtrans_order_id
-
-start_date
-
-expired_date
-
-created_at
-```
-
-Contoh:
-
-```
-user:
-rafi@email.com
-
-
-plan:
-PRO
-
-
-status:
-ACTIVE
-
-
-expired:
-14 August 2026
+detectHeading(paragraph)
 ```
 
 ---
 
-# 5. Webhook Midtrans (Bagian Paling Penting)
+# Rule 1 — Jumlah Kata
 
-Jangan percaya frontend.
+Heading hampir selalu pendek.
 
-Misalnya:
-
-User manipulasi:
+Misalnya
 
 ```
-Saya sudah bayar
+Latar Belakang
 ```
 
-Padahal belum.
+2 kata.
 
-Maka:
-
-Status pembayaran harus berasal dari Midtrans.
-
-Flow:
+Sedangkan
 
 ```
-Midtrans
+Perkembangan teknologi AI telah membawa perubahan...
+```
+
+18 kata.
+
+Rule:
+
+```
+if wordCount <= 8
+
+score += 25
+```
+
+---
+
+# Rule 2 — Tidak Diakhiri Titik
+
+Heading biasanya tidak memakai titik.
+
+```
+Latar Belakang
+```
+
+✔
+
+```
+Latar Belakang.
+```
+
+✖
+
+```
+if !text.endsWith(".")
+score +=10
+```
+
+---
+
+# Rule 3 — Semua Huruf Kapital
+
+Misalnya
+
+```
+BAB I
+
+PENDAHULUAN
+
+KESIMPULAN
+```
+
+Ini hampir pasti Heading.
+
+```
+isUpperCase(text)
+
+score +=30
+```
+
+---
+
+# Rule 4 — Mengandung Kata Kunci
+
+Misalnya
+
+```
+BAB
+
+BAB I
+
+BAB II
+
+DAFTAR ISI
+
+KESIMPULAN
+
+SARAN
+
+ABSTRAK
+
+PENDAHULUAN
+
+LAMPIRAN
+
+REFERENSI
+```
+
+Semuanya hampir pasti heading.
+
+```
+Heading Dictionary
+```
+
+```
+BAB
+BAB I
+BAB II
+PENDAHULUAN
+ABSTRAK
+LAMPIRAN
+```
+
+Kalau cocok
+
+```
+score +=50
+```
+
+---
+
+# Rule 5 — Pola Nomor
+
+Misalnya
+
+```
+1
+
+1.1
+
+1.1.1
+
+2
+
+2.3
+
+3.4.5
+```
+
+Regex
+
+```
+^\d+(\.\d+)*$
+```
+
+atau
+
+```
+^\d+(\.\d+)*\s
+```
+
+Misalnya
+
+```
+1.1 Latar Belakang
+```
+
+langsung dianggap heading.
+
+---
+
+# Rule 6 — Tidak Terlalu Panjang
+
+Misalnya
+
+```
+if character < 70
+
+score +=20
+```
+
+Karena heading jarang lebih dari 70 karakter.
+
+---
+
+# Rule 7 — Tidak Diakhiri Koma
+
+```
+...
+,
+;
+:
+```
+
+Jarang dipakai pada heading.
+
+---
+
+# Rule 8 — Ada Baris Kosong Sebelum
+
+Misalnya
+
+```
+(paragraph kosong)
+
+Rumusan Masalah
+```
+
+Kemungkinan heading naik.
+
+```
+score +=15
+```
+
+---
+
+# Rule 9 — Setelah Heading Biasanya Ada Paragraf
+
+Misalnya
+
+```
+Rumusan Masalah
+
+Penelitian ini...
+```
+
+Kalau sesudahnya langsung paragraph panjang
+
+```
+score +=20
+```
+
+---
+
+# Rule 10 — Bold
+
+Kalau user menekan Ctrl+B
+
+```
+Latar Belakang
+```
+
+Kemungkinan heading semakin besar.
+
+```
+score +=15
+```
+
+---
+
+# Rule 11 — Font Lebih Besar
+
+Kalau user memperbesar font.
+
+```
+16pt
+```
+
+dibanding
+
+```
+12pt
+```
+
+Maka
+
+```
+score +=15
+```
+
+---
+
+# Rule 12 — Tengah (Center)
+
+```
+BAB I
+```
+
+Biasanya Center.
+
+```
+score +=20
+```
+
+---
+
+# Rule 13 — Tidak Ada Bullet
+
+Kalau paragraph berupa
+
+```
+•
+-
+*
+```
+
+langsung jangan heading.
+
+```
+score -=40
+```
+
+---
+
+# Rule 14 — Tidak Berakhir Dengan "dan"
+
+Misalnya
+
+```
+Penggunaan AI dan
+```
+
+Jelas bukan heading.
+
+---
+
+# Rule 15 — Kalimat Terlalu Panjang
+
+Kalau
+
+```
+word >12
+
+score -=50
+```
+
+---
+
+# Sistem Scoring
+
+Misalnya
+
+```
+BAB I
+```
+
+Word count = 2
+
++25
+
+Uppercase
+
++30
+
+Dictionary
+
++50
+
+Centered
+
++20
+
+Total
+
+125
+
+Karena
+
+```
+>70
+```
+
+langsung
+
+```
+Heading 1
+```
+
+---
+
+Misalnya
+
+```
+Latar Belakang
+```
+
+Word pendek
+
++25
+
+Tidak titik
+
++10
+
+Tidak panjang
+
++20
+
+Total
+
+55
+
+Heading 2
+
+---
+
+Misalnya
+
+```
+Perkembangan AI telah berkembang sangat pesat...
+```
+
+Word banyak
+
+0
+
+Tidak uppercase
+
+0
+
+Karakter panjang
+
+0
+
+Total
+
+10
+
+Normal Paragraph
+
+---
+
+# Menentukan H1/H2/H3
+
+Bukan hanya mendeteksi heading, tetapi juga levelnya.
+
+Contoh aturan:
+
+```
+BAB I
+BAB II
+BAB III
+```
 
 ↓
 
-POST webhook
+Heading 1
+
+---
+
+```
+1 Pendahuluan
+
+2 Metode
+
+3 Hasil
+```
 
 ↓
 
-Backend Docsly
+Heading 2
+
+---
+
+```
+1.1
+
+1.2
+
+2.1
+```
 
 ↓
 
-Verify signature
+Heading 3
+
+---
+
+```
+1.1.1
+```
 
 ↓
 
-Update database
-
-```
+Heading 4
 
 ---
 
-Contoh:
+Atau gunakan struktur numerik:
 
-Midtrans kirim:
-
-```json
-{
- "transaction_status":"settlement",
- "order_id":"DOCSLY-PRO-123"
-}
-```
-
-Backend:
-
-```
-Jika settlement:
-
-ubah subscription:
-
-FREE
-
-↓
-
-PRO
-```
+| Pola           | Heading |
+| -------------- | ------- |
+| BAB I / BAB II | H1      |
+| 1 Judul        | H2      |
+| 1.1 Judul      | H3      |
+| 1.1.1 Judul    | H4      |
+| 1.1.1.1 Judul  | H5      |
 
 ---
 
-# 6. Metode Pembayaran
+# Auto Update TOC
 
-Midtrans mendukung:
+Karena semua heading sudah diketahui,
 
-## Bank Transfer
+Table of Contents tinggal membaca
 
-* BCA
-* Mandiri
-* BNI
-* BRI
-* Permata
+```
+editor.document
+```
 
-## E-wallet
+dan mencari
 
-* GoPay
-* OVO
-* Dana
-* ShopeePay
+```
+HeadingNode
+```
 
-## QRIS
-
-Ini menurut saya wajib untuk Indonesia.
-
-Karena user Docsly kemungkinan besar mahasiswa.
+Tidak perlu AI sama sekali.
 
 ---
 
-# 7. Subscription System Docsly
+# Jangan Langsung Mengubah Node
 
-Karena Docsly punya:
+Satu hal yang saya sarankan untuk menghindari pengalaman pengguna yang membingungkan adalah **jangan langsung mengubah paragraf menjadi heading saat pengguna masih mengetik**. Misalnya, ketika pengguna baru mengetik "Latar Belakang", sistem belum tentu tahu apakah itu benar-benar heading atau hanya bagian dari kalimat yang akan dilanjutkan.
 
-* Free
-* Pro
-* Premium
+Pendekatan yang lebih stabil adalah:
 
-Jangan hanya bergantung pada Midtrans.
+* Selama pengguna masih mengetik pada baris tersebut, simpan status sebagai **"candidate heading"**.
+* Jalankan deteksi ulang saat pengguna menekan **Enter**, berpindah ke baris lain (blur), atau berhenti mengetik selama sekitar 300–500 ms.
+* Jika skor melewati ambang batas (misalnya ≥70), ubah paragraf menjadi Heading secara otomatis.
+* Jika di kemudian hari pengguna mengedit baris tersebut hingga tidak lagi memenuhi aturan, turunkan kembali menjadi paragraf biasa.
 
-Buat logic sendiri.
+Dengan cara ini, editor terasa lebih mulus dan menghindari perubahan format yang tiba-tiba di tengah proses mengetik.
 
-Contoh:
+## Rekomendasi untuk Docsly
 
-```
-User bayar Pro:
+Saya akan membangun sistem ini dalam tiga lapisan:
 
-14 July
+1. **Rule Engine (95% kasus)**: Menggunakan kombinasi aturan seperti panjang teks, pola penomoran, huruf kapital, kata kunci, posisi, dan konteks untuk mendeteksi heading secara cepat dan konsisten.
+2. **Context Engine**: Melihat paragraf sebelum dan sesudah agar keputusan lebih akurat, misalnya memastikan heading diikuti oleh paragraf isi atau subheading lain.
+3. **Manual Override**: Tetap sediakan pilihan H1–H6 di toolbar atau melalui shortcut. Rule engine tidak akan selalu benar untuk semua jenis dokumen (misalnya artikel kreatif, dokumen hukum, atau gaya penulisan yang tidak mengikuti pola umum), sehingga pengguna harus tetap bisa mengubah hasil deteksi jika diperlukan.
 
-expired:
-
-14 August
-
-
-Tanggal 14 August:
-
-cron check
-
-
-Jika expired:
-
-PRO
-
-↓
-
-FREE
-
-```
-
----
-
-# 8. Free Trial 30 Hari
-
-Ini jangan lewat payment gateway.
-
-Flow:
-
-User signup:
-
-```
-create account
-
-↓
-
-subscription table:
-
-plan:
-TRIAL
-
-trial_end:
-+30 hari
-
-```
-
-Contoh:
-
-```
-User daftar:
-
-14 July
-
-Trial selesai:
-
-13 August
-
-```
-
----
-
-# 9. Halaman yang Perlu Kamu Buat
-
-Untuk SaaS Docsly:
-
-## Pricing Page
-
-```
-/pricing
-```
-
----
-
-## Checkout Page
-
-```
-/checkout
-```
-
-Isi:
-
-* paket
-* ringkasan
-* harga
-* metode pembayaran
-
----
-
-## Payment Success
-
-```
-/payment/success
-```
-
-Contoh:
-
-```
-🎉 Payment Successful
-
-Your Docsly Pro plan is active.
-
-Start creating documents.
-```
-
----
-
-## Payment Failed
-
-```
-/payment/failed
-```
-
----
-
-## Subscription Management
-
-```
-/settings/subscription
-```
-
-Isi:
-
-```
-Current Plan
-
-Docsly Pro
-
-Renews:
-14 August 2026
-
-
-[Upgrade]
-
-[Cancel Subscription]
-```
-
----
-
-# 10. Security yang Wajib
-
-Jangan simpan:
-
-❌ Server Key Midtrans di frontend
-
-Hanya:
-
-Backend:
-
-```
-MIDTRANS_SERVER_KEY
-```
-
-Frontend:
-
-```
-MIDTRANS_CLIENT_KEY
-```
-
-Environment:
-
-```
-.env
-
-MIDTRANS_SERVER_KEY=
-MIDTRANS_CLIENT_KEY=
-```
-
----
-
-# Saran Saya untuk Docsly
-
-Dengan kondisi Docsly sekarang:
-
-✅ Buat UI pricing dan checkout sendiri
-✅ Gunakan Midtrans Snap Embed
-✅ Backend handle transaksi
-✅ Gunakan webhook Midtrans
-✅ Buat subscription system sendiri di Supabase
-✅ Jangan membuat recurring payment dulu
-
-Untuk awal, gunakan model:
-
-```
-User bayar manual setiap bulan
-
-↓
-
-Midtrans
-
-↓
-
-Aktifkan paket
-
-↓
-
-Reminder sebelum expired
-```
-
-Setelah user banyak, baru pertimbangkan:
-
-* auto renewal
-* subscription billing otomatis
-
----
-
-Menurut saya kombinasi ini paling cocok untuk Docsly karena kamu mendapatkan:
-
-* UX premium seperti SaaS modern
-* keamanan payment dari Midtrans
-* fleksibilitas mengatur paket Free Trial/Pro/Premium sendiri
-* tidak terikat tampilan checkout bawaan Midtrans.
+Dengan pendekatan ini, pengguna dapat menulis secara natural tanpa terus-menerus memilih level heading, tetapi tetap memiliki kontrol penuh saat sistem salah mendeteksi. Ini memberikan pengalaman yang jauh lebih mendekati aplikasi modern seperti Notion atau Google Docs, namun dengan otomatisasi yang lebih cerdas berbasis aturan tanpa ketergantungan pada AI.

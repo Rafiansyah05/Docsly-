@@ -47,7 +47,8 @@ export const Indent = Extension.create<IndentOptions>({
               }
               const styles = [];
               if (attributes.indent > 0) {
-                styles.push(`margin-left: calc(${attributes.indent} * ${this.options.indentUnit})`);
+                const safeIndent = Math.min(attributes.indent, this.options.maxIndent);
+                styles.push(`margin-left: calc(${safeIndent} * ${this.options.indentUnit})`);
               }
               if (attributes.firstLineIndent > 0) {
                 styles.push(`text-indent: calc(${attributes.firstLineIndent} * 1.27cm)`);
@@ -144,10 +145,7 @@ export const Indent = Extension.create<IndentOptions>({
   addKeyboardShortcuts() {
     return {
       Tab: () => {
-        // If in a list, sink the list item
-        if (this.editor.commands.sinkListItem('listItem')) {
-          return true;
-        }
+
 
         const { selection } = this.editor.state;
         const { $from, empty } = selection;
@@ -162,9 +160,7 @@ export const Indent = Extension.create<IndentOptions>({
         return true; 
       },
       'Shift-Tab': () => {
-        if (this.editor.commands.liftListItem('listItem')) {
-          return true;
-        }
+
 
         const { selection } = this.editor.state;
         const { $from, empty } = selection;

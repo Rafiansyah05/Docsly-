@@ -91,12 +91,17 @@ export function WorkspaceDocuments({ initialDocuments, workspaceId }: { initialD
   const handleDelete = async () => {
     if (!documentToDelete) return;
     setIsDeleting(true);
+    
     try {
-      await deleteDocument(documentToDelete.id, workspaceId);
-      toast.success('Dokumen berhasil dihapus');
-      setIsDeleteDialogOpen(false);
-      setDocumentToDelete(null);
-      router.refresh();
+      const res = await deleteDocument(documentToDelete.id, workspaceId);
+      if (res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success('Dokumen berhasil dihapus');
+        setIsDeleteDialogOpen(false);
+        setDocumentToDelete(null);
+        // Do NOT call router.refresh() here. Server action with revalidatePath handles UI updates automatically.
+      }
     } catch (err) {
       toast.error('Terjadi kesalahan saat menghapus dokumen');
     } finally {

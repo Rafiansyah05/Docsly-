@@ -2,9 +2,11 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React, { useEffect, useState } from 'react';
 import { formatPageNumber, PageSettings } from '@/lib/page-numbers';
+import { PaginationPluginKey } from './pagination';
 
-const TocComponent = ({ editor, node, updateAttributes }: any) => {
+const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
   const [headings, setHeadings] = useState<any[]>(node?.attrs?.headings || []);
+  const [spacers, setSpacers] = useState<Record<number, number>>({});
 
   useEffect(() => {
     const updateToc = () => {
@@ -51,15 +53,41 @@ const TocComponent = ({ editor, node, updateAttributes }: any) => {
         updateAttributes({ headings: newHeadings });
       }
     };
+    
+    const updateSpacers = () => {
+      const pos = typeof getPos === 'function' ? getPos() : -1;
+      if (pos !== -1) {
+        const pluginState = PaginationPluginKey.getState(editor.state) as any;
+        const currentSpacers = pluginState?.spacers?.[`toc_${pos}`] || {};
+        
+        setSpacers(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(currentSpacers)) {
+            return currentSpacers;
+          }
+          return prev;
+        });
+      }
+    };
 
     // Need a small timeout to let the DOM render before calculating coordinates
-    const handleUpdate = () => setTimeout(updateToc, 50);
+    const handleUpdate = () => {
+      setTimeout(() => {
+        updateToc();
+      }, 50);
+    };
+    
+    const handleTransaction = () => {
+      updateSpacers();
+    };
 
     updateToc();
+    updateSpacers();
     editor.on('update', handleUpdate);
+    editor.on('transaction', handleTransaction);
 
     return () => {
       editor.off('update', handleUpdate);
+      editor.off('transaction', handleTransaction);
     };
   }, [editor]);
 
@@ -80,7 +108,16 @@ const TocComponent = ({ editor, node, updateAttributes }: any) => {
           {headings.map((h, idx) => (
             <li
               key={h.id || idx}
-              style={{ marginLeft: `${(h.level - 1) * 1.5}rem` }}
+              style={{ 
+                marginLeft: `${(h.level - 1) * 1.5}rem`,
+                marginTop: spacers[idx] ? `${spacers[idx]}px` : undefined,
+                ...(spacers[idx] ? {
+                  position: 'relative',
+                  borderTop: `${spacers[idx]}px solid transparent`,
+                  backgroundClip: 'padding-box',
+                  marginTop: 0, // override margin with border to act as a spacer that respects layout better
+                } : {})
+              }}
               className="text-sm flex items-end gap-2 group"
             >
               <span
