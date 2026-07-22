@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, BookOpen, X, Upload, Link as LinkIcon, Loader2, AlertCircle } from 'lucide-react';
 import { addReference, getReferences } from './extensions/citation';
 import { LimitReachedModal } from '@/components/limit-reached-modal';
+import { formatCitation } from '@/lib/citation-formatter';
 
 export const CitationManager = ({ editor, isOpen, onClose }: any) => {
   const [activeTab, setActiveTab] = useState<'auto' | 'manual'>('auto');
@@ -44,17 +45,20 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
     const r = refs.find((ref: any) => ref.id === id);
     if (!r) return;
     
-    const author = r.penulis || 'Unknown';
-    const year = r.tahun ? `(${r.tahun}).` : '(n.d.).';
-    const title = r.judul ? `${r.judul}.` : '';
-    const publisher = r.penerbit ? ` ${r.penerbit}.` : '';
+    const formattedParts = formatCitation(r, citationStyle);
     
-    let fullText = `${author} ${year} ${title}${publisher}`;
-    if (citationStyle === 'Harvard') {
-      fullText = `${author}, ${r.tahun || 'n.d.'}. ${title}${publisher}`;
-    }
+    const content = formattedParts.map(part => {
+      if (part.italic) {
+        return { type: 'text', marks: [{ type: 'italic' }], text: part.text };
+      }
+      return { type: 'text', text: part.text };
+    });
 
-    editor.chain().focus().insertContent(fullText).run();
+    editor.chain().focus().insertContent({
+      type: 'paragraph',
+      attrs: { hangingIndent: true },
+      content: content
+    }).run();
   };
 
   const processExtractedData = (result: any) => {
@@ -69,7 +73,7 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
     setFormData({
       id: '',
       judul: data.title || '',
-      penulis: data.authors ? data.authors.join(', ') : '',
+      penulis: data.authors ? data.authors.join('; ') : '',
       tahun: data.year || '',
       penerbit: data.publisher || data.journal || '',
       jenis: data.type === 'journal' ? 'Jurnal' : data.type === 'book' ? 'Buku' : 'Situs Web',
@@ -192,7 +196,7 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
                   <option className="dark:bg-zinc-900">Prosiding</option>
                 </select>
                 <input
-                  type="text" placeholder="Penulis (ex: Smith, J.)"
+                  type="text" placeholder="Penulis (pisahkan dengan titik koma ';')"
                   value={formData.penulis} onChange={e => setFormData({ ...formData, penulis: e.target.value })}
                   className="w-full text-sm border-b border-slate-200 dark:border-zinc-800 p-1 outline-none bg-transparent text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                 />
@@ -245,7 +249,9 @@ export const CitationManager = ({ editor, isOpen, onClose }: any) => {
             {refs.map((r) => (
               <div key={r.id} className="p-2 border border-slate-200 dark:border-zinc-800 rounded hover:bg-slate-50 dark:hover:bg-zinc-900 group flex flex-col gap-2 transition-colors">
                 <div className="text-sm text-slate-800 dark:text-zinc-200 leading-tight">
-                  <span className="font-semibold">{r.penulis}</span> ({r.tahun}). <i>{r.judul}</i>.
+                  {formatCitation(r, citationStyle).map((part, i) => (
+                    <span key={i} className={part.italic ? 'italic' : ''}>{part.text}</span>
+                  ))}
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button size="sm" variant="secondary" className="h-7 text-xs flex-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border-0" onClick={() => handleInsertCitation(r.id)}>

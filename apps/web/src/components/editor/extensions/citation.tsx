@@ -1,6 +1,7 @@
 import { Node, mergeAttributes, Extension } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React, { useEffect, useState } from 'react';
+import { formatCitation } from '@/lib/citation-formatter';
 
 // --- Global Reference Store (for MVP simplicity) ---
 // In a real app, this would be in a database or context, synced with the document.
@@ -83,24 +84,22 @@ const BibliographyComponent = ({ editor }: any) => {
 
   return (
     <NodeViewWrapper className="bibliography-wrapper mt-8 border-t pt-4">
-      <div className="font-bold text-xl mb-4">Daftar Pustaka</div>
+      <div className="font-bold text-xl mb-4 text-center">DAFTAR PUSTAKA</div>
       {refs.length === 0 ? (
         <p className="text-slate-400 italic text-sm">Belum ada sitasi yang ditambahkan ke dokumen ini.</p>
       ) : (
-        <div className="space-y-3 pl-4" style={{ textIndent: '-1rem' }}>
-          {refs.map((r, idx) => {
-            // Very basic APA format renderer
-            const author = r.penulis || 'Unknown';
-            const year = r.tahun ? `(${r.tahun}).` : '(n.d.).';
-            const title = r.judul ? <i className="font-medium">{r.judul}.</i> : '';
-            const publisher = r.penerbit ? ` ${r.penerbit}.` : '';
-
-            return (
-              <div key={r.id || idx} className="text-sm text-slate-800 leading-relaxed">
-                {author}. {year} {title}{publisher}
+        <div className="space-y-3">
+          {refs.map((r, idx) => (
+              <div 
+                key={r.id || idx} 
+                className="text-sm text-slate-800 leading-relaxed break-words" 
+                style={{ paddingLeft: '1.27cm', textIndent: '-1.27cm', marginLeft: '0px' }}
+              >
+                {formatCitation(r, 'APA').map((part, i) => (
+                  <span key={i} className={part.italic ? 'italic' : ''}>{part.text}</span>
+                ))}
               </div>
-            );
-          })}
+          ))}
         </div>
       )}
     </NodeViewWrapper>

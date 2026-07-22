@@ -42,7 +42,7 @@ export const Indent = Extension.create<IndentOptions>({
               return indentStr ? parseInt(indentStr, 10) : 0;
             },
             renderHTML: attributes => {
-              if (attributes.indent === 0 && !attributes.firstLineIndent) {
+              if (attributes.indent === 0 && !attributes.firstLineIndent && !attributes.hangingIndent) {
                 return {};
               }
               const styles = [];
@@ -53,9 +53,14 @@ export const Indent = Extension.create<IndentOptions>({
               if (attributes.firstLineIndent > 0) {
                 styles.push(`text-indent: calc(${attributes.firstLineIndent} * 1.27cm)`);
               }
+              if (attributes.hangingIndent) {
+                styles.push('padding-left: 1.27cm');
+                styles.push('text-indent: -1.27cm');
+              }
               return {
                 'data-indent': attributes.indent?.toString() || '0',
                 'data-first-line-indent': attributes.firstLineIndent?.toString() || '0',
+                'data-hanging-indent': attributes.hangingIndent ? 'true' : undefined,
                 style: styles.join('; '),
               };
             },
@@ -71,6 +76,11 @@ export const Indent = Extension.create<IndentOptions>({
               // but we need this attribute definition for tiptap to track it.
               return {};
             }
+          },
+          hangingIndent: {
+            default: false,
+            parseHTML: element => element.hasAttribute('data-hanging-indent'),
+            renderHTML: () => ({})
           }
         },
       },
