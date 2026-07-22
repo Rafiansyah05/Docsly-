@@ -7,9 +7,9 @@ import { motion } from 'framer-motion';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
+    <div className="h-screen overflow-hidden grid grid-cols-1 md:grid-cols-2">
       {/* Kolom Kiri: Abstract Shapes & Branding (Tersembunyi di Mobile) */}
-      <div className="hidden md:flex flex-col relative bg-[#0f172a] overflow-hidden justify-between p-12">
+      <div className="hidden md:flex flex-col relative bg-[#0f172a] overflow-hidden justify-between p-12 h-full">
         {/* Soft Mesh Gradient Background */}
         <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/30 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-20%] w-[60%] h-[60%] bg-sky-400/20 rounded-full blur-[100px] pointer-events-none" />
@@ -60,21 +60,23 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Kolom Kanan: Form */}
-      <div className="flex flex-col justify-center bg-white p-8 sm:p-12 lg:p-24 h-full relative">
-        <div className="md:hidden absolute top-8 left-8">
-          <Link href="/" className="inline-flex items-center">
-            <Image src="/images/logo-docsly.png" alt="Docsly Logo" width={32} height={32} className="object-contain rounded-md" />
-          </Link>
-        </div>
+      <div className="flex flex-col bg-white h-full overflow-y-auto">
+        <div className="flex-1 flex flex-col justify-center p-8 sm:p-12 lg:p-24 relative min-h-max">
+          <div className="md:hidden absolute top-8 left-8">
+            <Link href="/" className="inline-flex items-center">
+              <Image src="/images/logo-docsly.png" alt="Docsly Logo" width={32} height={32} className="object-contain rounded-md" />
+            </Link>
+          </div>
 
-        <div className="w-full max-w-sm mx-auto">
-          {children}
-        </div>
+          <div className="w-full max-w-sm mx-auto my-auto py-12">
+            {children}
+          </div>
 
-        <div className="absolute bottom-8 left-0 right-0 text-center text-xs text-slate-400">
-          <div className="flex justify-center space-x-4">
-            <Link href="/privacy" className="hover:text-slate-600 transition-colors">Kebijakan Privasi</Link>
-            <Link href="/terms" className="hover:text-slate-600 transition-colors">Syarat Layanan</Link>
+          <div className="mt-8 text-center text-xs text-slate-400">
+            <div className="flex justify-center space-x-4">
+              <Link href="/privacy" className="hover:text-slate-600 transition-colors">Kebijakan Privasi</Link>
+              <Link href="/terms" className="hover:text-slate-600 transition-colors">Syarat Layanan</Link>
+            </div>
           </div>
         </div>
       </div>

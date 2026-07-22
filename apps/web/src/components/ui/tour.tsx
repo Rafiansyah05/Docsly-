@@ -241,26 +241,30 @@ function TourOverlay({ isActive, step, targetRect, onNext, onSkip, isLastStep, s
     switch (pos) {
       case 'right':
         popoverStyle = {
+          position: 'absolute',
           left: targetRect.right + padding + spacing,
           top: Math.max(spacing, Math.min(viewportH - popoverHeight - spacing, targetRect.top + targetRect.height/2 - popoverHeight/2))
         };
         break;
       case 'left':
         popoverStyle = {
+          position: 'absolute',
           left: targetRect.left - padding - spacing - popoverWidth,
           top: Math.max(spacing, Math.min(viewportH - popoverHeight - spacing, targetRect.top + targetRect.height/2 - popoverHeight/2))
         };
         break;
       case 'bottom':
         popoverStyle = {
+          position: 'absolute',
           top: targetRect.bottom + padding + spacing,
-          left: Math.max(spacing, Math.min(viewportH - popoverWidth - spacing, targetRect.left + targetRect.width/2 - popoverWidth/2))
+          left: Math.max(spacing, Math.min(viewportW - popoverWidth - spacing, targetRect.left + targetRect.width/2 - popoverWidth/2))
         };
         break;
       case 'top':
         popoverStyle = {
+          position: 'absolute',
           top: targetRect.top - padding - spacing - popoverHeight,
-          left: Math.max(spacing, Math.min(viewportH - popoverWidth - spacing, targetRect.left + targetRect.width/2 - popoverWidth/2))
+          left: Math.max(spacing, Math.min(viewportW - popoverWidth - spacing, targetRect.left + targetRect.width/2 - popoverWidth/2))
         };
         break;
     }
