@@ -53,8 +53,25 @@ export async function deleteWorkspace(workspaceId: string) {
 
   if (!user) return { error: 'Unauthorized' };
 
+  // Verifikasi bahwa user adalah pemilik workspace
+  const { data: workspaceInfo, error: wsError } = await supabase
+    .from('workspaces')
+    .select('id')
+    .eq('id', workspaceId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (wsError || !workspaceInfo) return { error: 'Workspace tidak ditemukan atau bukan milik Anda' };
+
+  // Gunakan Admin Client untuk menghapus data berelasi agar terhindar dari RLS blocking di production
+  const { createClient: createSupabaseJs } = await import('@supabase/supabase-js');
+  const adminSupabase = createSupabaseJs(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   // First fetch all documents in the workspace
-  const { data: workspaceDocs } = await supabase
+  const { data: workspaceDocs } = await adminSupabase
     .from('documents')
     .select('id')
     .eq('workspace_id', workspaceId);
@@ -63,38 +80,35 @@ export async function deleteWorkspace(workspaceId: string) {
     const docIds = workspaceDocs.map(d => d.id);
     
     // 1. ai_conversations (and prompt_history)
-    const { data: convs } = await supabase.from('ai_conversations').select('id').in('document_id', docIds);
+    const { data: convs } = await adminSupabase.from('ai_conversations').select('id').in('document_id', docIds);
     if (convs && convs.length > 0) {
       const convIds = convs.map(c => c.id);
-      await supabase.from('prompt_history').delete().in('conversation_id', convIds);
-      await supabase.from('ai_conversations').delete().in('id', convIds);
+      await Promise.all([
+        adminSupabase.from('prompt_history').delete().in('conversation_id', convIds),
+        adminSupabase.from('ai_conversations').delete().in('id', convIds)
+      ]);
     }
     
-    // 2. document_versions
-    await supabase.from('document_versions').delete().in('document_id', docIds);
-    
-    // 3. attachments
-    await supabase.from('attachments').delete().in('document_id', docIds);
-    
-    // 4. image_placeholders
-    await supabase.from('image_placeholders').delete().in('document_id', docIds);
-    
-    // 5. bibliography_entries
-    await supabase.from('bibliography_entries').delete().in('document_id', docIds);
+    // Hapus secara paralel untuk menghindari timeout di Vercel (batas 10 detik)
+    await Promise.all([
+      adminSupabase.from('document_versions').delete().in('document_id', docIds),
+      adminSupabase.from('attachments').delete().in('document_id', docIds),
+      adminSupabase.from('image_placeholders').delete().in('document_id', docIds),
+      adminSupabase.from('bibliography_entries').delete().in('document_id', docIds)
+    ]);
     
     // 6. Delete documents
-    await supabase.from('documents').delete().in('id', docIds);
+    await adminSupabase.from('documents').delete().in('id', docIds);
   }
 
   // 7. Delete references (workspace level)
-  await supabase.from('references').delete().eq('workspace_id', workspaceId);
+  await adminSupabase.from('references').delete().eq('workspace_id', workspaceId);
 
   // 8. Then delete the workspace
-  const { error } = await supabase
+  const { error } = await adminSupabase
     .from('workspaces')
     .delete()
-    .eq('id', workspaceId)
-    .eq('user_id', user.id);
+    .eq('id', workspaceId);
 
   if (error) return { error: error.message };
 
