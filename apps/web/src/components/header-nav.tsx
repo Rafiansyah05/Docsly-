@@ -171,7 +171,7 @@ export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName, cur
       <div className="flex items-center min-w-0">{renderLeft()}</div>
 
       {/* Kanan: searchbar + upgrade + theme */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div id="tour-navbar-right" className="flex items-center gap-2 shrink-0">
         {/* Countdown */}
         {countdownText && (
           <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full text-xs font-medium text-amber-700 dark:text-amber-400 mr-2 shadow-sm transition-all duration-300">

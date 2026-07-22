@@ -9,6 +9,7 @@ import { UserMenu } from '@/components/user-menu';
 import { PremiumModal } from '@/components/premium-modal';
 import { SubscriptionSyncer } from '@/components/subscription-syncer';
 import { Home, LayoutGrid, BookOpen, Bell, LifeBuoy, PanelLeftOpen, PanelLeftClose, CreditCard } from 'lucide-react';
+import { useTour } from '@/components/ui/tour';
 
 const navItems = [
   { label: 'Home', href: '/w', icon: Home },
@@ -23,10 +24,38 @@ export function WorkspaceShell({ user, profile, workspaces, subscription, unread
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const isEditor = /^\/w\/[^/]+\/d\/[^/]+/.test(pathname || '');
+  const { startTour } = useTour();
+
+  React.useEffect(() => {
+    if (!isEditor) {
+      const toursStatus = profile?.tours_status || {};
+      const hasSeen = toursStatus['dashboard_tour'];
+      // Delay sedikit agar render selesai
+      const timer = setTimeout(() => {
+        startTour('dashboard_tour', [
+          {
+            targetId: 'tour-sidebar',
+            title: 'Menu Navigasi Utama',
+            content: 'Melalui sidebar ini, Anda dapat menavigasi ke berbagai halaman penting seperti Manajemen Workspace (Home), Pustaka Template, Panduan, Notifikasi, Pengaturan Akun, Tagihan dan FAQ & Support.',
+            position: 'right',
+            padding: 8
+          },
+          {
+            targetId: 'tour-navbar-right',
+            title: 'Pencarian & Preferensi',
+            content: 'Di area ini Anda bisa mencari dokumen, meng-upgrade ke paket Premium, dan mengubah tema visual (Terang/Gelap).',
+            position: 'bottom',
+            padding: 12
+          }
+        ], undefined, false, hasSeen, user?.id);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditor, startTour, profile, user]);
 
   const profileName = profile?.nama_lengkap || user.email || 'Pengguna';
   const profileEmail = user.email || '';
-  
+
   // Hitung status langganan
   let accountStatus = 'Free Plan';
   if (subscription && subscription.status === 'active') {
@@ -57,6 +86,7 @@ export function WorkspaceShell({ user, profile, workspaces, subscription, unread
       <SubscriptionSyncer />
       {/* Sidebar — full viewport height, di atas navbar */}
       <aside
+        id="tour-sidebar"
         className={`${collapsed ? 'w-20' : 'w-[260px]'} hidden lg:flex flex-col justify-between bg-white dark:bg-zinc-900 border-r border-[#E2E8F0] dark:border-zinc-800 h-full transition-all duration-300 ease-out relative shrink-0 z-40`}
       >
         <div className="flex flex-col h-full">

@@ -26,6 +26,7 @@ import Subscript from '@tiptap/extension-subscript';
 import Highlight from '@tiptap/extension-highlight';
 import Typography from '@tiptap/extension-typography';
 import CharacterCount from '@tiptap/extension-character-count';
+import { useTour } from '@/components/ui/tour';
 import { Pagination } from './extensions/pagination';
 import { Suggestion } from './extensions/suggestion';
 import { TableOfContents } from './extensions/toc';
@@ -57,10 +58,13 @@ interface TiptapEditorProps {
   initialContent: any;
   initialTitle: string;
   workspaceId: string;
+  hasSeenTour?: boolean;
+  userId?: string;
 }
 
-export function TiptapEditor({ documentId, initialContent, initialTitle, workspaceId }: TiptapEditorProps) {
+export function TiptapEditor({ documentId, initialTitle, initialContent, workspaceId, hasSeenTour, userId }: TiptapEditorProps) {
   const router = useRouter();
+  const { startTour } = useTour();
   const { saveState, triggerSave } = useAutosave(documentId);
   const [totalPages, setTotalPages] = useState(1);
   const totalPagesRef = React.useRef(1);
@@ -200,10 +204,10 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
   // Fetch the latest content on mount from Supabase to bypass any client Router Cache
   useEffect(() => {
     if (!editor) return;
-    
+
     let isMounted = true;
     const supabase = createClient();
-    
+
     const fetchLatest = async () => {
       try {
         // Cek localStorage dulu (untuk template atau import dokumen)
@@ -212,7 +216,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
           editor.commands.setContent(importedHtml);
           localStorage.removeItem(`import_${documentId}`);
           triggerSave(() => editor.getJSON());
-          
+
           // Tetap ambil judul jika diperlukan
           const { data } = await supabase.from('documents').select('judul').eq('id', documentId).single();
           if (isMounted && data) {
@@ -226,9 +230,9 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
           .select('konten_json_terkini, judul')
           .eq('id', documentId)
           .single();
-          
+
         if (error) throw error;
-        
+
         if (isMounted && data && data.konten_json_terkini) {
           editor.commands.setContent(data.konten_json_terkini);
           window.dispatchEvent(new CustomEvent('update-title', { detail: data.judul }));
@@ -237,9 +241,9 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         console.error('Gagal mengambil konten terbaru dari database:', err);
       }
     };
-    
+
     fetchLatest();
-    
+
     return () => {
       isMounted = false;
     };
@@ -258,7 +262,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     const syncLayout = () => {
       const docLayout = editor.state.doc.attrs.layout;
       if (!docLayout) return;
-      
+
       setLayout(prev => {
         if (
           prev.top === docLayout.top &&
@@ -286,13 +290,13 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         // Reset minHeight temporarily to get true natural scrollHeight
         const prevMinHeight = dom.style.minHeight;
         dom.style.minHeight = 'auto';
-        
+
         const contentHeight = dom.scrollHeight;
         dom.style.minHeight = prevMinHeight; // Restore it immediately
 
         const FULL_STEP = 1163; // 1123px height + 40px gap
         const UNPRINTABLE_GAP = layout.bottom + 40 + layout.top;
-        
+
         // total pages calculation
         const total = Math.max(1, Math.ceil((contentHeight + UNPRINTABLE_GAP) / FULL_STEP));
         totalPagesRef.current = total;
@@ -459,7 +463,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sizeBytes: croppedBlob.size }),
       });
-      
+
       const checkData = await res.json();
       if (!res.ok && checkData.message === 'Storage limit reached') {
         setLimitModal({
@@ -524,7 +528,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${baseUrl}/api/export/docx`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token || ''}`
         },
@@ -559,7 +563,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${baseUrl}/api/export/pdf`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token || ''}`
         },
@@ -600,40 +604,88 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     };
     editor.on('update', syncPageSettings);
     editor.on('transaction', syncPageSettings);
-    
+
     // Initial sync
     syncPageSettings();
-    
+
     return () => {
       editor.off('update', syncPageSettings);
       editor.off('transaction', syncPageSettings);
     };
   }, [editor]);
 
+  // Editor Tour Effect
+  useEffect(() => {
+    // Delay agar editor dan AI panel selesai render
+    const timer = setTimeout(() => {
+      startTour(
+        'editor_tour',
+        [
+          {
+            targetId: 'tour-editor-navbar',
+            title: 'Toolbar Format & Ekspor',
+            content: `Toolbar ini menyediakan seluruh alat yang Anda perlukan untuk menyusun dokumen secara profesional.
+
+1. Font: Mengatur jenis huruf, ukuran huruf, dan warna teks
+2. Heading & Auto Heading: Membuat struktur dokumen yang rapi atau menggunakan AI untuk menyusun heading secara otomatis.
+3. Format Teks: Menebalkan, memiringkan, memberi garis bawah, mencoret teks, superscript, subscript, dan menghapus format.
+4. Paragraf: Mengatur perataan teks, jarak baris, dan indentasi paragraf.
+5. Daftar & Elemen: Membuat bullet list, numbered list, quote, code, dan hyperlink.
+6. Fitur Dokumen: Menambahkan tabel, gambar, daftar isi otomatis, penomoran halaman yang mudah, sitasi & daftar pustaka otomatis, serta melihat riwayat perubahan dokumen.`,
+            position: 'bottom',
+            padding: 4
+          },
+          {
+            targetId: 'tour-editor-workspace',
+            title: 'Lembar Kerja Dokumen',
+            content: 'Ini adalah area utama Anda mengetik. Dokumen akan otomatis tersimpan setiap ada perubahan.',
+            position: 'right',
+            padding: 20
+          },
+          {
+            targetId: 'tour-ai-sidebar',
+            title: 'Asisten AI Pintar',
+            content: 'Gunakan panel ini untuk berdiskusi dengan AI, merangkum teks, atau memperbaiki ejaan langsung dari referensi Anda.',
+            position: 'left',
+            padding: 8
+          }
+        ],
+        undefined,
+        true, // showSkipAll
+        hasSeenTour,
+        userId
+      );
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [startTour]);
+
   return (
-    <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-zinc-950">
-      <DocumentNavbar
-        editor={editor}
-        saveState={saveState}
-        documentId={documentId}
-        initialTitle={initialTitle}
-        workspaceId={workspaceId}
-        onToggleHistory={() => setShowHistory(!showHistory)}
-        onOpenPageNumbers={() => setShowPageNumberModal(true)}
-        isExportingPdf={isExportingPdf}
-        isExportingDocx={isExportingDocx}
-        onExportPdf={exportPdf}
-        onExportDocx={exportDocx}
-        onUploadImage={triggerImageUpload}
-        isUploading={isUploading}
-      />
-      <EditorToolbar editor={editor} onUploadImage={triggerImageUpload} />
+    <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-zinc-950 relative">
+      <div id="tour-editor-navbar" className="shrink-0 z-40 relative">
+        <DocumentNavbar
+          editor={editor}
+          saveState={saveState}
+          documentId={documentId}
+          initialTitle={initialTitle}
+          workspaceId={workspaceId}
+          onToggleHistory={() => setShowHistory(!showHistory)}
+          onOpenPageNumbers={() => setShowPageNumberModal(true)}
+          isExportingPdf={isExportingPdf}
+          isExportingDocx={isExportingDocx}
+          onExportPdf={exportPdf}
+          onExportDocx={exportDocx}
+          onUploadImage={triggerImageUpload}
+          isUploading={isUploading}
+        />
+        <EditorToolbar editor={editor} onUploadImage={triggerImageUpload} />
+      </div>
       <TableBubbleMenu editor={editor} />
       <SuggestionBubbleMenu editor={editor} />
       <ImageBubbleMenu editor={editor} />
 
       <div className="flex-1 flex flex-row min-h-0 h-full overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-y-auto pb-4 md:pb-8 flex flex-col items-center bg-slate-200 dark:bg-zinc-900" onClick={() => setContextMenu(null)}>
+        <div id="tour-editor-workspace" className="flex-1 min-h-0 overflow-y-auto pb-4 md:pb-8 flex flex-col items-center bg-slate-200 dark:bg-zinc-900" onClick={() => setContextMenu(null)}>
           {/* Horizontal Ruler (Sticky Top) */}
           <div className="sticky top-0 z-30 mb-4 flex w-full justify-center bg-white dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800 py-1.5 shadow-sm">
             <div style={{ marginLeft: '24px' }}>
@@ -719,7 +771,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         </div>
 
         {/* AI Agent Sidebar Panel */}
-        <div className="h-full min-h-0 flex flex-col">
+        <div id="tour-ai-sidebar" className="h-full min-h-0 flex flex-col relative z-20">
           <AiSidebar editor={editor} documentId={documentId} />
         </div>
 

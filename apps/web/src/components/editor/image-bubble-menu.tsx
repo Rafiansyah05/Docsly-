@@ -10,6 +10,7 @@ export function ImageBubbleMenu({ editor }: { editor: Editor | null }) {
     <BubbleMenu
       editor={editor}
       pluginKey="imageBubbleMenu"
+      // @ts-expect-error Tiptap type mismatch for tippyOptions
       tippyOptions={{ duration: 100, placement: 'top' as const, zIndex: 999999, appendTo: () => document.body }}
       shouldShow={({ editor }) => editor.isActive('image') || editor.isActive('imageResize') || editor.isActive('imagePlaceholder')}
       className="flex items-center gap-1 p-1 rounded-md border bg-white dark:bg-zinc-900 shadow-md"

@@ -6,6 +6,7 @@ import "./globals.css";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TourProvider } from "@/components/ui/tour";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -45,7 +46,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <TourProvider>
+            {children}
+          </TourProvider>
         </ThemeProvider>
       </body>
     </html>

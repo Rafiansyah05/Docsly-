@@ -1,230 +1,194 @@
-Saya paham maksud Anda. Yang Anda inginkan bukan sekadar **mengubah urutan teks menjadi format APA**, tetapi **hasil akhirnya harus terlihat seperti hasil Microsoft Word atau Mendeley**, lengkap dengan formatting (italic, hanging indent, spacing, dll.).
+Bug: Popup Sitasi Tertimpa oleh Tutorial Overlay
 
-Dari screenshot, saya melihat beberapa masalah.
+Saat ini terdapat bug pada sistem onboarding/tutorial.
 
-### 1. Tidak ada *italic* ❌
+Masalah
 
-Hasil AI Anda:
+Ketika tutorial sedang aktif, lalu user membuka popup Sitasi & Daftar Pustaka, popup tersebut justru berada di belakang popup tutorial (onboarding).
 
-> Martin-Martin, A.; Orduna-Malea, E.; Ayllon, J. M.; Delgado López-Cózar, E., 2016. A two-sided academic landscape: portrait of highly-cited documents in Google Scholar (1950–2013). arXiv.
+Akibatnya:
 
-Seharusnya (APA 7):
+Popup sitasi terpotong.
+Tidak dapat digunakan.
+Sebagian tampilannya tertutup.
+User tidak dapat melihat seluruh isi popup.
+Terlihat seperti bug layering (z-index).
 
-> Martin-Martin, A., Orduna-Malea, E., Ayllon, J. M., & Delgado López-Cózar, E. (2016). *A two-sided academic landscape: Portrait of highly-cited documents in Google Scholar (1950–2013).* *arXiv.*
+Dari screenshot terlihat bahwa popup Sitasi & Daftar Pustaka muncul di bawah popup tutorial, padahal popup tersebut adalah komponen yang sedang dijelaskan.
 
-Yang harus **italic** adalah:
+Perilaku yang diharapkan
 
-* Judul jurnal (*Journal Name*)
-* Volume jurnal
-* Judul buku (jika tipe referensinya buku)
+Selama tutorial berlangsung, apabila langkah yang sedang dijelaskan adalah Sitasi & Daftar Pustaka, maka:
 
-Kalau ini preprint arXiv, banyak style tetap meng-*italic*-kan nama sumber (*arXiv*).
+Popup Sitasi harus tampil paling depan.
+Popup Tutorial tetap berada di atas overlay, tetapi tidak boleh menutupi popup Sitasi.
+Overlay hanya menggelapkan area di luar target.
+Area target (termasuk popup Sitasi) tetap terang dan tidak terkena blur.
 
----
+Urutan layer yang benar adalah:
 
-## 2. Hanging Indent tidak ada ❌
+Layer 5
+Tooltip / Tutorial Popup
 
-Sekarang hasilnya seperti ini
+↓
 
-```
-Martin-Martin, A.; Orduna...
-academic landscape...
-```
+Layer 4
+Popup Sitasi & Daftar Pustaka
 
-Padahal yang benar
+↓
 
-```
-Martin-Martin, A., Orduna-Malea, E., Ayllon, J. M., &
-     Delgado López-Cózar, E. (2016). A two-sided...
-```
+Layer 3
+Komponen yang sedang di-highlight
 
-atau
+↓
 
-```
-Martin-Martin, A., Orduna-Malea, E., Ayllon, J. M., &
-    Delgado López-Cózar, E. (2016). ...
-```
+Layer 2
+Overlay Blur
 
-Baris kedua harus masuk sekitar **1,27 cm (0.5")**.
+↓
 
-Ini **bukan menambahkan spasi**, tetapi menggunakan atribut paragraph:
+Layer 1
+Editor
 
-```
-paragraph {
-    textIndent = -1.27 cm
-    marginLeft = 1.27 cm
-}
-```
+Bukan seperti sekarang:
 
----
+Tutorial Popup
 
-## 3. Masih menggunakan ";" ❌
+↓
 
-AI Anda
+Overlay
 
-```
-Martin-Martin, A.;
-Orduna-Malea, E.;
-```
+↓
 
-APA tidak memakai titik koma.
+Popup Sitasi
+Mekanisme yang benar
 
-Harus
+Ketika tutorial mencapai langkah Sitasi & Daftar Pustaka, sistem harus melakukan urutan berikut:
 
-```
-Martin-Martin, A.,
-Orduna-Malea, E.,
-```
+User menekan tombol Sitasi.
+Popup Sitasi dibuka terlebih dahulu.
+Tunggu hingga popup selesai dirender.
+Hitung posisi popup Sitasi.
+Jadikan popup Sitasi sebagai target highlight.
+Spotlight mengikuti ukuran popup Sitasi, bukan hanya tombol Sitasi.
+Popup Tutorial muncul di samping popup Sitasi.
+Popup Sitasi tetap berada di atas overlay.
+Popup Sitasi tetap dapat diinteraksikan jika diperlukan.
+Highlight yang benar
 
----
+Tutorial jangan hanya menyorot tombol:
 
-## 4. Tidak ada "&" terakhir ❌
+Sitasi & Daftar Pustaka
 
-APA
+Karena tujuan pengguna adalah memahami isi popup.
 
-```
-A.,
-B.,
-&
-C.
-```
+Yang harus disorot adalah:
 
-bukan
++--------------------------------------+
+| AI Generate | Manual                 |
+|--------------------------------------|
+|                                      |
+| Upload Dokumen                       |
+|                                      |
+| Penjelasan                           |
+|                                      |
++--------------------------------------+
 
-```
-A.,
-B.,
-C.
-```
+Artinya seluruh popup Sitasi menjadi spotlight.
 
----
+Overlay
 
-## 5. Tahun salah layout ❌
+Overlay harus membuat lubang mengikuti ukuran popup Sitasi.
 
-Sekarang
+Contoh
 
-```
-Delgado..., 2016.
-```
+████████████████████████████
 
-APA
+████                ████████
 
-```
-Delgado López-Cózar, E. (2016).
-```
+████   Popup        ████████
 
-Harus di dalam kurung.
+████   Sitasi       ████████
 
----
+████                ████████
 
-## 6. Tidak ada sentence case ❌
+████████████████████████████
 
-Judul artikel APA harus
+Area putih adalah popup.
 
-```
-A two-sided academic landscape: Portrait of highly-cited documents in Google Scholar (1950–2013).
-```
+Area hitam adalah overlay.
 
-Bukan semua Title Case.
+Popup tidak boleh blur.
 
----
+Z-Index
 
-## 7. Nama jurnal harus italic ❌
+Pastikan layering mengikuti hirarki yang konsisten.
 
-```
-*Journal of Computer Science*
-```
+Contoh:
 
-atau
+Tutorial Popup
 
-```
-*Nature*
-```
+z-index: 5000
 
-atau
+↓
 
-```
-*arXiv*
-```
+Popup Sitasi
 
----
+z-index: 4900
 
-# Yang paling penting
+↓
 
-Menurut saya, masalah terbesar bukan pada prompt AI, tetapi pada arsitektur implementasinya.
+Highlighted Element
 
-Saat ini AI Anda tampaknya hanya menghasilkan **plain text**, misalnya:
+z-index: 4800
 
-```text
-Martin-Martin...
-```
+↓
 
-Padahal editor seperti Microsoft Word, Google Docs, atau Mendeley **tidak pernah menghasilkan daftar pustaka sebagai plain text**.
+Overlay
 
-Mereka menghasilkan **Rich Text**.
+z-index: 4700
 
-Contohnya:
+↓
 
-```
-paragraph
-    indentLeft = 1.27 cm
-    hanging = true
+Editor
 
-run
-    text = Martin-Martin, A.
-    italic = false
+z-index: auto
 
-run
-    text = A two-sided academic...
-    italic = true
+Jangan menggunakan nilai acak pada setiap komponen karena dapat menyebabkan konflik antar popup.
 
-run
-    text = arXiv
-    italic = true
-```
+Posisi Tooltip
 
-Artinya, AI seharusnya tidak mengembalikan hanya sebuah string, tetapi juga informasi formatting.
+Tooltip tutorial tidak boleh menutupi popup Sitasi.
 
-Misalnya:
+Posisinya harus otomatis memilih ruang kosong:
 
-```json
-[
-  {
-    "text": "Martin-Martin, A., Orduna-Malea, E., Ayllon, J. M., & Delgado López-Cózar, E. ",
-    "italic": false
-  },
-  {
-    "text": "(2016). ",
-    "italic": false
-  },
-  {
-    "text": "A two-sided academic landscape: Portrait of highly-cited documents in Google Scholar (1950–2013). ",
-    "italic": false
-  },
-  {
-    "text": "arXiv.",
-    "italic": true
-  }
-]
-```
+kanan popup
+kiri popup
+bawah popup
+atas popup
 
-Kemudian editor Anda yang menerapkan:
+sesuai ruang yang tersedia.
 
-* `italic`
-* `bold`
-* `underline`
-* `paragraph style`
-* `hanging indent`
-* `spacing`
+Fokus Tutorial
 
----
+Selama langkah ini berlangsung:
 
-## Saran untuk Docsly
+Popup Sitasi tetap terbuka.
+User dapat melihat seluruh isi popup.
+Spotlight mengikuti popup Sitasi.
+Overlay tidak menutupi popup.
+Tooltip menjelaskan fungsi popup.
+Setelah user menekan Mengerti, popup Sitasi ditutup (atau tetap terbuka jika memang diperlukan oleh alur berikutnya).
+Yang harus diperiksa
 
-Saya **tidak menyarankan AI yang langsung menulis daftar pustaka ke editor**. Pendekatan yang jauh lebih stabil adalah:
+Silakan audit seluruh sistem layering pada onboarding, karena bug ini kemungkinan juga akan terjadi pada popup lain seperti:
 
-1. AI hanya mengubah metadata menjadi **struktur referensi**.
-2. Sebuah **Citation Formatter Engine** (aturan deterministik, bukan AI) mengubah struktur tersebut menjadi format APA/Harvard.
-3. Editor merender hasilnya sebagai **rich text** (bukan plain text), sehingga italic, hanging indent, dan formatting lainnya diterapkan secara otomatis.
+Import Dokumen
+Export
+Rename Workspace
+Delete Workspace
+AI Agent
+Riwayat
+Pengaturan
 
-Pendekatan ini jauh lebih konsisten, hasilnya menyerupai Microsoft Word atau Mendeley, dan menghindari variasi format yang sering muncul jika semuanya diserahkan kepada model AI.
+Pastikan seluruh modal, dropdown, popover, context menu, dan dialog yang menjadi target tutorial selalu berada di atas overlay dan dapat disorot dengan benar tanpa tertutup atau terkena efek blur. Dengan demikian, sistem onboarding akan konsisten di semua komponen interaktif dalam Docsly.

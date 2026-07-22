@@ -7,7 +7,7 @@ import { Sparkles, CheckCircle2, Loader2, XCircle, ArrowRight } from 'lucide-rea
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 
-export function PremiumModal({ compact = false, className = '', currentPlan = 'Free Plan' }: { compact?: boolean; className?: string; currentPlan?: string }) {
+export function PremiumModal({ compact = false, className = '', currentPlan = 'Free Plan', triggerText }: { compact?: boolean; className?: string; currentPlan?: string; triggerText?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [paymentResult, setPaymentResult] = useState<{ status: 'success' | 'failed', message?: string } | null>(null);
@@ -40,7 +40,7 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
   const isPremium = currentPlan.includes('Premium');
   const isFree = !isPro && !isPremium;
 
-  const triggerText = isPro ? 'Pro Plan' : isPremium ? 'Premium Plan' : 'Upgrade';
+  const displayTriggerText = triggerText || (isPro ? 'Pro Plan' : isPremium ? 'Premium Plan' : 'Upgrade');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -52,7 +52,7 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
       <DialogTrigger asChild>
         <Button variant="outline" className={`h-9 ${compact ? 'w-9 px-0' : 'px-4 gap-2'} ${isFree ? 'bg-[#2563EB] hover:bg-blue-700 text-white border-0' : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-zinc-700 hover:bg-slate-200 dark:hover:bg-zinc-700'} font-medium transition-all rounded-[8px] ${className}`}>
           <Sparkles className={`h-4 w-4 ${isFree ? 'text-white/80' : 'text-[#2563EB] dark:text-blue-400'}`} />
-          {!compact ? <span className="hidden sm:inline">{triggerText}</span> : <span className="sr-only">{triggerText}</span>}
+          {!compact ? <span className="hidden sm:inline">{displayTriggerText}</span> : <span className="sr-only">{displayTriggerText}</span>}
         </Button>
       </DialogTrigger>
 

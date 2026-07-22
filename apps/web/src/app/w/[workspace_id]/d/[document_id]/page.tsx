@@ -21,11 +21,20 @@ export default async function DocumentPage({ params }: { params: { workspace_id:
     notFound();
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tours_status')
+    .eq('id', user.id)
+    .single();
+
+  const toursStatus = profile?.tours_status || {};
+  const hasSeenTour = toursStatus['editor_tour'];
+
   return (
     <div className="flex flex-col h-full w-full">
       {/* Editor Area */}
       <div className="flex-1 min-h-0 flex flex-col">
-        <TiptapEditor documentId={document.id} initialTitle={document.judul} initialContent={document.konten_json_terkini || { type: 'doc', content: [{ type: 'paragraph' }] }} workspaceId={params.workspace_id} />
+        <TiptapEditor hasSeenTour={hasSeenTour} userId={user.id} documentId={document.id} initialTitle={document.judul} initialContent={document.konten_json_terkini || { type: 'doc', content: [{ type: 'paragraph' }] }} workspaceId={params.workspace_id} />
       </div>
     </div>
   );
