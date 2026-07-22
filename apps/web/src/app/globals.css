@@ -173,6 +173,9 @@
     max-width: 100% !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
+
+    /* Set MS Word style default font */
+    font-family: 'Times New Roman', Times, serif;
   }
 
   /* Anti-Overflow Aggressive Rules for Pasted Content (e.g. from Excel, Web, Word) */

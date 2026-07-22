@@ -32,7 +32,6 @@ import { TableOfContents } from './extensions/toc';
 import { Citation, Bibliography } from './extensions/citation';
 import { ImagePlaceholder } from './extensions/image-placeholder';
 import { CustomDocument } from './extensions/custom-document';
-import { CropImageModal } from './crop-image-modal';
 import { LimitReachedModal } from '@/components/limit-reached-modal';
 import { PageNumberModal } from './page-number-modal';
 import { formatPageNumber, PageSettings } from '@/lib/page-numbers';
@@ -803,10 +802,10 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         }}
       />
 
-      <CropImageModal
+      <ImageCropModal
         isOpen={cropModalOpen}
         onClose={() => setCropModalOpen(false)}
-        imageFile={selectedFile}
+        file={selectedFile}
         onConfirm={handleConfirmCrop}
       />
 
