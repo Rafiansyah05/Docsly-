@@ -165,7 +165,7 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     content: initialContent,
     editorProps: {
       attributes: {
-        class: 'prose max-w-none focus:outline-none w-full min-h-[1056px] text-justify',
+        class: 'prose editor-prose max-w-none focus:outline-none w-full min-h-[1056px] text-justify',
         style: `font-family: "Times New Roman", Times, serif; color: #000000; font-size: ${16 * 0.75}pt;`, // Default to 12pt (16px * 0.75)
       },
     },

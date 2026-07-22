@@ -153,14 +153,14 @@
     background-color: #60a5fa;
     pointer-events: none;
   }
-  .prose table p {
+  .editor-prose table p {
     margin: 0;
   }
 
   /* 
    * MS Word Intelligent Formatting Rules
    */
-  .prose {
+  .editor-prose {
     padding: 0 !important;
     margin: 0 !important;
     overflow-wrap: break-word !important;
@@ -179,43 +179,43 @@
   }
 
   /* Anti-Overflow Aggressive Rules for Pasted Content (e.g. from Excel, Web, Word) */
-  .prose * {
+  .editor-prose * {
     max-width: 100%;
   }
 
   /* Hancurkan semua inline nowrap yang sering terbawa dari hasil paste */
-  .prose [style*="nowrap"] {
+  .editor-prose [style*="nowrap"] {
     white-space: pre-wrap !important;
   }
 
   /* Paksa semua elemen dengan inline width (kecuali resize handle) agar tidak melebihi kertas */
-  .prose [style*="width"]:not(.column-resize-handle) {
+  .editor-prose [style*="width"]:not(.column-resize-handle) {
     max-width: 100% !important;
   }
 
-  .prose a {
+  .editor-prose a {
     word-break: break-all !important;
   }
 
-  .prose p {
+  .editor-prose p {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
   }
 
   /* Hancurkan border tabel luar yang menyebabkan garis lurus saat page break */
-  .prose table {
+  .editor-prose table {
     border: none !important;
   }
   
   /* Pastikan spacer td menghapus semua border bawaan agar tidak ada garis vertikal yang bocor */
-  .prose table tr.page-break-spacer td {
+  .editor-prose table tr.page-break-spacer td {
     border: hidden !important;
     background: transparent !important;
     position: relative !important;
   }
 
   /* Gambar garis penutup tabel halaman sebelumnya (mensimulasikan bottom border) */
-  .prose table tr.page-break-spacer td::before {
+  .editor-prose table tr.page-break-spacer td::before {
     content: '';
     position: absolute;
     top: 0;
@@ -227,7 +227,7 @@
   }
 
   /* Gambar garis pembuka tabel halaman berikutnya (mensimulasikan top border) */
-  .prose table tr.page-break-spacer td::after {
+  .editor-prose table tr.page-break-spacer td::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -239,7 +239,7 @@
   }
   
   /* Architectural Pagination Fragments for Code Blocks */
-  .prose pre {
+  .editor-prose pre {
     background: transparent !important;
     position: relative;
     z-index: 10; /* Supaya text di atas fragment latar */
