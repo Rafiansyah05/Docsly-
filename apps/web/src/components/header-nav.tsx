@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Monitor, ArrowLeft, Home, LayoutGrid, BookOpen, Bell, LifeBuoy, FolderOpen } from 'lucide-react';
+import { Moon, Sun, Monitor, ArrowLeft, Home, LayoutGrid, BookOpen, Bell, LifeBuoy, FolderOpen, CreditCard } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ const PAGE_META: Record<string, { label: string; Icon: React.ElementType }> = {
   '/w/template': { label: 'Template', Icon: LayoutGrid },
   '/w/panduan': { label: 'Panduan', Icon: BookOpen },
   '/w/notifications': { label: 'Notifikasi', Icon: Bell },
+  '/w/billing': { label: 'Billing & Akun', Icon: CreditCard },
   '/w/faq': { label: 'FAQ & Support', Icon: LifeBuoy },
 };
 

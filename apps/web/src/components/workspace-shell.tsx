@@ -8,13 +8,14 @@ import { HeaderNav } from '@/components/header-nav';
 import { UserMenu } from '@/components/user-menu';
 import { PremiumModal } from '@/components/premium-modal';
 import { SubscriptionSyncer } from '@/components/subscription-syncer';
-import { Home, LayoutGrid, BookOpen, Bell, LifeBuoy, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { Home, LayoutGrid, BookOpen, Bell, LifeBuoy, PanelLeftOpen, PanelLeftClose, CreditCard } from 'lucide-react';
 
 const navItems = [
   { label: 'Home', href: '/w', icon: Home },
   { label: 'Template', href: '/w/template', icon: LayoutGrid },
   { label: 'Panduan', href: '/w/panduan', icon: BookOpen },
   { label: 'Notifikasi', href: '/w/notifications', icon: Bell },
+  { label: 'Billing & Akun', href: '/w/billing', icon: CreditCard },
   { label: 'FAQ & Support', href: '/w/faq', icon: LifeBuoy },
 ];
 
