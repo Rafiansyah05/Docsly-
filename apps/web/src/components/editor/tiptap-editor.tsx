@@ -32,6 +32,8 @@ import { TableOfContents } from './extensions/toc';
 import { Citation, Bibliography } from './extensions/citation';
 import { ImagePlaceholder } from './extensions/image-placeholder';
 import { CustomDocument } from './extensions/custom-document';
+import { CropImageModal } from './crop-image-modal';
+import { LimitReachedModal } from '@/components/limit-reached-modal';
 import { PageNumberModal } from './page-number-modal';
 import { formatPageNumber, PageSettings } from '@/lib/page-numbers';
 import { EditorToolbar } from './editor-toolbar';
@@ -73,6 +75,11 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; page: number } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [limitModal, setLimitModal] = useState<{
+    isOpen: boolean;
+    plan: string;
+    maxMb: number;
+  }>({ isOpen: false, plan: 'Free', maxMb: 100 });
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -447,6 +454,26 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
     if (!croppedBlob || !selectedFile) return;
     setIsUploading(true);
     try {
+      // Periksa limit storage terlebih dahulu melalui API
+      const res = await fetch('/api/user/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sizeBytes: croppedBlob.size }),
+      });
+      
+      const checkData = await res.json();
+      if (!res.ok && checkData.message === 'Storage limit reached') {
+        setLimitModal({
+          isOpen: true,
+          plan: checkData.plan || 'Free',
+          maxMb: checkData.max_mb || 100
+        });
+        setIsUploading(false);
+        return;
+      }
+
+      if (!res.ok) throw new Error(checkData.message || 'Gagal mengecek limit storage');
+
       const fileName = `${Date.now()}-${selectedFile.name.replace(/\s+/g, '-')}`;
       const { data, error } = await supabase.storage.from('documents').upload(fileName, croppedBlob);
       if (error) throw error;
@@ -776,7 +803,21 @@ export function TiptapEditor({ documentId, initialContent, initialTitle, workspa
         }}
       />
 
-      <ImageCropModal isOpen={cropModalOpen} onClose={() => setCropModalOpen(false)} file={selectedFile} onConfirm={handleConfirmCrop} />
+      <CropImageModal
+        isOpen={cropModalOpen}
+        onClose={() => setCropModalOpen(false)}
+        imageFile={selectedFile}
+        onConfirm={handleConfirmCrop}
+      />
+
+      <LimitReachedModal
+        isOpen={limitModal.isOpen}
+        onClose={() => setLimitModal(prev => ({ ...prev, isOpen: false }))}
+        resetAt={null}
+        plan={limitModal.plan}
+        type="storage"
+        maxMb={limitModal.maxMb}
+      />
 
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
     </div>

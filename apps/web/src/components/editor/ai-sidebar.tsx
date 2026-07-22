@@ -103,6 +103,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitResetAt, setLimitResetAt] = useState<string | null>(null);
   const [limitPlan, setLimitPlan] = useState<string>('Free');
+  const [limitType, setLimitType] = useState<'ai' | 'citation' | 'storage'>('ai');
+  const [limitMaxMb, setLimitMaxMb] = useState<number | undefined>(undefined);
 
   // Resize handling
   const startResize = (e: React.MouseEvent) => {
@@ -364,6 +366,38 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     setProgress(5);
     setStageLabel('Mengunggah file...');
 
+    const totalSize = currentFiles.reduce((acc, item) => acc + item.file.size, 0);
+    if (totalSize > 0) {
+      try {
+        const res = await fetch('/api/user/storage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sizeBytes: totalSize }),
+        });
+        const checkData = await res.json();
+        if (!res.ok && checkData.message === 'Storage limit reached') {
+          setLimitType('storage');
+          setLimitPlan(checkData.plan || 'Free');
+          setLimitMaxMb(checkData.max_mb || 100);
+          setLimitResetAt(null);
+          setLimitModalOpen(true);
+          
+          setIsLoading(false);
+          setProgress(0);
+          setStageLabel('Memproses...');
+          setAttachedFiles(currentFiles); // Restore
+          return;
+        }
+        if (!res.ok) throw new Error(checkData.message);
+      } catch (e: any) {
+        console.error('Storage check failed:', e);
+        toast.error('Gagal mengecek sisa kapasitas storage. Coba lagi.');
+        setIsLoading(false);
+        setAttachedFiles(currentFiles);
+        return;
+      }
+    }
+
     // Upload files to Supabase Storage if any
     const uploadedAttachments: MessageAttachment[] = [];
     try {
@@ -445,6 +479,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
       if (response.status === 429) {
         const errorData = await response.json();
+        setLimitType('ai');
         setLimitResetAt(errorData.resetAt);
         setLimitPlan(errorData.plan || 'Free');
         setLimitModalOpen(true);
@@ -675,6 +710,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
       if (response.status === 429) {
         const errorData = await response.json();
+        setLimitType('ai');
         setLimitResetAt(errorData.resetAt);
         setLimitPlan(errorData.plan || 'Free');
         setLimitModalOpen(true);
@@ -830,6 +866,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
 
       if (response.status === 429) {
         const errorData = await response.json();
+        setLimitType('ai');
         setLimitResetAt(errorData.resetAt);
         setLimitPlan(errorData.plan || 'Free');
         setLimitModalOpen(true);
@@ -1280,7 +1317,8 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
         onClose={() => setLimitModalOpen(false)}
         resetAt={limitResetAt}
         plan={limitPlan}
-        type="ai"
+        type={limitType}
+        maxMb={limitMaxMb}
       />
 
       {userId && (

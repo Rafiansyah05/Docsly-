@@ -56,7 +56,7 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[1050px] rounded-2xl bg-white dark:bg-zinc-900 p-0 overflow-hidden border border-slate-100 dark:border-zinc-800 shadow-xl">
+      <DialogContent className="sm:max-w-[1050px] rounded-2xl bg-white dark:bg-zinc-900 p-0 overflow-y-auto max-h-[90vh] border border-slate-100 dark:border-zinc-800 shadow-xl">
 
         {paymentResult ? (
           <div className="p-12 flex flex-col items-center justify-center text-center min-h-[400px]">
@@ -113,18 +113,18 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
 
 
               {/* Free Plan */}
-              <div className={`p-8 rounded-2xl flex flex-col transition-all border ${isFree ? 'border-[#2563EB] bg-[#EFF6FF] dark:bg-blue-900/20 ring-1 ring-[#2563EB]/20' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/40 hover:border-slate-300 dark:hover:border-zinc-700'}`}>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Free</h3>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 h-10">Cocok untuk penggunaan dasar.</p>
+              <div className={`p-6 md:p-8 rounded-3xl flex flex-col transition-all border ${isFree ? 'border-[#2563EB]/50 bg-blue-50/50 dark:bg-blue-900/10 ring-4 ring-blue-500/10' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-slate-300 dark:hover:border-zinc-700'}`}>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Free</h3>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1.5 h-10">Cocok untuk penggunaan dasar.</p>
 
                 <div className="my-6 flex items-end gap-1">
                   <span className="text-4xl font-extrabold text-slate-900 dark:text-zinc-100">Rp 0</span>
                 </div>
 
                 <ul className="space-y-4 mb-8 flex-1 mt-2">
-                  {['Editor & Export Dasar', '10 AI Credit / hari', 'Template Akademik', 'Storage 100MB'].map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-zinc-300">
-                      <CheckCircle2 className="h-5 w-5 text-[#2563EB] dark:text-blue-400 shrink-0" />
+                  {['25 AI Credit / 3 Jam', '25 Sitasi Otomatis / 3 Jam', 'Editor & Ekspor Dasar', 'Storage 100MB'].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-slate-600 dark:text-zinc-300">
+                      <CheckCircle2 className="h-5 w-5 text-slate-400 dark:text-zinc-500 shrink-0" />
                       <span className="leading-tight">{feature}</span>
                     </li>
                   ))}
@@ -139,9 +139,9 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
               </div>
 
               {/* Pro Plan */}
-              <div className={`p-8 rounded-2xl flex flex-col relative transition-all border ${isPro ? 'border-[#2563EB] bg-[#EFF6FF] dark:bg-blue-900/20 ring-1 ring-[#2563EB]/20 shadow-md shadow-blue-500/5 dark:shadow-blue-900/10' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/40 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-sm'}`}>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Pro</h3>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 h-10">Untuk mahasiswa & pelajar.</p>
+              <div className={`p-6 md:p-8 rounded-3xl flex flex-col relative transition-all border ${isPro ? 'border-[#2563EB]/50 bg-blue-50/50 dark:bg-blue-900/10 ring-4 ring-blue-500/10 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-md'}`}>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Pro</h3>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1.5 h-10">Untuk mahasiswa & pelajar.</p>
 
                 <div className="my-6 flex items-end gap-1">
                   <span className="text-4xl font-extrabold text-slate-900 dark:text-zinc-100">Rp 39rb</span>
@@ -149,8 +149,8 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
                 </div>
 
                 <ul className="space-y-4 mb-8 flex-1 mt-2">
-                  {['500 AI Credit / 4 Jam', '50 Citation / 4 Jam', 'Template Akademik', 'Storage 2GB'].map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-zinc-300">
+                  {['500 AI Credit / 1 Jam', '50 Sitasi Otomatis / 1 Jam', 'Template Akademik Premium', 'Storage 2GB'].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-zinc-200 font-medium">
                       <CheckCircle2 className="h-5 w-5 text-[#2563EB] dark:text-blue-400 shrink-0" />
                       <span className="leading-tight">{feature}</span>
                     </li>
@@ -176,14 +176,14 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
               </div>
 
               {/* Premium Plan */}
-              <div className={`p-8 rounded-2xl flex flex-col relative transition-all border ${isPremium ? 'border-[#2563EB] bg-[#EFF6FF] dark:bg-blue-900/20 ring-1 ring-[#2563EB]/20 shadow-md shadow-blue-500/5 dark:shadow-blue-900/10' : 'border-[#2563EB]/30 dark:border-blue-500/30 bg-white dark:bg-zinc-800/40 hover:border-[#2563EB]/60 dark:hover:border-blue-500/60 shadow-sm relative'}`}>
+              <div className={`p-6 md:p-8 rounded-3xl flex flex-col relative transition-all border ${isPremium ? 'border-[#2563EB]/50 bg-blue-50/50 dark:bg-blue-900/10 ring-4 ring-blue-500/10 shadow-lg shadow-blue-500/10' : 'border-[#2563EB]/30 dark:border-blue-500/30 bg-white dark:bg-zinc-900 hover:border-[#2563EB]/60 dark:hover:border-blue-500/60 shadow-md relative'}`}>
                 {!isPremium && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                    Most Popular
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md">
+                    Paling Populer
                   </div>
                 )}
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Premium</h3>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 h-10">Untuk profesional & tim.</p>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Premium</h3>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1.5 h-10">Untuk profesional & tim.</p>
 
                 <div className="my-6 flex items-end gap-1">
                   <span className="text-4xl font-extrabold text-slate-900 dark:text-zinc-100">Rp 89rb</span>
@@ -191,10 +191,10 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
                 </div>
 
                 <ul className="space-y-4 mb-8 flex-1 mt-2">
-                  {['1500 AI Credit / Jam', 'Unlimited Citation', 'Priority Server', 'Storage 20GB'].map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-zinc-300">
-                      <CheckCircle2 className="h-5 w-5 text-[#2563EB] dark:text-blue-400 shrink-0" />
-                      <span className="font-medium leading-tight">{feature}</span>
+                  {['1500 AI Credit / 30 Menit', 'Unlimited Sitasi Otomatis', 'Prioritas Server Utama', 'Storage 20GB'].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-slate-800 dark:text-zinc-100 font-semibold">
+                      <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <span className="leading-tight">{feature}</span>
                     </li>
                   ))}
                 </ul>

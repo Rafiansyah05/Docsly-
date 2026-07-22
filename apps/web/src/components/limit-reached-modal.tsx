@@ -17,10 +17,11 @@ interface LimitReachedModalProps {
   onClose: () => void;
   resetAt: string | null;
   plan: string;
-  type: 'ai' | 'citation';
+  type: 'ai' | 'citation' | 'storage';
+  maxMb?: number;
 }
 
-export function LimitReachedModal({ isOpen, onClose, resetAt, plan, type }: LimitReachedModalProps) {
+export function LimitReachedModal({ isOpen, onClose, resetAt, plan, type, maxMb }: LimitReachedModalProps) {
   const router = useRouter();
   
   const resetText = resetAt 
@@ -40,17 +41,21 @@ export function LimitReachedModal({ isOpen, onClose, resetAt, plan, type }: Limi
             Batas Limit Tercapai
           </DialogTitle>
           <DialogDescription className="text-slate-600 dark:text-zinc-400 mt-2">
-            Anda telah mencapai batas penggunaan {type === 'ai' ? 'AI Credit' : 'Citation'} untuk paket {plan} Anda.
+            {type === 'storage' 
+              ? `Kapasitas penyimpanan Anda (${maxMb}MB) untuk paket ${plan} telah penuh.`
+              : `Anda telah mencapai batas penggunaan ${type === 'ai' ? 'AI Credit' : 'Citation'} untuk paket ${plan} Anda.`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-lg p-4 my-4 flex items-start gap-3 border border-slate-100 dark:border-zinc-800">
-          <Clock className="w-5 h-5 text-slate-500 mt-0.5 shrink-0" />
-          <div className="text-sm text-slate-700 dark:text-zinc-300">
-            <p className="font-medium mb-1">Kapan limit akan direset?</p>
-            <p>Limit Anda akan diperbarui <strong>{resetText}</strong>.</p>
+        {type !== 'storage' && (
+          <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-lg p-4 my-4 flex items-start gap-3 border border-slate-100 dark:border-zinc-800">
+            <Clock className="w-5 h-5 text-slate-500 mt-0.5 shrink-0" />
+            <div className="text-sm text-slate-700 dark:text-zinc-300">
+              <p className="font-medium mb-1">Kapan limit akan direset?</p>
+              <p>Limit Anda akan diperbarui <strong>{resetText}</strong>.</p>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex flex-col gap-3 mt-2">
           {isFreeOrTrial && (
@@ -59,7 +64,9 @@ export function LimitReachedModal({ isOpen, onClose, resetAt, plan, type }: Limi
                 Butuh kuota lebih banyak tanpa menunggu?
               </h4>
               <p className="text-xs text-blue-700 dark:text-blue-400 mb-3">
-                Upgrade ke Pro atau Premium sekarang untuk mendapatkan kapasitas hingga 1500 request AI dan menghilangkan cooldown.
+                {type === 'storage' 
+                  ? 'Upgrade ke Pro atau Premium sekarang untuk mendapatkan kapasitas penyimpanan hingga 20GB.'
+                  : 'Upgrade ke Pro atau Premium sekarang untuk mendapatkan kapasitas hingga 1500 request AI dan menghilangkan cooldown.'}
               </p>
               <Button
                 onClick={() => {

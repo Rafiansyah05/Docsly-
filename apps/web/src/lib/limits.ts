@@ -185,3 +185,45 @@ export async function checkAndConsumeCitation(userId: string) {
 
   return { allowed: true, plan };
 }
+
+export async function checkAndConsumeStorage(userId: string, sizeBytes: number) {
+  const plan = await getUserPlan(userId);
+  const limits = PLAN_LIMITS[plan];
+
+  const maxBytes = limits.storage_mb * 1024 * 1024;
+
+  const supabase = createAdminClient();
+  
+  let { data: userLimit } = await supabase
+    .from('user_limits')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!userLimit) {
+    const { data: newLimit } = await supabase
+      .from('user_limits')
+      .insert({ user_id: userId, ai_credits_used: 0, citations_used: 0, storage_used_bytes: 0 })
+      .select()
+      .single();
+    userLimit = newLimit;
+  }
+
+  const currentUsed = userLimit?.storage_used_bytes || 0;
+
+  if (currentUsed + sizeBytes > maxBytes) {
+    return {
+      allowed: false,
+      reason: 'storage_full',
+      plan,
+      max_mb: limits.storage_mb,
+      current_used_bytes: currentUsed
+    };
+  }
+
+  await supabase.from('user_limits').update({
+    storage_used_bytes: currentUsed + sizeBytes
+  }).eq('user_id', userId);
+
+  return { allowed: true, plan, max_mb: limits.storage_mb, current_used_bytes: currentUsed + sizeBytes };
+}
