@@ -3,7 +3,7 @@ export const fetchCache = 'force-no-store';
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Righteous } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TourProvider } from "@/components/ui/tour";
@@ -11,6 +11,12 @@ import { TourProvider } from "@/components/ui/tour";
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
+});
+
+const righteous = Righteous({
+  weight: "400",
+  subsets: ['latin'],
+  variable: '--font-righteous',
 });
 
 export const metadata: Metadata = {
@@ -24,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", jakarta.variable)}>
+    <html lang="en" className={cn("font-sans", jakarta.variable, righteous.variable)}>
       <head>
         <meta httpEquiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://snap-assets.midtrans.com https://api.midtrans.com https://app.midtrans.com https://app.sandbox.midtrans.com https://pay.google.com https://gwk.gopayapi.com;" />
         <script dangerouslySetInnerHTML={{__html: `

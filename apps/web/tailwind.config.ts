@@ -15,6 +15,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'sans-serif'],
+        righteous: ['var(--font-righteous)', 'sans-serif'],
       },
     },
   },

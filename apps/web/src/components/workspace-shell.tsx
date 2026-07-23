@@ -112,7 +112,7 @@ export function WorkspaceShell({ user, profile, workspaces, subscription, unread
                   <div className="relative h-8 w-8 overflow-hidden rounded-full">
                     <Image src="/images/icon.png" alt="Docsly" fill className="object-contain" />
                   </div>
-                  <span className="text-[18px] font-semibold text-[#111827] dark:text-zinc-100">Docsly</span>
+                  <span className="text-[20px] text-[#111827] dark:text-zinc-100 font-righteous tracking-wide">docsly</span>
                 </div>
 
                 <button
