@@ -2,12 +2,14 @@
 
 import React from 'react';
 import { type Editor } from '@tiptap/react';
-import { ChevronLeft, Table as TableIcon, Image as ImageIcon, ListOrdered, BookOpen, History, Download, Loader2 } from 'lucide-react';
+import { ChevronLeft, Table as TableIcon, Image as ImageIcon, ListOrdered, BookOpen, History, Download, Loader2, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { SaveState } from '@/hooks/use-autosave';
 import { DocumentHeader } from '@/components/editor/document-header';
 import { CitationManager } from './citation-manager';
+import { MarginSettingsPopover } from './margin-settings-popover';
+import { DocumentLayout } from './document-ruler';
 
 interface DocumentNavbarProps {
   editor: Editor | null;
@@ -23,10 +25,13 @@ interface DocumentNavbarProps {
   onExportDocx: () => void;
   onUploadImage: () => void;
   isUploading: boolean;
+  layout: DocumentLayout;
+  onLayoutChange: (layout: DocumentLayout) => void;
 }
 
-export function DocumentNavbar({ editor, saveState, documentId, initialTitle, workspaceId, onToggleHistory, onOpenPageNumbers, isExportingPdf, isExportingDocx, onExportPdf, onExportDocx, onUploadImage, isUploading }: DocumentNavbarProps) {
+export function DocumentNavbar({ editor, saveState, documentId, initialTitle, workspaceId, onToggleHistory, onOpenPageNumbers, isExportingPdf, isExportingDocx, onExportPdf, onExportDocx, onUploadImage, isUploading, layout, onLayoutChange }: DocumentNavbarProps) {
   const [isCitationOpen, setIsCitationOpen] = React.useState(false);
+  const [isMarginOpen, setIsMarginOpen] = React.useState(false);
 
   if (!editor) return null;
 
@@ -71,11 +76,20 @@ export function DocumentNavbar({ editor, saveState, documentId, initialTitle, wo
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCitationOpen(!isCitationOpen)}
+            onClick={() => { setIsCitationOpen(!isCitationOpen); setIsMarginOpen(false); }}
             className={`h-7 px-2 text-xs ${isCitationOpen ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
             title="Manajemen Sitasi"
           >
             <BookOpen className="h-3.5 w-3.5 mr-1" /> Sitasi/Daftar Pustaka
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setIsMarginOpen(!isMarginOpen); setIsCitationOpen(false); }}
+            className={`h-7 px-2 text-xs ${isMarginOpen ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
+            title="Atur Margin"
+          >
+            <Settings2 className="h-3.5 w-3.5 mr-1" /> Margin
           </Button>
           <Button variant="ghost" size="sm" onClick={onToggleHistory} className="h-7 px-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200" title="Riwayat Versi">
             <History className="h-3.5 w-3.5 mr-1" /> Riwayat
@@ -84,6 +98,7 @@ export function DocumentNavbar({ editor, saveState, documentId, initialTitle, wo
 
         <div className="relative">
           <CitationManager editor={editor} isOpen={isCitationOpen} onClose={() => setIsCitationOpen(false)} />
+          <MarginSettingsPopover layout={layout} onLayoutChange={onLayoutChange} isOpen={isMarginOpen} onClose={() => setIsMarginOpen(false)} />
         </div>
       </div>
 

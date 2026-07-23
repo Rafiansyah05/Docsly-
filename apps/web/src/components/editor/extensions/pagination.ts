@@ -218,8 +218,24 @@ export const Pagination = Extension.create({
             let currentPush = 0;
             const newSpacers: Record<string, any> = {};
             
+            // Find the last node that actually contains content
+            let lastContentPos = -1;
+            view.state.doc.forEach((node, offset) => {
+              const hasText = node.textContent.trim() !== '';
+              const isMedia = node.type.name === 'image' || node.type.name === 'table' || node.type.name === 'horizontalRule' || node.type.name === 'equation' || node.type.name === 'callout' || node.type.name === 'imagePlaceholder' || node.type.name === 'codeBlock' || node.type.name === 'bulletList' || node.type.name === 'orderedList';
+              if (hasText || isMedia) {
+                lastContentPos = Math.max(lastContentPos, offset);
+              }
+            });
+            
             let pos = 0;
             view.state.doc.forEach((node, offset, index) => {
+              // Ignore nodes that are strictly after the last content node (trailing empty nodes)
+              if (offset > lastContentPos) {
+                pos += node.nodeSize;
+                return;
+              }
+              
               const domNode = view.nodeDOM(pos) as HTMLElement;
               if (domNode && domNode.nodeType === 1) {
                 const rect = domNode.getBoundingClientRect();

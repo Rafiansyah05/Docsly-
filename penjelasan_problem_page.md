@@ -1,194 +1,269 @@
-Bug: Popup Sitasi Tertimpa oleh Tutorial Overlay
+# Bug Critical - Halaman Kosong Tidak Terhapus Otomatis
 
-Saat ini terdapat bug pada sistem onboarding/tutorial.
+## Permasalahan
 
-Masalah
+Sistem pagination Docsly saat ini masih memiliki bug.
 
-Ketika tutorial sedang aktif, lalu user membuka popup Sitasi & Daftar Pustaka, popup tersebut justru berada di belakang popup tutorial (onboarding).
-
-Akibatnya:
-
-Popup sitasi terpotong.
-Tidak dapat digunakan.
-Sebagian tampilannya tertutup.
-User tidak dapat melihat seluruh isi popup.
-Terlihat seperti bug layering (z-index).
-
-Dari screenshot terlihat bahwa popup Sitasi & Daftar Pustaka muncul di bawah popup tutorial, padahal popup tersebut adalah komponen yang sedang dijelaskan.
-
-Perilaku yang diharapkan
-
-Selama tutorial berlangsung, apabila langkah yang sedang dijelaskan adalah Sitasi & Daftar Pustaka, maka:
-
-Popup Sitasi harus tampil paling depan.
-Popup Tutorial tetap berada di atas overlay, tetapi tidak boleh menutupi popup Sitasi.
-Overlay hanya menggelapkan area di luar target.
-Area target (termasuk popup Sitasi) tetap terang dan tidak terkena blur.
-
-Urutan layer yang benar adalah:
-
-Layer 5
-Tooltip / Tutorial Popup
-
-↓
-
-Layer 4
-Popup Sitasi & Daftar Pustaka
-
-↓
-
-Layer 3
-Komponen yang sedang di-highlight
-
-↓
-
-Layer 2
-Overlay Blur
-
-↓
-
-Layer 1
-Editor
-
-Bukan seperti sekarang:
-
-Tutorial Popup
-
-↓
-
-Overlay
-
-↓
-
-Popup Sitasi
-Mekanisme yang benar
-
-Ketika tutorial mencapai langkah Sitasi & Daftar Pustaka, sistem harus melakukan urutan berikut:
-
-User menekan tombol Sitasi.
-Popup Sitasi dibuka terlebih dahulu.
-Tunggu hingga popup selesai dirender.
-Hitung posisi popup Sitasi.
-Jadikan popup Sitasi sebagai target highlight.
-Spotlight mengikuti ukuran popup Sitasi, bukan hanya tombol Sitasi.
-Popup Tutorial muncul di samping popup Sitasi.
-Popup Sitasi tetap berada di atas overlay.
-Popup Sitasi tetap dapat diinteraksikan jika diperlukan.
-Highlight yang benar
-
-Tutorial jangan hanya menyorot tombol:
-
-Sitasi & Daftar Pustaka
-
-Karena tujuan pengguna adalah memahami isi popup.
-
-Yang harus disorot adalah:
-
-+--------------------------------------+
-| AI Generate | Manual                 |
-|--------------------------------------|
-|                                      |
-| Upload Dokumen                       |
-|                                      |
-| Penjelasan                           |
-|                                      |
-+--------------------------------------+
-
-Artinya seluruh popup Sitasi menjadi spotlight.
-
-Overlay
-
-Overlay harus membuat lubang mengikuti ukuran popup Sitasi.
-
-Contoh
-
-████████████████████████████
-
-████                ████████
-
-████   Popup        ████████
-
-████   Sitasi       ████████
-
-████                ████████
-
-████████████████████████████
-
-Area putih adalah popup.
-
-Area hitam adalah overlay.
-
-Popup tidak boleh blur.
-
-Z-Index
-
-Pastikan layering mengikuti hirarki yang konsisten.
+Ketika seluruh isi pada halaman terakhir dihapus (text, tabel, gambar, code block, equation, list, dll), halaman tersebut **tetap dipertahankan**, sehingga muncul halaman kosong yang seharusnya tidak ada.
 
 Contoh:
 
-Tutorial Popup
+* Halaman 1 penuh.
+* Halaman 2 berisi beberapa paragraf.
+* User menghapus seluruh isi halaman 2.
+* Hasil saat ini:
 
-z-index: 5000
+  * Halaman 2 tetap muncul dalam keadaan kosong.
+* Hasil yang diharapkan:
 
-↓
+  * Halaman 2 langsung dihapus sehingga dokumen kembali hanya memiliki Halaman 1.
 
-Popup Sitasi
+Bug ini masih terus terjadi walaupun sebelumnya sudah dilakukan beberapa perbaikan.
 
-z-index: 4900
+---
 
-↓
+# Perilaku yang Diinginkan
 
-Highlighted Element
+Pagination harus sepenuhnya mengikuti jumlah konten, **bukan jumlah halaman yang pernah dibuat.**
 
-z-index: 4800
+Artinya:
 
-↓
+* Jika tidak ada konten yang membutuhkan halaman baru, maka halaman baru **tidak boleh ada**.
+* Halaman hanya boleh dibuat apabila terdapat konten yang benar-benar meluap (overflow) dari halaman sebelumnya.
+* Begitu overflow tersebut hilang karena user menghapus atau mengedit konten, halaman tambahan harus langsung dihapus secara otomatis.
 
-Overlay
+---
 
-z-index: 4700
+# Aturan Pagination
 
-↓
+## Rule 1
 
-Editor
+Halaman pertama selalu ada.
 
-z-index: auto
+Halaman pertama tidak boleh dihapus walaupun kosong.
 
-Jangan menggunakan nilai acak pada setiap komponen karena dapat menyebabkan konflik antar popup.
+---
 
-Posisi Tooltip
+## Rule 2
 
-Tooltip tutorial tidak boleh menutupi popup Sitasi.
+Semua halaman setelah halaman pertama bersifat dinamis.
 
-Posisinya harus otomatis memilih ruang kosong:
+Artinya:
 
-kanan popup
-kiri popup
-bawah popup
-atas popup
+* dibuat ketika diperlukan
+* dihapus ketika tidak diperlukan
 
-sesuai ruang yang tersedia.
+Tidak boleh ada halaman statis.
 
-Fokus Tutorial
+---
 
-Selama langkah ini berlangsung:
+## Rule 3
 
-Popup Sitasi tetap terbuka.
-User dapat melihat seluruh isi popup.
-Spotlight mengikuti popup Sitasi.
-Overlay tidak menutupi popup.
-Tooltip menjelaskan fungsi popup.
-Setelah user menekan Mengerti, popup Sitasi ditutup (atau tetap terbuka jika memang diperlukan oleh alur berikutnya).
-Yang harus diperiksa
+Halaman baru hanya boleh dibuat apabila terdapat komponen yang benar-benar tidak muat pada halaman sebelumnya.
 
-Silakan audit seluruh sistem layering pada onboarding, karena bug ini kemungkinan juga akan terjadi pada popup lain seperti:
+Komponen yang dimaksud meliputi:
 
-Import Dokumen
-Export
-Rename Workspace
-Delete Workspace
-AI Agent
-Riwayat
-Pengaturan
+* Text
+* Heading
+* Paragraph
+* List
+* Quote
+* Table
+* Image
+* Code Block
+* Equation
+* Callout
+* Horizontal Line
+* Footnote
+* Semua node editor lainnya
 
-Pastikan seluruh modal, dropdown, popover, context menu, dan dialog yang menjadi target tutorial selalu berada di atas overlay dan dapat disorot dengan benar tanpa tertutup atau terkena efek blur. Dengan demikian, sistem onboarding akan konsisten di semua komponen interaktif dalam Docsly.
+Jika seluruh komponen masih muat pada halaman saat ini, maka **jangan pernah membuat halaman baru.**
+
+---
+
+## Rule 4
+
+Jika halaman terakhir tidak memiliki satu pun node yang dirender, maka halaman tersebut harus langsung dihapus.
+
+Bukan disembunyikan.
+
+Bukan diberi tinggi nol.
+
+Tetapi benar-benar dihapus dari struktur pagination.
+
+Contoh:
+
+Halaman 1
+
+```
+Paragraf...
+Paragraf...
+Paragraf...
+```
+
+Halaman 2
+
+```
+(kosong)
+```
+
+Hasil yang benar
+
+```
+Halaman 1 saja
+```
+
+---
+
+## Rule 5
+
+Setelah setiap perubahan editor, sistem wajib melakukan evaluasi ulang seluruh pagination.
+
+Perubahan yang memicu evaluasi antara lain:
+
+* mengetik
+* menghapus
+* paste
+* cut
+* undo
+* redo
+* drag & drop
+* insert image
+* delete image
+* resize image
+* insert table
+* delete table
+* merge cell
+* split cell
+* perubahan ukuran font
+* perubahan margin
+* perubahan line spacing
+* perubahan heading
+* seluruh transaksi editor lainnya
+
+Jangan hanya mengecek saat mengetik.
+
+---
+
+# Jangan Mengandalkan Jumlah Halaman Lama
+
+Saat ini terlihat sistem masih mempertahankan page container lama.
+
+Ini adalah penyebab utama bug.
+
+Yang harus dilakukan adalah:
+
+Setelah setiap transaksi editor:
+
+1. Hitung ulang posisi seluruh node.
+2. Tentukan node berada di halaman mana.
+3. Bangun ulang mapping halaman berdasarkan posisi node terbaru.
+4. Hapus page container yang tidak memiliki node sama sekali.
+5. Render ulang pagination.
+
+Jangan mempertahankan page container lama apabila sudah tidak memiliki isi.
+
+Pagination harus merupakan hasil perhitungan ulang setiap kali terjadi perubahan, bukan hasil penambahan halaman yang bersifat permanen.
+
+---
+
+# Definisi Halaman Kosong
+
+Halaman dianggap kosong apabila:
+
+* tidak memiliki text
+* tidak memiliki heading
+* tidak memiliki paragraph
+* tidak memiliki image
+* tidak memiliki table
+* tidak memiliki code block
+* tidak memiliki equation
+* tidak memiliki list
+* tidak memiliki node editor apa pun
+
+Whitespace, placeholder, node dummy, node kosong, atau elemen sementara **tidak boleh dianggap sebagai konten**.
+
+---
+
+# Expected Behavior
+
+Contoh 1
+
+Awal
+
+```
+Page 1
+██████████
+
+Page 2
+████
+```
+
+User menghapus isi Page 2
+
+Hasil
+
+```
+Page 1
+██████████
+```
+
+Page 2 langsung hilang.
+
+---
+
+Contoh 2
+
+Awal
+
+```
+Page 1
+██████████
+
+Page 2
+██
+```
+
+User menghapus dua paragraf terakhir sehingga semuanya muat di Page 1.
+
+Hasil
+
+```
+Page 1
+████████████
+```
+
+Page 2 langsung hilang.
+
+---
+
+Contoh 3
+
+User mengetik lagi hingga Page 1 penuh.
+
+Hasil
+
+```
+Page 1
+██████████
+
+Page 2
+██
+```
+
+Page 2 dibuat kembali secara otomatis.
+
+---
+
+# Target
+
+Pagination harus selalu merepresentasikan kondisi dokumen saat ini.
+
+Jumlah halaman tidak boleh ditentukan oleh riwayat editor, melainkan harus ditentukan hanya oleh jumlah konten yang benar-benar ada.
+
+Singkatnya:
+
+* Ada overflow → buat halaman baru.
+* Tidak ada overflow → hapus halaman tambahan.
+* Tidak boleh ada halaman kosong yang tersisa.
+* Jangan menggunakan cache atau mempertahankan page container lama yang sudah tidak memiliki node.

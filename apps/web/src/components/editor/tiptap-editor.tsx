@@ -287,12 +287,41 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
     const updatePagination = () => {
       const dom = editor.view.dom;
       if (dom) {
-        // Reset minHeight temporarily to get true natural scrollHeight
-        const prevMinHeight = dom.style.minHeight;
-        dom.style.minHeight = 'auto';
+        // Unset all height constraints entirely for true natural measurement
+        const wrapper = dom.closest('.document-layout-wrapper') as HTMLElement | null;
+        const outer = wrapper?.parentElement;
+        
+        const prevDomMin = dom.style.minHeight;
+        const prevWrapperH = wrapper ? wrapper.style.height : '';
+        const prevOuterMin = outer ? outer.style.minHeight : '';
 
-        const contentHeight = dom.scrollHeight;
-        dom.style.minHeight = prevMinHeight; // Restore it immediately
+        dom.style.minHeight = 'auto';
+        if (wrapper) wrapper.style.height = 'auto';
+        if (outer) outer.style.minHeight = 'auto';
+
+        // Find the last node that actually contains content
+        let lastContentPos = -1;
+        editor.state.doc.forEach((node, offset) => {
+          const hasText = node.textContent.trim() !== '';
+          const isMedia = node.type.name === 'image' || node.type.name === 'table' || node.type.name === 'horizontalRule' || node.type.name === 'equation' || node.type.name === 'callout' || node.type.name === 'imagePlaceholder' || node.type.name === 'codeBlock' || node.type.name === 'bulletList' || node.type.name === 'orderedList';
+          if (hasText || isMedia) {
+            lastContentPos = offset;
+          }
+        });
+
+        let contentHeight = 0;
+        if (lastContentPos >= 0) {
+          const lastDomNode = editor.view.nodeDOM(lastContentPos) as HTMLElement;
+          if (lastDomNode && lastDomNode.getBoundingClientRect) {
+            const rect = lastDomNode.getBoundingClientRect();
+            const editorRect = dom.getBoundingClientRect();
+            contentHeight = Math.max(0, rect.bottom - editorRect.top);
+          }
+        }
+
+        dom.style.minHeight = prevDomMin;
+        if (wrapper) wrapper.style.height = prevWrapperH;
+        if (outer) outer.style.minHeight = prevOuterMin;
 
         const FULL_STEP = 1163; // 1123px height + 40px gap
         const UNPRINTABLE_GAP = layout.bottom + 40 + layout.top;
@@ -416,26 +445,23 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
       });
 
     // 2. Aggressively trim any trailing empty paragraphs in the entire document
-    // This guarantees that ghost pages caused by trailing spaces are destroyed
-    const currentDoc = tr.doc;
-    for (let i = currentDoc.childCount - 1; i >= 0; i--) {
-      const node = currentDoc.child(i);
-      if (node.type.name === 'paragraph' && node.textContent.trim() === '') {
-        const from = tr.mapping.map(currentDoc.resolve(0).posAtIndex(i));
-        const to = from + node.nodeSize;
+    while (tr.doc.childCount > 1) {
+      const lastChild = tr.doc.child(tr.doc.childCount - 1);
+      if (lastChild.type.name === 'paragraph' && lastChild.textContent.trim() === '') {
+        const from = tr.doc.content.size - lastChild.nodeSize;
+        const to = from + lastChild.nodeSize;
         tr = tr.delete(from, to);
         deleted = true;
       } else {
-        break; // Stop at the first real content
+        break;
       }
     }
 
     if (deleted) {
       editor.view.dispatch(tr);
     }
-
-    setShowDeleteModal(false);
     setPendingDeleteNodes([]);
+    setShowDeleteModal(false);
   };
 
   const supabase = createClient();
@@ -631,7 +657,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
 3. Format Teks: Menebalkan, memiringkan, memberi garis bawah, mencoret teks, superscript, subscript, dan menghapus format.
 4. Paragraf: Mengatur perataan teks, jarak baris, dan indentasi paragraf.
 5. Daftar & Elemen: Membuat bullet list, numbered list, quote, code, dan hyperlink.
-6. Fitur Dokumen: Menambahkan tabel, gambar, daftar isi otomatis, penomoran halaman yang mudah, sitasi & daftar pustaka otomatis, serta melihat riwayat perubahan dokumen.`,
+6. Fitur Dokumen: Menambahkan tabel, gambar, daftar isi otomatis, penomoran halaman yang mudah, sitasi & daftar pustaka otomatis, mengatur margin kertas, serta melihat riwayat perubahan dokumen.`,
             position: 'bottom',
             padding: 4
           },
@@ -677,6 +703,8 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
           onExportDocx={exportDocx}
           onUploadImage={triggerImageUpload}
           isUploading={isUploading}
+          layout={layout}
+          onLayoutChange={handleLayoutChange}
         />
         <EditorToolbar editor={editor} onUploadImage={triggerImageUpload} />
       </div>

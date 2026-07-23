@@ -5,6 +5,7 @@ import { type Editor } from '@tiptap/react';
 import { HeaderNav } from '@/components/header-nav';
 import { DocumentNavbar } from '@/components/editor/document-navbar';
 import { SaveState } from '@/hooks/use-autosave';
+import { DocumentLayout } from '@/components/editor/document-ruler';
 
 interface AppHeaderProps {
   showDocumentNavbar?: boolean;
@@ -22,6 +23,8 @@ interface AppHeaderProps {
   onExportDocx?: () => void;
   onUploadImage?: () => void;
   isUploading?: boolean;
+  layout?: DocumentLayout;
+  onLayoutChange?: (layout: DocumentLayout) => void;
 }
 
 export function AppHeader({
@@ -39,6 +42,8 @@ export function AppHeader({
   onExportDocx,
   onUploadImage,
   isUploading,
+  layout,
+  onLayoutChange,
 }: AppHeaderProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-zinc-950 border-b border-[#E2E8F0] dark:border-zinc-800">
@@ -63,6 +68,8 @@ export function AppHeader({
           onExportDocx={onExportDocx || (() => {})}
           onUploadImage={onUploadImage || (() => {})}
           isUploading={isUploading || false}
+          layout={layout || { top: 96, bottom: 96, left: 96, right: 96 }}
+          onLayoutChange={onLayoutChange || (() => {})}
         />
       )}
     </header>
