@@ -524,30 +524,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
     try {
       const titleInput = document.querySelector('input[placeholder="Ketik judul dokumen..."]') as HTMLInputElement;
       const title = titleInput && titleInput.value.trim() !== '' ? titleInput.value : 'Dokumen';
-      const jsonDoc = JSON.parse(JSON.stringify(editor.getJSON()));
-      try {
-        const { PaginationPluginKey } = require('@/components/editor/extensions/pagination');
-        const paginationState = PaginationPluginKey.getState(editor.state);
-        const spacers = paginationState?.spacers || {};
-        Object.keys(spacers).forEach((posStr) => {
-          const pos = parseInt(posStr, 10);
-          const resolved = editor.state.doc.resolve(pos);
-          let currentJson = jsonDoc;
-          for (let d = 0; d < resolved.depth; d++) {
-            const idx = resolved.index(d);
-            if (currentJson.content && currentJson.content[idx]) {
-              currentJson = currentJson.content[idx];
-            }
-          }
-          const childIdx = resolved.index(resolved.depth);
-          if (currentJson.content && currentJson.content[childIdx]) {
-            const targetNode = currentJson.content[childIdx];
-            targetNode.attrs = { ...(targetNode.attrs || {}), pageBreakBefore: true };
-          }
-        });
-      } catch (e) {
-        console.warn('Failed to inject page breaks for DOCX', e);
-      }
+      const html = editor.getHTML();
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -558,7 +535,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token || ''}`
         },
-        body: JSON.stringify({ title, content: jsonDoc }),
+        body: JSON.stringify({ title, html }),
       });
       if (!response.ok) throw new Error('Export failed');
       const blob = await response.blob();

@@ -55,10 +55,10 @@ export class ExportController {
     try {
       await this.verifyAuth(req);
       
-      const { title, content } = body;
-      if (!content) throw new BadRequestException('Content is required');
+      const { title, html } = body;
+      if (!html) throw new BadRequestException('HTML content is required');
 
-      const docxBuffer = await this.exportService.generateDocx(title, content);
+      const docxBuffer = await this.exportService.generateDocx(title, html);
       
       res.setHeader('Content-Disposition', `attachment; filename="${title || 'Dokumen'}.docx"`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');

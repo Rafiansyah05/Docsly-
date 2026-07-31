@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import * as mammoth from 'mammoth';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+const HTMLtoDOCX = require('html-to-docx');
 import { toRoman } from './page-numbers.utils';
 
 @Injectable()
@@ -133,11 +134,24 @@ export class ExportService {
     }
   }
 
-  async generateDocx(title: string, content: any): Promise<Buffer> {
-    // Basic stub for DOCX export. You can migrate the DOCX logic similarly.
-    // In the old next.js code, DOCX generation is handled by docx library.
-    // For now we return a dummy buffer or import docx logic.
-    return Buffer.from('');
+  async generateDocx(title: string, html: string): Promise<Buffer> {
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${title || 'Dokumen'}</title>
+      </head>
+      <body>
+        ${html}
+      </body>
+      </html>
+    `;
+    const fileBuffer = await HTMLtoDOCX(fullHtml, null, {
+      title: title || 'Dokumen',
+      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+    });
+    return fileBuffer as Buffer;
   }
 
   async importDocx(buffer: Buffer): Promise<string> {

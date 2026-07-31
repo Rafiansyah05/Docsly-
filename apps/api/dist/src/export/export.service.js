@@ -44,6 +44,7 @@ const common_1 = require("@nestjs/common");
 const puppeteer = __importStar(require("puppeteer"));
 const mammoth = __importStar(require("mammoth"));
 const pdf_lib_1 = require("pdf-lib");
+const HTMLtoDOCX = require('html-to-docx');
 const page_numbers_utils_1 = require("./page-numbers.utils");
 let ExportService = class ExportService {
     async generatePdf(title, html, pageSettings) {
@@ -159,8 +160,24 @@ let ExportService = class ExportService {
             throw error;
         }
     }
-    async generateDocx(title, content) {
-        return Buffer.from('');
+    async generateDocx(title, html) {
+        const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${title || 'Dokumen'}</title>
+      </head>
+      <body>
+        ${html}
+      </body>
+      </html>
+    `;
+        const fileBuffer = await HTMLtoDOCX(fullHtml, null, {
+            title: title || 'Dokumen',
+            margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+        });
+        return fileBuffer;
     }
     async importDocx(buffer) {
         const result = await mammoth.convertToHtml({ buffer });

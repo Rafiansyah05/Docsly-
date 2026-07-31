@@ -51,7 +51,7 @@ export class PaymentService {
       throw new Error('Failed to create payment record');
     }
 
-    const parameter = {
+    const parameter: any = {
       transaction_details: {
         order_id: orderId,
         gross_amount: grossAmount
