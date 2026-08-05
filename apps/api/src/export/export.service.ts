@@ -10,6 +10,17 @@ export class ExportService {
   async generatePdf(title: string, html: string, pageSettings: any): Promise<Buffer> {
     let browser = null;
     try {
+      const cheerio = require('cheerio');
+      const $ = cheerio.load(html);
+      
+      // Fix empty paragraphs so they take up space (preserve empty lines)
+      $('p').each((_: any, el: any) => {
+        if ($(el).text().trim() === '' && $(el).find('img').length === 0 && $(el).find('br').length === 0) {
+          $(el).text('\u00A0');
+        }
+      });
+      html = $('body').html() || html;
+
       let displayHeaderFooter = false;
       
       if (pageSettings?.enabled) {
@@ -49,6 +60,25 @@ export class ExportService {
             .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; page-break-inside: avoid; }
             .prose table td, .prose table th { border: 1px solid black; padding: 4px 8px; vertical-align: top; }
             .prose ul, .prose ol { padding-left: 2em; margin-bottom: 1em; }
+            
+            /* Flat List Architecture Numbering & Bullets */
+            .prose [data-list-type]:not([data-list-type='none']) {
+              position: relative;
+              padding-left: 32px;
+            }
+            .prose [data-list-type]:not([data-list-type='none'])::before {
+              content: attr(data-list-prefix);
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 28px;
+              padding-right: 4px;
+              white-space: nowrap;
+              text-align: right;
+              font-weight: 400;
+              color: inherit;
+            }
+
             @page { size: A4; margin: 2.54cm; }
             .page-break-spacer { page-break-after: always; height: 0; display: block; }
           </style>
@@ -135,6 +165,30 @@ export class ExportService {
   }
 
   async generateDocx(title: string, html: string): Promise<Buffer> {
+    const cheerio = require('cheerio');
+    const $ = cheerio.load(html);
+
+    $('[data-list-type]').each((_: any, el: any) => {
+      const listType = $(el).attr('data-list-type');
+      if (listType && listType !== 'none') {
+        const prefix = $(el).attr('data-list-prefix') || '';
+        if (prefix) {
+          // Prepend as raw text to avoid any invalid XML generation by html-to-docx
+          $(el).prepend(prefix + '\u00A0');
+        }
+      }
+    });
+    
+    // Fix empty paragraphs so they take up space (preserve empty lines)
+    // Use unicode non-breaking space instead of <br> to ensure Word compatibility
+    $('p').each((_: any, el: any) => {
+      if ($(el).text().trim() === '' && $(el).find('img').length === 0 && $(el).find('br').length === 0) {
+        $(el).text('\u00A0');
+      }
+    });
+    
+    const processedHtml = $('body').html() || html;
+
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -143,7 +197,7 @@ export class ExportService {
         <title>${title || 'Dokumen'}</title>
       </head>
       <body>
-        ${html}
+        ${processedHtml}
       </body>
       </html>
     `;
