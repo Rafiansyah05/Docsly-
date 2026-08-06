@@ -31,12 +31,17 @@ export async function POST(req: Request) {
 
     // Forward to NestJS AI Microservice
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const payload = {
+      ...body,
+      plan: limitCheck.plan || 'Free'
+    };
+    
     const aiResponse = await fetch(`${baseUrl}/ai/execute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
 
     if (!aiResponse.ok) {

@@ -371,7 +371,9 @@
     padding-right: 4px;
     white-space: nowrap;
     text-align: right;
-    font-weight: 400;
+    font-weight: inherit;
+    font-style: inherit;
+    text-decoration: inherit;
     color: inherit;
   }
 

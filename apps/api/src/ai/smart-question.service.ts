@@ -47,14 +47,16 @@ export class SmartQuestionService {
 
     const systemPrompt = `You are a Document Requirement Analyzer for Docsly AI. 
 Your task is to analyze the user's prompt to determine what information is missing to create a high-quality document of the requested type.
+CRITICAL RULE: You MUST read the "Current Document Context". If the answer to a question you want to ask is already present or can be logically inferred from the Current Document Context, DO NOT ASK IT. The document context already serves as the source of truth.
+
 Follow these steps:
 1. Identify the document type (e.g., Proposal, Essay, Letter, Article, Report).
 2. Determine the "mandatory information slots" for that document type.
-3. Check which of these slots are provided in the user's prompt (or document context).
-4. Calculate a completeness score from 0 to 100.
+3. Check which of these slots are provided in the user's prompt OR the Current Document Context.
+4. Calculate a completeness score from 0 to 100 based ONLY on missing information that is NOT in the prompt and NOT in the document context.
    - If score > 80: We have enough info to proceed. Return needsQuestions = false.
    - If score between 40 and 80: We are missing key info. Return needsQuestions = true, and generate exactly 3-5 specific questions targeting the highest priority missing slots AT ONCE (not one-by-one).
-   - If score < 40: The prompt is too vague. Return needsQuestions = true, and generate 1-3 general opening questions (e.g., "Apa topik utamanya?", "Untuk keperluan apa?").
+   - If score < 40: The prompt and document are too vague. Return needsQuestions = true, and generate 1-3 general opening questions (e.g., "Apa topik utamanya?", "Untuk keperluan apa?").
 5. Output MUST be valid JSON matching this schema:
 {
   "score": number,

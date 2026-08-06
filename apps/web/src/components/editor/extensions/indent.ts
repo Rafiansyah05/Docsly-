@@ -23,10 +23,11 @@ export const Indent = Extension.create<IndentOptions>({
 
   addOptions() {
     return {
-      types: ['paragraph', 'heading'],
-      indentUnit: '2rem',
+      types: ['paragraph', 'heading', 'blockquote'],
+      indentUnit: '32px',
       minIndent: 0,
       maxIndent: 8,
+      indentLevels: [0, 1, 2, 3, 4, 5, 6, 7, 8],
     };
   },
 
@@ -155,28 +156,101 @@ export const Indent = Extension.create<IndentOptions>({
   addKeyboardShortcuts() {
     return {
       Tab: () => {
-
-
-        const { selection } = this.editor.state;
+        const { state, view, commands } = this.editor;
+        const { selection } = state;
         const { $from, empty } = selection;
 
-        // If cursor is at the beginning of the block (parentOffset === 0)
-        if (empty && $from.parentOffset === 0) {
-          return this.editor.commands.indentFirstLine();
+        if (!empty) {
+          let applied = false;
+          let tr = state.tr;
+          tr.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+            if (this.options.types.includes(node.type.name)) {
+              const currentIndent = node.attrs.indent || 0;
+              if (currentIndent < this.options.maxIndent) {
+                tr.setNodeMarkup(pos, undefined, { ...node.attrs, indent: currentIndent + 1 });
+                applied = true;
+              }
+            }
+          });
+          if (applied) {
+            // @ts-ignore
+            const { syncListNumbers } = require('./flat-list-engine');
+            syncListNumbers(tr, tr.doc, selection.from);
+            view.dispatch(tr);
+            return true;
+          }
+          return false;
         }
 
-        // If not at the beginning, prevent default tab behavior (do not insert spaces/tabs)
-        // per user requirement "Jangan membuat indent" if at the middle.
+        if (empty && $from.parentOffset === 0) {
+          const parent = $from.parent;
+          const attrs = parent.attrs;
+
+          if (attrs.listType && attrs.listType !== 'none') {
+            const currentIndent = attrs.indent || 0;
+            if (currentIndent < this.options.maxIndent) {
+              const tr = state.tr.setNodeMarkup($from.before(), undefined, {
+                ...attrs,
+                indent: currentIndent + 1,
+              });
+              // @ts-ignore
+              const { syncListNumbers } = require('./flat-list-engine');
+              syncListNumbers(tr, tr.doc, $from.pos);
+              view.dispatch(tr);
+              return true;
+            }
+          }
+          return commands.indentFirstLine();
+        }
+
         return true; 
       },
       'Shift-Tab': () => {
-
-
-        const { selection } = this.editor.state;
+        const { state, view, commands } = this.editor;
+        const { selection } = state;
         const { $from, empty } = selection;
 
+        if (!empty) {
+          let applied = false;
+          let tr = state.tr;
+          tr.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+            if (this.options.types.includes(node.type.name)) {
+              const currentIndent = node.attrs.indent || 0;
+              if (currentIndent > 0) {
+                tr.setNodeMarkup(pos, undefined, { ...node.attrs, indent: currentIndent - 1 });
+                applied = true;
+              }
+            }
+          });
+          if (applied) {
+            // @ts-ignore
+            const { syncListNumbers } = require('./flat-list-engine');
+            syncListNumbers(tr, tr.doc, selection.from);
+            view.dispatch(tr);
+            return true;
+          }
+          return false;
+        }
+
         if (empty && $from.parentOffset === 0) {
-          return this.editor.commands.outdentFirstLine();
+          const parent = $from.parent;
+          const attrs = parent.attrs;
+
+          if (attrs.listType && attrs.listType !== 'none') {
+            const currentIndent = attrs.indent || 0;
+            if (currentIndent > 0) {
+              const tr = state.tr.setNodeMarkup($from.before(), undefined, {
+                ...attrs,
+                indent: currentIndent - 1,
+              });
+              // @ts-ignore
+              const { syncListNumbers } = require('./flat-list-engine');
+              syncListNumbers(tr, tr.doc, $from.pos);
+              view.dispatch(tr);
+              return true;
+            }
+          }
+          return commands.outdentFirstLine();
         }
 
         return true;

@@ -55,13 +55,16 @@ export class ExportController {
     try {
       await this.verifyAuth(req);
       
-      const { title, html } = body;
-      if (!html) throw new BadRequestException('HTML content is required');
+      const { title, documentJson, html } = body;
+      // Accept either documentJson (preferred, new) or html (legacy fallback)
+      if (!documentJson && !html) throw new BadRequestException('Document content is required');
 
-      const docxBuffer = await this.exportService.generateDocx(title, html);
+      const docxBuffer = await this.exportService.generateDocx(title, documentJson || null, html || null);
       
-      res.setHeader('Content-Disposition', `attachment; filename="${title || 'Dokumen'}.docx"`);
+      const safeTitle = (title || 'Dokumen').replace(/[^\w\s\-().]/g, '_');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.docx"`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Length', docxBuffer.length);
       res.status(200).send(docxBuffer);
     } catch (error: any) {
       console.error('Export DOCX error:', error);

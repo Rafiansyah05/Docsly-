@@ -2,34 +2,403 @@ import { Injectable } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import * as mammoth from 'mammoth';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-const HTMLtoDOCX = require('html-to-docx');
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  LevelFormat,
+  convertInchesToTwip,
+  convertMillimetersToTwip,
+  UnderlineType,
+} from 'docx';
 import { toRoman } from './page-numbers.utils';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+// Half-points (docx unit). 1pt = 2 half-points.
+const PT = (pt: number) => pt * 2;
+
+// Twip from pt (for spacing). 1pt = 20 twip.
+const TWIP = (pt: number) => pt * 20;
+
+// Indentation per heading level (matching CSS: heading-level-2 = 1.5rem = ~24px, heading-level-3 = 3rem = ~48px)
+// 1 rem = 16px = ~12pt, so 1.5rem ≈ 18pt ≈ 360 twip
+const HEADING_INDENT: Record<number, number> = {
+  1: 0,
+  2: TWIP(18),  // 1.5rem
+  3: TWIP(36),  // 3rem
+  4: TWIP(54),  // 4.5rem
+  5: TWIP(54),
+  6: TWIP(54),
+};
+
+// Font sizes per heading level (from globals.css)
+const HEADING_FONT_SIZE: Record<number, number> = {
+  1: PT(16),
+  2: PT(14),
+  3: PT(13),
+  4: PT(12),
+  5: PT(11),
+  6: PT(11),
+};
+
+const HEADING_LEVELS_MAP: Record<number, any> = {
+  1: HeadingLevel.HEADING_1,
+  2: HeadingLevel.HEADING_2,
+  3: HeadingLevel.HEADING_3,
+  4: HeadingLevel.HEADING_4,
+  5: HeadingLevel.HEADING_5,
+  6: HeadingLevel.HEADING_6,
+};
+
+const DEFAULT_FONT = 'Times New Roman';
+const DEFAULT_SIZE = PT(11);   // 11pt = 22 half-points
+const LINE_SPACING = 276;      // 1.15 line spacing (240 = single, 276 = 1.15, 360 = 1.5)
+
+// ─── Type Definitions ─────────────────────────────────────────────────────────
+
+interface TipTapMark {
+  type: string;
+  attrs?: Record<string, any>;
+}
+
+interface TipTapNode {
+  type: string;
+  attrs?: Record<string, any>;
+  content?: TipTapNode[];
+  text?: string;
+  marks?: TipTapMark[];
+}
+
+// ─── Helper: Convert inline text nodes to TextRun array ──────────────────────
+
+function inlineToRuns(node: TipTapNode, overrideSize?: number): TextRun[] {
+  if (!node.content) return [];
+
+  const runs: TextRun[] = [];
+  for (const child of node.content) {
+    if (child.type === 'text') {
+      const text = child.text || '';
+      const marks = child.marks || [];
+      const isBold = marks.some(m => m.type === 'bold');
+      const isItalic = marks.some(m => m.type === 'italic');
+      const isUnderline = marks.some(m => m.type === 'underline');
+      const isStrike = marks.some(m => m.type === 'strike');
+      const textStyleMark = marks.find(m => m.type === 'textStyle');
+      const color = textStyleMark?.attrs?.color;
+      let font = DEFAULT_FONT;
+      if (textStyleMark?.attrs?.fontFamily) {
+        font = textStyleMark.attrs.fontFamily.replace(/['"]/g, '').split(',')[0].trim();
+      }
+      
+      let size = overrideSize || DEFAULT_SIZE;
+      if (textStyleMark?.attrs?.fontSize) {
+        // TipTap fontSize is usually in pt or px (e.g., '14pt' or '16px')
+        const fsMatch = textStyleMark.attrs.fontSize.match(/^(\d+(?:\.\d+)?)(pt|px)$/);
+        if (fsMatch) {
+          const val = parseFloat(fsMatch[1]);
+          const unit = fsMatch[2];
+          size = unit === 'pt' ? PT(val) : Math.round(val * 1.5); // 1px = 0.75pt = 1.5 half-points
+        }
+      }
+
+      runs.push(new TextRun({
+        text,
+        bold: isBold || undefined,
+        italics: isItalic || undefined,
+        underline: isUnderline ? { type: UnderlineType.SINGLE } : undefined,
+        strike: isStrike || undefined,
+        color: color ? color.replace('#', '') : undefined, // Leave undefined instead of 000000 for inherit
+        font: font,
+        size: size,
+      }));
+    } else if (child.type === 'hardBreak') {
+      runs.push(new TextRun({ text: '', break: 1 }));
+    }
+  }
+  return runs;
+}
+
+// ─── Helper: Paragraph attrs → indent in twips ───────────────────────────────
+
+function getIndent(attrs: Record<string, any> = {}): any {
+  const indent = attrs.indent || 0;
+  const firstLineIndent = attrs.firstLineIndent || 0;
+  const hangingIndent = attrs.hangingIndent || false;
+
+  let left = 0;
+  let hanging = undefined;
+  let firstLine = undefined;
+
+  // 1 indent level = 2rem = 32px = 480 twips
+  if (indent > 0) {
+    left = indent * 480;
+  }
+
+  // firstLineIndent = 1.27cm = 720 twips
+  if (firstLineIndent > 0) {
+    firstLine = firstLineIndent * 720;
+  }
+
+  // hangingIndent = 1.27cm (left +720, hanging 720)
+  if (hangingIndent) {
+    left += 720;
+    hanging = 720;
+  }
+
+  if (left === 0 && !hanging && !firstLine) return undefined;
+
+  return {
+    ...(left > 0 ? { left } : {}),
+    ...(hanging ? { hanging } : {}),
+    ...(firstLine ? { firstLine } : {})
+  };
+}
+
+function getAlignment(attrs: Record<string, any> = {}): any {
+  if (attrs.textAlign === 'center') return AlignmentType.CENTER;
+  if (attrs.textAlign === 'right') return AlignmentType.RIGHT;
+  if (attrs.textAlign === 'justify') return AlignmentType.JUSTIFIED;
+  return undefined;
+}
+
+// ─── Helper: Convert a TipTap node to docx Paragraph/Table ──────────────────
+
+function convertNode(node: TipTapNode): (Paragraph | Table)[] {
+  const type = node.type;
+  const attrs = node.attrs || {};
+  const alignment = getAlignment(attrs);
+
+  // ── Heading ────────────────────────────────────────────────────────────────
+  if (type === 'heading') {
+    const level = attrs.level || 1;
+    // Combine base heading indent with potential user-applied custom indent
+    const baseIndentTwips = HEADING_INDENT[level] || 0;
+    const customIndentObj = getIndent(attrs) || {};
+    const finalIndentLeft = baseIndentTwips + (customIndentObj.left || 0);
+    const indentObj = finalIndentLeft > 0 ? { ...customIndentObj, left: finalIndentLeft } : customIndentObj;
+    
+    const runs = inlineToRuns(node, HEADING_FONT_SIZE[level] || DEFAULT_SIZE);
+
+    // If preserveFormat — treat like a plain paragraph
+    if (attrs.preserveFormat) {
+      return [new Paragraph({
+        children: runs.length > 0 ? runs : [new TextRun({ text: '', font: DEFAULT_FONT, size: DEFAULT_SIZE })],
+        spacing: { line: LINE_SPACING, before: 0, after: 0 },
+        indent: Object.keys(indentObj).length > 0 ? indentObj : undefined,
+        alignment,
+      })];
+    }
+
+    return [new Paragraph({
+      heading: HEADING_LEVELS_MAP[level] || HeadingLevel.HEADING_1,
+      children: runs.length > 0 ? runs : [new TextRun({ text: '', font: DEFAULT_FONT, size: HEADING_FONT_SIZE[level] || DEFAULT_SIZE })],
+      spacing: { line: LINE_SPACING, before: 0, after: 0 },
+      indent: Object.keys(indentObj).length > 0 ? indentObj : undefined,
+      alignment,
+    })];
+  }
+
+  // ── Paragraph (also handles flat list items via listType attr) ────────────
+  if (type === 'paragraph') {
+    const listType = attrs.listType;
+    const listPrefix = attrs.listPrefix || '';
+    const hasListType = listType && listType !== 'none' && listType !== '';
+    const indentObj = getIndent(attrs) || {};
+    const runs = inlineToRuns(node);
+
+    // Empty paragraph → blank line (preserve spacing)
+    if (runs.length === 0 && !hasListType) {
+      return [new Paragraph({
+        children: [new TextRun({ text: '', font: DEFAULT_FONT, size: DEFAULT_SIZE })],
+        spacing: { line: LINE_SPACING, before: 0, after: 0 },
+        indent: Object.keys(indentObj).length > 0 ? indentObj : undefined,
+        alignment,
+      })];
+    }
+
+    // Bullet list item
+    if (listType === 'bullet') {
+      const prefix = listPrefix || '•';
+      const baseIndentLeft = 480;
+      const finalIndentLeft = baseIndentLeft + (indentObj.left || 0);
+      return [new Paragraph({
+        children: [
+          new TextRun({ text: `${prefix}\t`, font: DEFAULT_FONT, size: DEFAULT_SIZE }),
+          ...runs,
+        ],
+        spacing: { line: LINE_SPACING, before: 0, after: 0 },
+        indent: { ...indentObj, left: finalIndentLeft, hanging: 480 },
+        alignment,
+      })];
+    }
+
+    // Numbered/decimal list item
+    if (listType === 'decimal' || listType === 'ordered') {
+      const prefix = listPrefix || '1.';
+      const baseIndentLeft = 480;
+      const finalIndentLeft = baseIndentLeft + (indentObj.left || 0);
+      return [new Paragraph({
+        children: [
+          new TextRun({ text: `${prefix}\t`, font: DEFAULT_FONT, size: DEFAULT_SIZE }),
+          ...runs,
+        ],
+        spacing: { line: LINE_SPACING, before: 0, after: 0 },
+        indent: { ...indentObj, left: finalIndentLeft, hanging: 480 },
+        alignment,
+      })];
+    }
+
+    // Normal paragraph
+    return [new Paragraph({
+      children: runs,
+      spacing: { line: LINE_SPACING, before: 0, after: 0 },
+      indent: Object.keys(indentObj).length > 0 ? indentObj : undefined,
+      alignment,
+    })];
+  }
+
+  // ── Bullet List (native TipTap bulletList / orderedList) ──────────────────
+  if (type === 'bulletList') {
+    const items: Paragraph[] = [];
+    for (const li of node.content || []) {
+      for (const para of li.content || []) {
+        if (para.type === 'paragraph') {
+          const indentObj = getIndent(para.attrs) || {};
+          const baseIndentLeft = 480;
+          const finalIndentLeft = baseIndentLeft + (indentObj.left || 0);
+          const alignment = getAlignment(para.attrs);
+          const runs = inlineToRuns(para);
+          items.push(new Paragraph({
+            children: [
+              new TextRun({ text: '•\t', font: DEFAULT_FONT, size: DEFAULT_SIZE }),
+              ...runs,
+            ],
+            spacing: { line: LINE_SPACING, before: 0, after: 0 },
+            indent: { ...indentObj, left: finalIndentLeft, hanging: 480 },
+            alignment,
+          }));
+        } else if (para.type === 'bulletList' || para.type === 'orderedList') {
+          // Nested list
+          items.push(...convertNode(para) as Paragraph[]);
+        }
+      }
+    }
+    return items;
+  }
+
+  if (type === 'orderedList') {
+    const items: Paragraph[] = [];
+    let counter = (attrs.start || 1);
+    for (const li of node.content || []) {
+      for (const para of li.content || []) {
+        if (para.type === 'paragraph') {
+          const indentObj = getIndent(para.attrs) || {};
+          const baseIndentLeft = 480;
+          const finalIndentLeft = baseIndentLeft + (indentObj.left || 0);
+          const alignment = getAlignment(para.attrs);
+          const runs = inlineToRuns(para);
+          items.push(new Paragraph({
+            children: [
+              new TextRun({ text: `${counter}.\t`, font: DEFAULT_FONT, size: DEFAULT_SIZE }),
+              ...runs,
+            ],
+            spacing: { line: LINE_SPACING, before: 0, after: 0 },
+            indent: { ...indentObj, left: finalIndentLeft, hanging: 480 },
+            alignment,
+          }));
+          counter++;
+        }
+      }
+    }
+    return items;
+  }
+
+  // ── Table ─────────────────────────────────────────────────────────────────
+  if (type === 'table') {
+    const tableRows: TableRow[] = [];
+    for (const rowNode of node.content || []) {
+      if (rowNode.type !== 'tableRow') continue;
+      const cells: TableCell[] = [];
+      for (const cellNode of rowNode.content || []) {
+        if (cellNode.type !== 'tableCell' && cellNode.type !== 'tableHeader') continue;
+        const isHeader = cellNode.type === 'tableHeader';
+        const cellParagraphs: Paragraph[] = [];
+
+        for (const para of cellNode.content || []) {
+          const indentObj = getIndent(para.attrs) || {};
+          const alignment = getAlignment(para.attrs);
+          const runs = inlineToRuns(para);
+          cellParagraphs.push(new Paragraph({
+            children: isHeader
+              ? runs.map(r => new TextRun({ text: (r as any)._options?.text ?? '', bold: true, font: DEFAULT_FONT, size: DEFAULT_SIZE }))
+              : (runs.length > 0 ? runs : [new TextRun({ text: '', font: DEFAULT_FONT, size: DEFAULT_SIZE })]),
+            spacing: { line: LINE_SPACING, before: 0, after: 0 },
+            indent: Object.keys(indentObj).length > 0 ? indentObj : undefined,
+            alignment,
+          }));
+        }
+
+        if (cellParagraphs.length === 0) {
+          cellParagraphs.push(new Paragraph({
+            children: [new TextRun({ text: '', font: DEFAULT_FONT, size: DEFAULT_SIZE })],
+          }));
+        }
+
+        cells.push(new TableCell({
+          children: cellParagraphs,
+          borders: {
+            top:    { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+            left:   { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+            right:  { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+          },
+        }));
+      }
+      if (cells.length > 0) {
+        tableRows.push(new TableRow({ children: cells }));
+      }
+    }
+    if (tableRows.length === 0) return [];
+    return [new Table({
+      rows: tableRows,
+      width: { size: 100, type: WidthType.PERCENTAGE },
+    })];
+  }
+
+  // ── Skip non-content nodes ─────────────────────────────────────────────────
+  return [];
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class ExportService {
+
   async generatePdf(title: string, html: string, pageSettings: any): Promise<Buffer> {
     let browser = null;
     try {
       const cheerio = require('cheerio');
       const $ = cheerio.load(html);
       
-      // Fix empty paragraphs so they take up space (preserve empty lines)
       $('p').each((_: any, el: any) => {
         if ($(el).text().trim() === '' && $(el).find('img').length === 0 && $(el).find('br').length === 0) {
-          $(el).text('\u00A0');
+          $(el).html('<br>');
         }
       });
       html = $('body').html() || html;
 
-      let displayHeaderFooter = false;
-      
-      if (pageSettings?.enabled) {
-        displayHeaderFooter = true;
-      }
-
       browser = await puppeteer.launch({
         headless: true,
-        channel: 'chrome', // Use chromium or chrome based on environment
+        channel: 'chrome',
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
       const page = await browser.newPage();
@@ -47,40 +416,26 @@ export class ExportService {
               background: white;
               color: #000000;
               font-size: 11pt;
-              line-height: 1.5;
+              line-height: 1.15;
               margin: 0;
               padding: 0;
             }
             .prose { max-width: none; }
-            .prose p { margin-top: 0; margin-bottom: 0; }
-            .prose h1 { font-size: 16pt; font-weight: bold; margin-top: 24pt; margin-bottom: 12pt; page-break-after: avoid; }
-            .prose h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; margin-bottom: 8pt; page-break-after: avoid; }
-            .prose h3 { font-size: 12pt; font-weight: bold; margin-top: 12pt; margin-bottom: 4pt; page-break-after: avoid; }
+            .prose p { margin-top: 0; margin-bottom: 0; font-size: 11pt; }
+            .prose h1 { font-size: 16pt; font-weight: bold; margin-top: 0; margin-bottom: 0; page-break-after: avoid; }
+            .prose h2 { font-size: 14pt; font-weight: bold; margin-top: 0; margin-bottom: 0; page-break-after: avoid; }
+            .prose h3 { font-size: 13pt; font-weight: bold; margin-top: 0; margin-bottom: 0; page-break-after: avoid; }
+            .prose h4, .prose h5, .prose h6 { font-size: 12pt; font-weight: bold; margin-top: 0; margin-bottom: 0; }
             .prose img { display: block; max-width: 100%; height: auto; margin: 0; }
             .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; page-break-inside: avoid; }
             .prose table td, .prose table th { border: 1px solid black; padding: 4px 8px; vertical-align: top; }
             .prose ul, .prose ol { padding-left: 2em; margin-bottom: 1em; }
-            
-            /* Flat List Architecture Numbering & Bullets */
-            .prose [data-list-type]:not([data-list-type='none']) {
-              position: relative;
-              padding-left: 32px;
-            }
-            .prose [data-list-type]:not([data-list-type='none'])::before {
-              content: attr(data-list-prefix);
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 28px;
-              padding-right: 4px;
-              white-space: nowrap;
-              text-align: right;
-              font-weight: 400;
-              color: inherit;
-            }
-
+            .prose .heading-level-2 { margin-left: 1.5rem; }
+            .prose .heading-level-3 { margin-left: 3rem; }
+            .prose .heading-level-4 { margin-left: 4.5rem; }
+            .prose [data-list-type]:not([data-list-type='none']) { position: relative; padding-left: 32px; }
+            .prose [data-list-type]:not([data-list-type='none'])::before { content: attr(data-list-prefix); position: absolute; left: 0; top: 0; width: 28px; padding-right: 4px; white-space: nowrap; text-align: right; font-weight: 400; color: inherit; }
             @page { size: A4; margin: 2.54cm; }
-            .page-break-spacer { page-break-after: always; height: 0; display: block; }
           </style>
         </head>
         <body>
@@ -115,22 +470,16 @@ export class ExportService {
           
           let activeSection = null;
           for (const sec of sortedSections) {
-            if (pageNum >= sec.startPage) {
-              activeSection = sec;
-            }
+            if (pageNum >= sec.startPage) activeSection = sec;
           }
           
           if (activeSection) {
             let text = '';
             const currentNumber = activeSection.startNumber + (pageNum - activeSection.startPage);
             
-            if (activeSection.format === 'arabic') {
-              text = currentNumber.toString();
-            } else if (activeSection.format === 'roman_lower') {
-              text = toRoman(currentNumber).toLowerCase();
-            } else if (activeSection.format === 'roman_upper') {
-              text = toRoman(currentNumber);
-            }
+            if (activeSection.format === 'arabic') text = currentNumber.toString();
+            else if (activeSection.format === 'roman_lower') text = toRoman(currentNumber).toLowerCase();
+            else if (activeSection.format === 'roman_upper') text = toRoman(currentNumber);
             
             if (text) {
               const fontSize = 11;
@@ -141,14 +490,10 @@ export class ExportService {
               if (align === 'left') x = 72; 
               else if (align === 'right') x = width - 72 - textWidth;
               
-              let y = 35; // bottom margin
-              if (position === 'top') {
-                y = height - 45; // top margin
-              }
+              let y = 35;
+              if (position === 'top') y = height - 45;
               
-              pdfPage.drawText(text, {
-                x, y, size: fontSize, font: font, color: rgb(0, 0, 0),
-              });
+              pdfPage.drawText(text, { x, y, size: fontSize, font, color: rgb(0, 0, 0) });
             }
           }
         });
@@ -164,46 +509,250 @@ export class ExportService {
     }
   }
 
-  async generateDocx(title: string, html: string): Promise<Buffer> {
-    const cheerio = require('cheerio');
-    const $ = cheerio.load(html);
+  async generateDocx(title: string, documentJson: any | null, html: string | null): Promise<Buffer> {
+    if (documentJson) {
+      return this.generateDocxFromJson(title, documentJson);
+    }
+    return this.generateDocxFromHtmlFallback(title, html || '');
+  }
 
-    $('[data-list-type]').each((_: any, el: any) => {
-      const listType = $(el).attr('data-list-type');
-      if (listType && listType !== 'none') {
-        const prefix = $(el).attr('data-list-prefix') || '';
-        if (prefix) {
-          // Prepend as raw text to avoid any invalid XML generation by html-to-docx
-          $(el).prepend(prefix + '\u00A0');
+  private async generateDocxFromJson(title: string, documentJson: any): Promise<Buffer> {
+    const docChildren: (Paragraph | Table)[] = [];
+
+    // Get document-level layout from JSON attrs (margins in px, 1px ≈ 0.75pt)
+    const layout = documentJson?.attrs?.layout || { top: 96, bottom: 96, left: 96, right: 96 };
+    // Convert px to twip: 1px = 0.75pt, 1pt = 20twip → 1px = 15 twip
+    const pxToTwip = (px: number) => Math.round(px * 15);
+
+    const content: TipTapNode[] = documentJson?.content || [];
+
+    let currentListRef: string | null = null;
+    let currentListFormat: string | null = null;
+    let listCounter = 0;
+    const numberingConfigs: any[] = [];
+
+    function getLevelFormat(prefix: string, listType: string) {
+      prefix = (prefix || '').trim();
+      if (listType === 'bullet') return LevelFormat.BULLET;
+      if (/^[a-z]\.$/.test(prefix)) return LevelFormat.LOWER_LETTER;
+      if (/^[A-Z]\.$/.test(prefix)) return LevelFormat.UPPER_LETTER;
+      if (/^[ivxlc]+\.$/i.test(prefix)) {
+        return prefix === prefix.toLowerCase() ? LevelFormat.LOWER_ROMAN : LevelFormat.UPPER_ROMAN;
+      }
+      return LevelFormat.DECIMAL;
+    }
+
+    for (const node of content) {
+      // Skip editor-only nodes
+      if (['aiTyping', 'imagePlaceholder', 'doc'].includes(node.type)) continue;
+      
+      // Native List Handling
+      if (node.type === 'paragraph' && node.attrs?.listType && node.attrs.listType !== 'none') {
+        const listType = node.attrs.listType;
+        const listPrefix = node.attrs.listPrefix || (listType === 'bullet' ? '•' : '1.');
+        const indentObj = getIndent(node.attrs) || {};
+        const format = getLevelFormat(listPrefix, listType);
+        
+        // Start a new numbering instance if list format changes or previous node wasn't this list
+        if (currentListFormat !== format) {
+          listCounter++;
+          currentListRef = `list-ref-${listCounter}`;
+          currentListFormat = format;
+          
+          numberingConfigs.push({
+            reference: currentListRef,
+            levels: Array.from({ length: 9 }).map((_, i) => ({
+              level: i,
+              format: format,
+              text: listType === 'bullet' ? '•' : (format === LevelFormat.LOWER_LETTER || format === LevelFormat.UPPER_LETTER) ? `%${i + 1}.` : `%${i + 1}.`,
+              alignment: AlignmentType.LEFT,
+              style: {
+                paragraph: {
+                  indent: { left: 480 + (i * 480), hanging: 480 } // Dynamic indent based on level
+                }
+              }
+            }))
+          });
         }
+        
+        const level = Math.min((node.attrs.indent || 0), 8); // TipTap indent acts as level
+        const runs = inlineToRuns(node);
+        const alignment = getAlignment(node.attrs);
+        
+        docChildren.push(new Paragraph({
+          children: runs,
+          spacing: { line: LINE_SPACING, before: 0, after: 0 },
+          numbering: { reference: currentListRef as string, level },
+          alignment,
+        }));
+        continue;
       }
-    });
-    
-    // Fix empty paragraphs so they take up space (preserve empty lines)
-    // Use unicode non-breaking space instead of <br> to ensure Word compatibility
-    $('p').each((_: any, el: any) => {
-      if ($(el).text().trim() === '' && $(el).find('img').length === 0 && $(el).find('br').length === 0) {
-        $(el).text('\u00A0');
+      
+      // Reset list tracking if normal node
+      if (node.type !== 'bulletList' && node.type !== 'orderedList') {
+        currentListFormat = null;
+        currentListRef = null;
       }
-    });
-    
-    const processedHtml = $('body').html() || html;
 
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${title || 'Dokumen'}</title>
-      </head>
-      <body>
-        ${processedHtml}
-      </body>
-      </html>
-    `;
+      const converted = convertNode(node);
+      docChildren.push(...converted);
+    }
+
+    if (docChildren.length === 0) {
+      docChildren.push(new Paragraph({ children: [new TextRun({ text: '', font: DEFAULT_FONT, size: DEFAULT_SIZE })] }));
+    }
+
+    const docOptions: any = {
+      styles: {
+        default: {
+          document: {
+            run: { font: DEFAULT_FONT, size: DEFAULT_SIZE, color: '000000' },
+            paragraph: { spacing: { line: LINE_SPACING, before: 0, after: 0 } },
+          },
+        },
+        paragraphStyles: [
+          {
+            id: 'Heading1',
+            name: 'Heading 1',
+            basedOn: 'Normal',
+            next: 'Normal',
+            run: { bold: true, size: PT(16), font: DEFAULT_FONT, color: '000000' },
+            paragraph: { spacing: { line: LINE_SPACING, before: 0, after: 0 } },
+          },
+          {
+            id: 'Heading2',
+            name: 'Heading 2',
+            basedOn: 'Normal',
+            next: 'Normal',
+            run: { bold: true, size: PT(14), font: DEFAULT_FONT, color: '000000' },
+            paragraph: { spacing: { line: LINE_SPACING, before: 0, after: 0 }, indent: { left: TWIP(18) } },
+          },
+          {
+            id: 'Heading3',
+            name: 'Heading 3',
+            basedOn: 'Normal',
+            next: 'Normal',
+            run: { bold: true, size: PT(13), font: DEFAULT_FONT, color: '000000' },
+            paragraph: { spacing: { line: LINE_SPACING, before: 0, after: 0 }, indent: { left: TWIP(36) } },
+          },
+          {
+            id: 'Heading4',
+            name: 'Heading 4',
+            basedOn: 'Normal',
+            next: 'Normal',
+            run: { bold: true, size: PT(12), font: DEFAULT_FONT, color: '000000' },
+            paragraph: { spacing: { line: LINE_SPACING, before: 0, after: 0 }, indent: { left: TWIP(54) } },
+          },
+          {
+            id: 'Heading5',
+            name: 'Heading 5',
+            basedOn: 'Normal',
+            next: 'Normal',
+            run: { bold: true, size: PT(11), font: DEFAULT_FONT, color: '000000' },
+            paragraph: { spacing: { line: LINE_SPACING, before: 0, after: 0 }, indent: { left: TWIP(54) } },
+          },
+          {
+            id: 'Heading6',
+            name: 'Heading 6',
+            basedOn: 'Normal',
+            next: 'Normal',
+            run: { bold: true, size: PT(11), font: DEFAULT_FONT, color: '000000' },
+            paragraph: { spacing: { line: LINE_SPACING, before: 0, after: 0 }, indent: { left: TWIP(54) } },
+          },
+        ],
+      },
+      sections: [
+        {
+          properties: {
+            page: {
+              size: {
+                width: convertMillimetersToTwip(210),  // A4
+                height: convertMillimetersToTwip(297),
+              },
+              margin: {
+                top:    pxToTwip(layout.top),
+                right:  pxToTwip(layout.right),
+                bottom: pxToTwip(layout.bottom),
+                left:   pxToTwip(layout.left),
+              },
+            },
+          },
+          children: docChildren,
+        },
+      ],
+    };
+
+    if (numberingConfigs.length > 0) {
+      docOptions.numbering = {
+        config: numberingConfigs
+      };
+    }
+
+    const doc = new Document(docOptions);
+
+    return await Packer.toBuffer(doc);
+  }
+
+  private async generateDocxFromHtmlFallback(title: string, html: string): Promise<Buffer> {
+    const HTMLtoDOCX = require('html-to-docx');
+    const cheerio = require('cheerio');
+    const $ = cheerio.load(html, { decodeEntities: false });
+
+    const children = $('body').children().toArray();
+    let currentList: any = null;
+    let currentListType: string | null = null;
+
+    for (const el of children) {
+      const listType = $(el).attr('data-list-type');
+      if (listType === 'bullet' || listType === 'ordered') {
+        const isOrdered = listType === 'ordered';
+        if (currentListType !== listType) {
+          const listTag = isOrdered ? '<ol></ol>' : '<ul></ul>';
+          currentList = $(listTag);
+          $(el).before(currentList);
+          currentListType = listType;
+        }
+        const li = $('<li></li>').html($(el).html() || '');
+        currentList.append(li);
+        $(el).remove();
+      } else {
+        currentList = null;
+        currentListType = null;
+      }
+    }
+
+    $('p').each((_: any, el: any) => {
+      if ($(el).text().trim() === '' && $(el).find('img').length === 0) {
+        $(el).html('&nbsp;');
+      }
+    });
+
+    $('*').each((_: any, el: any) => {
+      if (el.type !== 'tag') return;
+      const attribs = el.attribs || {};
+      Object.keys(attribs).forEach(attr => {
+        const isSafe =
+          (el.name === 'a' && attr === 'href') ||
+          (el.name === 'img' && ['src', 'alt', 'width', 'height'].includes(attr)) ||
+          ((el.name === 'td' || el.name === 'th') && ['colspan', 'rowspan'].includes(attr));
+        if (!isSafe) $(el).removeAttr(attr);
+      });
+    });
+
+    ['span', 'div', 'section', 'article', 'figure', 'figcaption'].forEach(tag => {
+      $(tag).each((_: any, el: any) => { $(el).replaceWith($(el).html() || ''); });
+    });
+
+    $('script, style, link, noscript').remove();
+
+    const processedHtml = $.html('body').replace('<body>', '').replace('</body>', '').trim();
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title || 'Dokumen'}</title></head><body>${processedHtml}</body></html>`;
+
     const fileBuffer = await HTMLtoDOCX(fullHtml, null, {
       title: title || 'Dokumen',
-      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+      font: DEFAULT_FONT,
+      fontSize: DEFAULT_SIZE,
     });
     return fileBuffer as Buffer;
   }

@@ -33,6 +33,7 @@ import { TableOfContents } from './extensions/toc';
 import { Citation, Bibliography } from './extensions/citation';
 import { ImagePlaceholder } from './extensions/image-placeholder';
 import { CustomDocument } from './extensions/custom-document';
+import { AiTyping } from './extensions/ai-typing';
 import { LimitReachedModal } from '@/components/limit-reached-modal';
 import { PageNumberModal } from './page-number-modal';
 import { formatPageNumber, PageSettings } from '@/lib/page-numbers';
@@ -118,6 +119,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
   const editor = useEditor({
     extensions: [
       CustomDocument,
+      AiTyping,
       StarterKit.configure({
         document: false,
         heading: false,
@@ -524,7 +526,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
     try {
       const titleInput = document.querySelector('input[placeholder="Ketik judul dokumen..."]') as HTMLInputElement;
       const title = titleInput && titleInput.value.trim() !== '' ? titleInput.value : 'Dokumen';
-      const html = editor.getHTML();
+      const documentJson = editor.getJSON(); // Send JSON, not HTML — avoids corruption
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -535,9 +537,12 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token || ''}`
         },
-        body: JSON.stringify({ title, html }),
+        body: JSON.stringify({ title, documentJson }),
       });
-      if (!response.ok) throw new Error('Export failed');
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Export failed: ${errText}`);
+      }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -554,6 +559,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
       setIsExportingDocx(false);
     }
   };
+
 
   const exportPdf = async () => {
     setIsExportingPdf(true);

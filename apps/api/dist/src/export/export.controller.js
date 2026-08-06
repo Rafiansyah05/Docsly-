@@ -60,12 +60,14 @@ let ExportController = class ExportController {
     async exportDocx(req, body, res) {
         try {
             await this.verifyAuth(req);
-            const { title, html } = body;
-            if (!html)
-                throw new common_1.BadRequestException('HTML content is required');
-            const docxBuffer = await this.exportService.generateDocx(title, html);
-            res.setHeader('Content-Disposition', `attachment; filename="${title || 'Dokumen'}.docx"`);
+            const { title, documentJson, html } = body;
+            if (!documentJson && !html)
+                throw new common_1.BadRequestException('Document content is required');
+            const docxBuffer = await this.exportService.generateDocx(title, documentJson || null, html || null);
+            const safeTitle = (title || 'Dokumen').replace(/[^\w\s\-().]/g, '_');
+            res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.docx"`);
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            res.setHeader('Content-Length', docxBuffer.length);
             res.status(200).send(docxBuffer);
         }
         catch (error) {

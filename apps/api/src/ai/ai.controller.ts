@@ -26,10 +26,10 @@ export class AiController {
    */
   @Post('execute')
   async execute(
-    @Body() body: { prompt: string; documentJson: any; activeBlockIndex?: number; intent?: string; action?: string; attachments?: any[] },
+    @Body() body: { prompt: string; documentJson: any; activeBlockIndex?: number; intent?: string; action?: string; attachments?: any[]; plan?: string },
     @Res() res: Response,
   ): Promise<void> {
-    const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments } = body;
+    const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments, plan = 'Free' } = body;
 
     if (!prompt) {
       res.status(400).json({ error: 'Prompt is required' });
@@ -80,7 +80,15 @@ export class AiController {
 
       // Stage 4 — Execute AI
       send('progress', { stage: 'execute', label: 'AI sedang menulis & memproses...', percent: 70 });
-      let result = await this.taskExecutor.execute(intent as UserIntent, prompt, context, action === 'skip_questions', attachments);
+      let result = await this.taskExecutor.execute(
+        intent as UserIntent,
+        prompt,
+        context,
+        action === 'skip_questions',
+        attachments,
+        plan,
+        send
+      );
 
       // Stage 5 - Language Compliance Layer
       if (result.operations && result.operations.length > 0) {

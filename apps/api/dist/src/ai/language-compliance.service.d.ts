@@ -5,4 +5,5 @@ export declare class LanguageComplianceService {
     private anthropic;
     constructor(configService: ConfigService);
     verify(operations: BlockOperation[]): Promise<BlockOperation[]>;
+    private attemptJsonRecovery;
 }

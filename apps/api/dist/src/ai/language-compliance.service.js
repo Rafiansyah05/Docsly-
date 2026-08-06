@@ -40,32 +40,76 @@ Your job is to take an array of ProseMirror JSON block operations and apply the 
 
 You will receive the JSON array of operations. You MUST return ONLY the modified JSON array of operations. 
 DO NOT wrap in \`\`\`json. DO NOT change the "op" or "index" fields. ONLY modify the "node" contents.
-Return valid JSON. Escape newlines as \\n.`;
+Return valid JSON. Escape newlines as \\n. Make sure the entire JSON array is complete and properly closed.`;
+        const MAX_LCL_TOKENS = 8000;
+        const MAX_LOOPS = 3;
         try {
-            const response = await this.anthropic.messages.create({
-                model: 'claude-haiku-4-5',
-                max_tokens: 4000,
-                system: systemPrompt,
-                messages: [
-                    {
+            const messages = [
+                {
+                    role: 'user',
+                    content: JSON.stringify(operations),
+                }
+            ];
+            let fullText = '';
+            let isComplete = false;
+            let loops = 0;
+            while (!isComplete && loops < MAX_LOOPS) {
+                loops++;
+                const response = await this.anthropic.messages.create({
+                    model: 'claude-haiku-4-5',
+                    max_tokens: MAX_LCL_TOKENS,
+                    system: systemPrompt,
+                    messages,
+                });
+                const textBlock = response.content.find((c) => c.type === 'text');
+                const text = textBlock ? textBlock.text : '';
+                fullText += text;
+                if (response.stop_reason === 'max_tokens' && loops < MAX_LOOPS) {
+                    messages.push({ role: 'assistant', content: text });
+                    messages.push({
                         role: 'user',
-                        content: JSON.stringify(operations),
-                    }
-                ],
-            });
-            const textBlock = response.content.find((c) => c.type === 'text');
-            const text = textBlock ? textBlock.text : '';
-            const jsonStart = text.indexOf('[');
-            const jsonEnd = text.lastIndexOf(']') + 1;
-            if (jsonStart !== -1 && jsonEnd !== -1) {
-                const jsonStr = text.substring(jsonStart, jsonEnd);
-                return JSON.parse(jsonStr);
+                        content: 'Lanjutkan output JSON dari karakter terakhir yang terpotong. JANGAN mengulang dari awal. Pastikan output JSON array ditutup dengan benar.',
+                    });
+                }
+                else {
+                    isComplete = true;
+                }
+            }
+            const jsonStart = fullText.indexOf('[');
+            const jsonEnd = fullText.lastIndexOf(']') + 1;
+            if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                const jsonStr = fullText.substring(jsonStart, jsonEnd);
+                try {
+                    return JSON.parse(jsonStr);
+                }
+                catch (parseError) {
+                    console.warn('LCL JSON parse failed, attempting auto-recovery...');
+                    const recovered = this.attemptJsonRecovery(jsonStr);
+                    if (recovered)
+                        return recovered;
+                }
             }
             return operations;
         }
         catch (error) {
             console.error('Error in LanguageComplianceService:', error);
             return operations;
+        }
+    }
+    attemptJsonRecovery(jsonStr) {
+        try {
+            const endings = [']}', '}]', ']'];
+            for (const ending of endings) {
+                try {
+                    return JSON.parse(jsonStr + ending);
+                }
+                catch {
+                }
+            }
+            return null;
+        }
+        catch {
+            return null;
         }
     }
 };

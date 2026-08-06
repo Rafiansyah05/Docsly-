@@ -55,6 +55,30 @@ const formatMessageContent = (content: string) => {
   });
 };
 
+const simulateTyping = async (editor: any, operations: any[]) => {
+  // Sort operations by index to apply them in order visually
+  const sortedOps = [...operations].sort((a, b) => (a.index || 0) - (b.index || 0));
+  
+  for (const op of sortedOps) {
+    // Apply single operation
+    editor.commands.applyAiOperations([op]);
+    
+    // Auto scroll to cursor / newly inserted content
+    editor.commands.scrollIntoView();
+    
+    // Calculate a dynamic delay based on content size to simulate typing
+    // Approx 30-40 characters per second = ~25ms per char. 
+    // We cap it at 1.5 seconds per block to not make the user wait forever.
+    const textLength = JSON.stringify(op).length;
+    let delay = Math.min(Math.max(textLength * 5, 200), 1500); 
+    
+    // Add randomness for natural feel
+    delay = delay + (Math.random() * 200 - 100);
+    
+    await new Promise(res => setTimeout(res, delay));
+  }
+};
+
 export function AiSidebar({ editor, documentId }: AiSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -527,6 +551,49 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
             if (eventType === 'progress') {
               setStageLabel(data.label || 'Memproses...');
               setProgress(data.percent || 0);
+
+              if (data.stage === 'classify') {
+                // Insert aiTyping at end of document (safe — does not depend on cursor)
+                const endPos = editor.state.doc.content.size;
+                const tr = editor.state.tr.insert(
+                  endPos,
+                  editor.state.schema.nodes.aiTyping.create({ stage: data.stage, percent: data.percent, words: 0 })
+                );
+                editor.view.dispatch(tr);
+                // Auto-scroll to the panel
+                editor.commands.scrollIntoView();
+              } else {
+                // Update existing aiTyping node attrs
+                const tr = editor.state.tr;
+                let found = false;
+                editor.state.doc.descendants((node: any, pos: number) => {
+                  if (node.type.name === 'aiTyping') {
+                    tr.setNodeMarkup(pos, undefined, {
+                      ...node.attrs,
+                      stage: data.stage,
+                      percent: data.percent
+                    });
+                    found = true;
+                  }
+                });
+                if (found) editor.view.dispatch(tr);
+              }
+            }
+
+            if (eventType === 'typing') {
+              const tr = editor.state.tr;
+              editor.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'aiTyping') {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    words: Math.floor((data.length || 0) / 6)
+                  });
+                }
+              });
+              editor.view.dispatch(tr);
+              
+              // Auto-scroll to the typing node
+              editor.commands.scrollIntoView();
             }
 
             if (eventType === 'result') {
@@ -534,8 +601,26 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
               setProgress(0);
 
               if (data.operations) {
-                editor.commands.applyAiOperations(data.operations);
+                await simulateTyping(editor, data.operations);
               }
+
+              // After typing is done, delete the aiTyping node
+              const tr = editor.state.tr;
+              let deleted = false;
+              const positions: number[] = [];
+              editor.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'aiTyping') {
+                  positions.push(pos);
+                }
+              });
+              positions.reverse().forEach(pos => {
+                const node = tr.doc.nodeAt(pos);
+                if (node) {
+                  tr.delete(pos, pos + node.nodeSize);
+                  deleted = true;
+                }
+              });
+              if (deleted) editor.view.dispatch(tr);
 
               let responseContent = data.explanation || 'Selesai! Perubahan telah diterapkan ke dokumen.';
 
@@ -586,6 +671,22 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
       console.error('Error sending message:', error);
       setIsLoading(false);
       setProgress(0);
+      const tr = editor.state.tr;
+      let deleted = false;
+      const positions: number[] = [];
+      editor.state.doc.descendants((node: any, pos: number) => {
+        if (node.type.name === 'aiTyping') {
+          positions.push(pos);
+        }
+      });
+      positions.reverse().forEach(pos => {
+        const node = tr.doc.nodeAt(pos);
+        if (node) {
+          tr.delete(pos, pos + node.nodeSize);
+          deleted = true;
+        }
+      });
+      if (deleted) editor.view.dispatch(tr);
       setMessages((prev) => [
         ...prev,
         {
@@ -605,6 +706,26 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     setProgress(0);
     setStageLabel('Memproses...');
     setWorkflowState('chat');
+    
+    if (editor) {
+      const tr = editor.state.tr;
+      let deleted = false;
+      const positions: number[] = [];
+      editor.state.doc.descendants((node: any, pos: number) => {
+        if (node.type.name === 'aiTyping') {
+          positions.push(pos);
+        }
+      });
+      positions.reverse().forEach(pos => {
+        const node = tr.doc.nodeAt(pos);
+        if (node) {
+          tr.delete(pos, pos + node.nodeSize);
+          deleted = true;
+        }
+      });
+      if (deleted) editor.view.dispatch(tr);
+    }
+    
     setMessages((prev) => [...prev, { role: 'assistant', content: 'Proses dihentikan oleh pengguna.' }]);
   };
 
@@ -690,9 +811,11 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
       // Find current heading's live index in the document
       let liveIndex = 0;
       let currentIndex = 0;
-      editor.state.doc.forEach((node: any) => {
+      let targetPos = editor.state.doc.content.size;
+      editor.state.doc.forEach((node: any, pos: number) => {
         if (node.type.name === 'heading' && node.textContent === heading.text) {
           liveIndex = currentIndex;
+          targetPos = pos + node.nodeSize;
         }
         currentIndex++;
       });
@@ -747,14 +870,72 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
             if (eventType === 'progress') {
               setStageLabel(data.label || 'Memproses...');
               setProgress(data.percent || 0);
+              
+              if (data.stage === 'classify') {
+                // Insert aiTyping after the section heading (targetPos)
+                const insertAt = Math.min(targetPos, editor.state.doc.content.size);
+                const tr = editor.state.tr.insert(
+                  insertAt,
+                  editor.state.schema.nodes.aiTyping.create({ stage: data.stage, percent: data.percent, words: 0 })
+                );
+                editor.view.dispatch(tr);
+                editor.commands.scrollIntoView();
+              } else {
+                const tr = editor.state.tr;
+                let found = false;
+                editor.state.doc.descendants((node: any, pos: number) => {
+                  if (node.type.name === 'aiTyping') {
+                    tr.setNodeMarkup(pos, undefined, {
+                      ...node.attrs,
+                      stage: data.stage,
+                      percent: data.percent
+                    });
+                    found = true;
+                  }
+                });
+                if (found) editor.view.dispatch(tr);
+              }
+            }
+            if (eventType === 'typing') {
+              const tr = editor.state.tr;
+              let found = false;
+              editor.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'aiTyping') {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    words: Math.floor((data.length || 0) / 6)
+                  });
+                  found = true;
+                }
+              });
+              if (found) editor.view.dispatch(tr);
+              editor.commands.scrollIntoView();
             }
             if (eventType === 'result') {
               setIsLoading(false);
               setProgress(0);
+              
               if (data.operations) {
-                editor.commands.applyAiOperations(data.operations);
+                await simulateTyping(editor, data.operations);
               }
 
+              const tr = editor.state.tr;
+              let deleted = false;
+              const positions: number[] = [];
+              editor.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'aiTyping') {
+                  positions.push(pos);
+                }
+              });
+              positions.reverse().forEach(pos => {
+                const node = tr.doc.nodeAt(pos);
+                if (node) {
+                  tr.delete(pos, pos + node.nodeSize);
+                  deleted = true;
+                }
+              });
+              if (deleted) editor.view.dispatch(tr);
+              
               const responseContent = data.explanation || 'Selesai! Perubahan telah diterapkan ke dokumen.';
               if (conversationId) {
                 supabase
@@ -775,6 +956,22 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
       console.error('Failed to write section:', e);
       setIsLoading(false);
       setProgress(0);
+      const tr = editor.state.tr;
+      let deleted = false;
+      const positions: number[] = [];
+      editor.state.doc.descendants((node: any, pos: number) => {
+        if (node.type.name === 'aiTyping') {
+          positions.push(pos);
+        }
+      });
+      positions.reverse().forEach(pos => {
+        const node = tr.doc.nodeAt(pos);
+        if (node) {
+          tr.delete(pos, pos + node.nodeSize);
+          deleted = true;
+        }
+      });
+      if (deleted) editor.view.dispatch(tr);
       setMessages((prev) => [...prev, { role: 'assistant', content: `❌ Maaf, gagal menulis konten untuk "${heading.text}".` }]);
     }
   };
@@ -900,45 +1097,125 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           }
           if (!dataStr) continue;
 
+          let data: any;
           try {
-            const data = JSON.parse(dataStr);
-            if (eventType === 'progress') {
-              setStageLabel(data.label || 'Memproses...');
-              setProgress(data.percent || 0);
-            }
-            if (eventType === 'result') {
-              setIsLoading(false);
-              setProgress(0);
-              if (data.operations) {
-                editor.commands.applyAiOperations(data.operations);
-              }
+            data = JSON.parse(dataStr);
+          } catch (e) {
+            console.warn('Failed to parse SSE data:', dataStr);
+            continue;
+          }
 
-              let responseContent = data.explanation || 'Selesai! Perubahan telah diterapkan ke dokumen.';
-              if (data.intent === 'generate_outline') {
-                setWorkflowState('outline_review');
-                responseContent = 'Saya telah menyusun kerangka (outline) dokumen di editor. Silakan tinjau dan konfirmasi di bawah untuk mulai menulis isi bab secara bertahap.';
-              }
+          if (eventType === 'progress') {
+            setStageLabel(data.label || 'Memproses...');
+            setProgress(data.percent || 0);
 
-              if (conversationId) {
-                supabase
-                  .from('prompt_history')
-                  .insert({
-                    conversation_id: conversationId,
-                    user_prompt: promptToSend,
-                    ai_response: responseContent,
-                  })
-                  .then();
-              }
-              setMessages((prev) => [...prev, { role: 'assistant', content: responseContent }]);
+            if (data.stage === 'classify') {
+              // Insert aiTyping panel at end of doc
+              const endPos = editor.state.doc.content.size;
+              const tr = editor.state.tr.insert(
+                endPos,
+                editor.state.schema.nodes.aiTyping.create({ stage: data.stage, percent: data.percent, words: 0 })
+              );
+              editor.view.dispatch(tr);
+              editor.commands.scrollIntoView();
+            } else {
+              // Update existing aiTyping node
+              const tr = editor.state.tr;
+              let found = false;
+              editor.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'aiTyping') {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    stage: data.stage,
+                    percent: data.percent
+                  });
+                  found = true;
+                }
+              });
+              if (found) editor.view.dispatch(tr);
             }
-            if (eventType === 'error') throw new Error(data.message);
-          } catch (e) { }
+          }
+
+          if (eventType === 'typing') {
+            const tr = editor.state.tr;
+            let found = false;
+            editor.state.doc.descendants((node: any, pos: number) => {
+              if (node.type.name === 'aiTyping') {
+                tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  words: Math.floor((data.length || 0) / 6)
+                });
+                found = true;
+              }
+            });
+            if (found) editor.view.dispatch(tr);
+            editor.commands.scrollIntoView();
+          }
+
+          if (eventType === 'result') {
+            setIsLoading(false);
+            setProgress(0);
+
+            // Apply operations with simulate typing effect
+            if (data.operations && data.operations.length > 0) {
+              await simulateTyping(editor, data.operations);
+            }
+
+            // Remove aiTyping panel
+            const tr = editor.state.tr;
+            const positions: number[] = [];
+            editor.state.doc.descendants((node: any, pos: number) => {
+              if (node.type.name === 'aiTyping') positions.push(pos);
+            });
+            positions.reverse().forEach(pos => {
+              const node = tr.doc.nodeAt(pos);
+              if (node) tr.delete(pos, pos + node.nodeSize);
+            });
+            if (positions.length > 0) editor.view.dispatch(tr);
+
+            let responseContent = data.explanation || 'Selesai! Perubahan telah diterapkan ke dokumen.';
+            if (data.intent === 'generate_outline') {
+              setWorkflowState('outline_review');
+              responseContent = 'Saya telah menyusun kerangka (outline) dokumen di editor. Silakan tinjau dan konfirmasi di bawah untuk mulai menulis isi bab secara bertahap.';
+            }
+
+            if (conversationId) {
+              supabase
+                .from('prompt_history')
+                .insert({
+                  conversation_id: conversationId,
+                  user_prompt: promptToSend,
+                  ai_response: responseContent,
+                })
+                .then();
+            }
+            setMessages((prev) => [...prev, { role: 'assistant', content: responseContent }]);
+          }
+
+          if (eventType === 'error') {
+            throw new Error(data.message || 'Terjadi kesalahan dari server AI.');
+          }
         }
       }
     } catch (error: any) {
       console.error('Error in executeAiRequest:', error);
       setIsLoading(false);
       setProgress(0);
+
+      // Also clean up aiTyping node if present
+      try {
+        const tr = editor.state.tr;
+        const positions: number[] = [];
+        editor.state.doc.descendants((node: any, pos: number) => {
+          if (node.type.name === 'aiTyping') positions.push(pos);
+        });
+        positions.reverse().forEach(pos => {
+          const node = tr.doc.nodeAt(pos);
+          if (node) tr.delete(pos, pos + node.nodeSize);
+        });
+        if (positions.length > 0) editor.view.dispatch(tr);
+      } catch (_) {}
+
       setMessages((prev) => [...prev, { role: 'assistant', content: `❌ Error: ${error.message}` }]);
     }
   };

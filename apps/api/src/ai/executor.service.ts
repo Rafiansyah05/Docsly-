@@ -54,7 +54,9 @@ export class TaskExecutor {
     prompt: string,
     documentContext: string,
     isAssuming: boolean = false,
-    attachments: any[] = []
+    attachments: any[] = [],
+    plan: string = 'Free',
+    send?: (event: string, data: object) => void
   ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
     const anthropicKey = this.configService.get<string>('ANTHROPIC_API_KEY');
     const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
@@ -74,7 +76,7 @@ export class TaskExecutor {
     const systemPrompt = this.getSystemPrompt(intent, isAssuming);
 
     try {
-      return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt);
+      return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt, plan, send);
     } catch (error: any) {
       console.error(`Error in TaskExecutor (Claude):`, error);
       return {
@@ -89,6 +91,8 @@ export class TaskExecutor {
     prompt: string,
     documentContext: string,
     systemPrompt: string,
+    plan: string,
+    send?: (event: string, data: object) => void
   ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
     const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
     const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
@@ -104,30 +108,59 @@ export class TaskExecutor {
     let fullText = '';
     let isComplete = false;
     let loops = 0;
-    const MAX_LOOPS = 4; // Boleh sampai ~32k output tokens
+    
+    // Dynamic Limits
+    const MAX_LOOPS = plan.toLowerCase() === 'free' ? 1 : (isLightTask ? 2 : 4);
+    let reachedLimit = false;
 
     while (!isComplete && loops < MAX_LOOPS) {
       loops++;
-      const response = await this.anthropic.messages.create({
+      const stream = await this.anthropic.messages.stream({
         model,
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: messages,
       });
-
-      const textBlock = response.content.find((c: any) => c.type === 'text');
-      const text = textBlock ? (textBlock as any).text : '';
-      fullText += text;
-
-      if (response.stop_reason === 'max_tokens') {
-        messages.push({ role: 'assistant', content: text });
-        messages.push({ 
-          role: 'user', 
-          content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.' 
-        });
+      
+      let chunkCount = 0;
+      let lastTextLength = fullText.length;
+      
+      for await (const chunk of stream) {
+        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+          const textChunk = chunk.delta.text;
+          fullText += textChunk;
+          chunkCount++;
+          
+          if (send && chunkCount % 5 === 0) {
+            // Estimate tokens loosely based on length
+            send('typing', { chunks: chunkCount, length: fullText.length });
+          }
+        }
+      }
+      
+      const finalMessage = await stream.finalMessage();
+      
+      if (finalMessage.stop_reason === 'max_tokens') {
+        if (loops >= MAX_LOOPS) {
+          reachedLimit = true;
+          isComplete = true; // Force stop
+        } else {
+          // Keep looping to get more tokens
+          const newText = fullText.substring(lastTextLength);
+          messages.push({ role: 'assistant', content: newText });
+          messages.push({ 
+            role: 'user', 
+            content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.' 
+          });
+        }
       } else {
         isComplete = true;
       }
+    }
+
+    if (reachedLimit) {
+      // Auto-JSON Recovery: Try to force close the JSON to salvage the operations
+      fullText += '"]}]}'; 
     }
 
     const jsonStart = fullText.indexOf('{');
@@ -135,7 +168,11 @@ export class TaskExecutor {
     if (jsonStart !== -1 && jsonEnd !== -1) {
       let jsonStr = fullText.substring(jsonStart, jsonEnd);
       try {
-        return JSON.parse(jsonStr);
+        const parsed = JSON.parse(jsonStr);
+        if (reachedLimit) {
+          parsed.explanation = (parsed.explanation || '') + ' (Output dipotong karena batas limit plan Anda mencapai batas maksimal token untuk sekali permintaan.)';
+        }
+        return parsed;
       } catch (parseError: any) {
         console.error('JSON Parse Error:', parseError);
         console.error('Raw Claude Output:', fullText);

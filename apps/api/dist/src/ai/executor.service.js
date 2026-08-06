@@ -60,7 +60,7 @@ let TaskExecutor = class TaskExecutor {
             apiKey: this.configService.get('ANTHROPIC_API_KEY') || '',
         });
     }
-    async execute(intent, prompt, documentContext, isAssuming = false, attachments = []) {
+    async execute(intent, prompt, documentContext, isAssuming = false, attachments = [], plan = 'Free', send) {
         const anthropicKey = this.configService.get('ANTHROPIC_API_KEY');
         const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
         let fullPrompt = prompt;
@@ -75,7 +75,7 @@ let TaskExecutor = class TaskExecutor {
         }
         const systemPrompt = this.getSystemPrompt(intent, isAssuming);
         try {
-            return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt);
+            return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt, plan, send);
         }
         catch (error) {
             console.error(`Error in TaskExecutor (Claude):`, error);
@@ -85,7 +85,7 @@ let TaskExecutor = class TaskExecutor {
             };
         }
     }
-    async executeWithClaude(intent, prompt, documentContext, systemPrompt) {
+    async executeWithClaude(intent, prompt, documentContext, systemPrompt, plan, send) {
         const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
         const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
         const maxTokens = isLightTask ? 4096 : 8192;
@@ -98,35 +98,60 @@ let TaskExecutor = class TaskExecutor {
         let fullText = '';
         let isComplete = false;
         let loops = 0;
-        const MAX_LOOPS = 4;
+        const MAX_LOOPS = plan.toLowerCase() === 'free' ? 1 : (isLightTask ? 2 : 4);
+        let reachedLimit = false;
         while (!isComplete && loops < MAX_LOOPS) {
             loops++;
-            const response = await this.anthropic.messages.create({
+            const stream = await this.anthropic.messages.stream({
                 model,
                 max_tokens: maxTokens,
                 system: systemPrompt,
                 messages: messages,
             });
-            const textBlock = response.content.find((c) => c.type === 'text');
-            const text = textBlock ? textBlock.text : '';
-            fullText += text;
-            if (response.stop_reason === 'max_tokens') {
-                messages.push({ role: 'assistant', content: text });
-                messages.push({
-                    role: 'user',
-                    content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.'
-                });
+            let chunkCount = 0;
+            let lastTextLength = fullText.length;
+            for await (const chunk of stream) {
+                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+                    const textChunk = chunk.delta.text;
+                    fullText += textChunk;
+                    chunkCount++;
+                    if (send && chunkCount % 5 === 0) {
+                        send('typing', { chunks: chunkCount, length: fullText.length });
+                    }
+                }
+            }
+            const finalMessage = await stream.finalMessage();
+            if (finalMessage.stop_reason === 'max_tokens') {
+                if (loops >= MAX_LOOPS) {
+                    reachedLimit = true;
+                    isComplete = true;
+                }
+                else {
+                    const newText = fullText.substring(lastTextLength);
+                    messages.push({ role: 'assistant', content: newText });
+                    messages.push({
+                        role: 'user',
+                        content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.'
+                    });
+                }
             }
             else {
                 isComplete = true;
             }
+        }
+        if (reachedLimit) {
+            fullText += '"]}]}';
         }
         const jsonStart = fullText.indexOf('{');
         const jsonEnd = fullText.lastIndexOf('}') + 1;
         if (jsonStart !== -1 && jsonEnd !== -1) {
             let jsonStr = fullText.substring(jsonStart, jsonEnd);
             try {
-                return JSON.parse(jsonStr);
+                const parsed = JSON.parse(jsonStr);
+                if (reachedLimit) {
+                    parsed.explanation = (parsed.explanation || '') + ' (Output dipotong karena batas limit plan Anda mencapai batas maksimal token untuk sekali permintaan.)';
+                }
+                return parsed;
             }
             catch (parseError) {
                 console.error('JSON Parse Error:', parseError);

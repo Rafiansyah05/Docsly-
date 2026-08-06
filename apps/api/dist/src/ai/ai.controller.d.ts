@@ -18,6 +18,7 @@ export declare class AiController {
         intent?: string;
         action?: string;
         attachments?: any[];
+        plan?: string;
     }, res: Response): Promise<void>;
     private getIntentLabel;
 }

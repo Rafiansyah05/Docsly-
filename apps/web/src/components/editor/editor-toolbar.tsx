@@ -326,7 +326,11 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
                 key={font.name}
                 onClick={(e) => {
                   e.preventDefault();
-                  (editor.chain().focus() as any).setFontFamily(font.value).run();
+                  (editor.chain().focus() as any)
+                    .setFontFamily(font.value)
+                    .updateAttributes('paragraph', { listFontFamily: font.value })
+                    .updateAttributes('heading', { listFontFamily: font.value })
+                    .run();
                 }}
                 className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-200"
               >
@@ -349,7 +353,11 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
                 key={size}
                 onClick={(e) => {
                   e.preventDefault();
-                  (editor.chain().focus() as any).setFontSize(size).run();
+                  (editor.chain().focus() as any)
+                    .setFontSize(size)
+                    .updateAttributes('paragraph', { listFontSize: size })
+                    .updateAttributes('heading', { listFontSize: size })
+                    .run();
                 }}
                 className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 justify-center text-zinc-900 dark:text-zinc-200"
               >
@@ -363,7 +371,14 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <div className="flex items-center ml-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg h-8 overflow-hidden">
           <input
             type="color"
-            onInput={(e) => (editor.chain().focus() as any).setColor((e.target as HTMLInputElement).value).run()}
+            onInput={(e) => {
+              const val = (e.target as HTMLInputElement).value;
+              (editor.chain().focus() as any)
+                .setColor(val)
+                .updateAttributes('paragraph', { listColor: val })
+                .updateAttributes('heading', { listColor: val })
+                .run();
+            }}
             value={editor.getAttributes('textStyle').color || '#0f172a'}
             className="w-8 h-10 -m-1 cursor-pointer"
             title="Pilih Warna Teks"
