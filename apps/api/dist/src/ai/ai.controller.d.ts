@@ -20,5 +20,9 @@ export declare class AiController {
         attachments?: any[];
         plan?: string;
     }, res: Response): Promise<void>;
+    translate(body: {
+        text: string;
+        targetLanguage: 'english' | 'indonesian';
+    }, res: Response): Promise<void>;
     private getIntentLabel;
 }

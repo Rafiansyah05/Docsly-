@@ -68,22 +68,13 @@ export function analyzeDocument(editor: Editor): AutoHeadingResult {
         }
 
         if (detectedLevel !== null && detectedLevel <= 3) {
-          currentIndent = detectedLevel === 1 ? 0 : detectedLevel - 1;
-
           const headingType = schema.nodes.heading;
           if (headingType) {
             let finalAttrs = {
               ...node.attrs,
               level: detectedLevel,
-              indent: 0,
               preserveFormat: true,
             };
-
-            if (node.attrs.listType && node.attrs.listType !== 'none' && node.attrs.listPrefix) {
-              finalAttrs.listType = 'none';
-              finalAttrs.listPrefix = '';
-              tr = tr.insertText(newMarkerStr + '. ', mappedPos + 1);
-            }
 
             tr = tr.setNodeMarkup(mappedPos, headingType, finalAttrs, node.marks);
             changed = true;
@@ -93,20 +84,6 @@ export function analyzeDocument(editor: Editor): AutoHeadingResult {
             else if (detectedLevel === 2) result.h2Count++;
             else if (detectedLevel === 3) result.h3Count++;
           }
-        } else {
-          // It is a list item but not a heading in Mode A. Indent it like content.
-          if (currentIndent > 0) {
-            const finalAttrs = { ...node.attrs, indent: currentIndent };
-            tr = tr.setNodeMarkup(mappedPos, null, finalAttrs, node.marks);
-            changed = true;
-          }
-        }
-      } else {
-        // Content Node
-        if (currentIndent > 0) {
-          const finalAttrs = { ...node.attrs, indent: currentIndent };
-          tr = tr.setNodeMarkup(mappedPos, null, finalAttrs, node.marks);
-          changed = true;
         }
       }
     }
@@ -141,42 +118,13 @@ export function analyzeDocument(editor: Editor): AutoHeadingResult {
         if (score >= 80 && currentLevel <= 3) {
           tn.assignedLevel = currentLevel;
           
-          // Detect Ambiguity and Determine Target Format (Rule 9 & Unconditional Normalization)
-          const parentFormat = tn.parent ? tn.parent.info?.format : null;
-          let targetFormat: FormatType = tn.info!.format;
-          let needsFormatChange = false;
-          
-          if (parentFormat && tn.info?.format === parentFormat) {
-            needsFormatChange = true;
-            if (parentFormat === 'UPPER_ALPHA' || parentFormat === 'BAB') targetFormat = 'NUMERIC';
-            else if (parentFormat === 'NUMERIC') targetFormat = 'LOWER_ALPHA';
-            else targetFormat = 'NUMERIC'; 
-          }
-          
           const mappedPos = tr.mapping.map(tn.pos);
-          
-          // Unconditionally normalize the sequence!
-          // We always call correctAnomaly to fix sequence gaps (e.g. A, C -> A, B)
-          const finalMarkerStr = correctAnomaly(tn.node, mappedPos, tr, tn.info!.marker, targetFormat, index);
-          
           const headingType = schema.nodes.heading;
           let finalAttrs = {
             ...tn.node.attrs,
             level: tn.assignedLevel,
-            indent: 0,
             preserveFormat: true,
           };
-
-          if (tn.node.attrs.listType && tn.node.attrs.listType !== 'none' && tn.node.attrs.listPrefix) {
-            finalAttrs.listType = 'none';
-            finalAttrs.listPrefix = '';
-            // If it was a list item, correctAnomaly handled the listPrefix attribute instead of text insertion!
-            // Wait, correctAnomaly handles BOTH listPrefix and text insertion.
-            // If we wipe listType here, we MUST insert the text ourselves if it was a list item!
-            // Actually, correctAnomaly updates tr with listPrefix. If we immediately set it to none, we lose the prefix!
-            // So we should insert the text here, using finalMarkerStr.
-            tr = tr.insertText(finalMarkerStr + '. ', mappedPos + 1);
-          }
 
           tr = tr.setNodeMarkup(mappedPos, headingType, finalAttrs, tn.node.marks);
           changed = true;
@@ -191,34 +139,6 @@ export function analyzeDocument(editor: Editor): AutoHeadingResult {
     }
 
     processTree(tree, 1);
-
-    // Pass 3 (Mode B): Apply Indentation to contents and non-headings
-    let currentDepth = 0;
-    for (let i = 0; i < nodes.length; i++) {
-      const { node, pos } = nodes[i];
-      if (node.type.name !== 'paragraph' && !node.type.name.includes('heading')) continue;
-      
-      const mappedPos = tr.mapping.map(pos);
-      const tn = markerNodes.find(m => m.pos === pos);
-      
-      if (tn) {
-        currentDepth = tn.depth || 1;
-        if (!tn.assignedLevel && currentDepth > 1) {
-          // Normal list item that didn't become a heading. Indent it appropriately.
-          const finalAttrs = { ...node.attrs, indent: currentDepth - 1 };
-          tr = tr.setNodeMarkup(mappedPos, null, finalAttrs, node.marks);
-          changed = true;
-        }
-      } else {
-        // Content node
-        if (currentDepth > 0) {
-          const contentIndent = currentDepth; // content is indented to match its parent's depth
-          const finalAttrs = { ...node.attrs, indent: contentIndent };
-          tr = tr.setNodeMarkup(mappedPos, null, finalAttrs, node.marks);
-          changed = true;
-        }
-      }
-    }
   }
 
   if (changed) {

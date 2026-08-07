@@ -3,6 +3,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React, { useEffect, useState } from 'react';
 import { formatPageNumber, PageSettings } from '@/lib/page-numbers';
 import { PaginationPluginKey } from './pagination';
+import { getMarkerInfo } from '@/lib/editor/hierarchy-analyzer';
 
 const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
   const [headings, setHeadings] = useState<any[]>(node?.attrs?.headings || []);
@@ -17,8 +18,71 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
       const UNPRINTABLE_GAP = 96 + 40 + 96;
       const pageSettings = editor.state.doc.attrs.pageSettings as PageSettings | null;
 
+      let firstFontFamily: string | undefined;
+      let firstFontSize: string | undefined;
+      let foundText = false;
+
       editor.state.doc.descendants((node: any, pos: number) => {
+        if (!foundText && node.isText && node.text && node.text.trim().length > 0) {
+          foundText = true;
+          if (node.marks) {
+            node.marks.forEach((mark: any) => {
+              if (mark.type.name === 'textStyle') {
+                if (mark.attrs.fontFamily && !firstFontFamily) firstFontFamily = mark.attrs.fontFamily;
+                if (mark.attrs.fontSize && !firstFontSize) firstFontSize = mark.attrs.fontSize;
+              }
+            });
+          }
+        }
+
+        let isTocItem = false;
+        let detectedLevel = 1;
+        let id = node.attrs.id || `toc-${pos}`;
+
         if (node.type.name === 'heading') {
+          isTocItem = true;
+          detectedLevel = node.attrs.level;
+        } else if (node.type.name === 'paragraph') {
+          const text = node.textContent.trim();
+          if (!text) return; // Skip empty paragraphs
+
+          const info = getMarkerInfo(node);
+          if (info) {
+             isTocItem = true;
+             if (info.format === 'BAB') detectedLevel = 1;
+             else if (info.format === 'DECIMAL') {
+                const parts = info.marker.split('.').filter(Boolean);
+                detectedLevel = parts.length;
+             } else {
+                detectedLevel = (node.attrs.indent || 0) + 1;
+             }
+          } else {
+             const wordCount = text.split(/\s+/).length;
+             let isBold = false;
+             if (node.marks && node.marks.some((m: any) => m.type.name === 'bold')) {
+                 isBold = true;
+             } else {
+                 let allTextBold = true;
+                 let hasText = false;
+                 node.descendants((child: any) => {
+                     if (child.isText) {
+                         hasText = true;
+                         if (!child.marks?.some((m: any) => m.type.name === 'bold')) {
+                             allTextBold = false;
+                         }
+                     }
+                 });
+                 if (hasText && allTextBold) isBold = true;
+             }
+
+             if (isBold && wordCount > 0 && wordCount <= 12 && !text.endsWith('.')) {
+                 isTocItem = true;
+                 detectedLevel = (node.attrs.indent || 0) + 1;
+             }
+          }
+        }
+
+        if (isTocItem && detectedLevel <= 3) {
           let pageNumStr = '';
           if (dom && editorRect && pageSettings?.enabled) {
             try {
@@ -34,12 +98,18 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
             }
           }
 
-          const existing = node.attrs.headings?.find((old: any) => old.id === node.attrs.id);
+          const existing = node.attrs.headings?.find((old: any) => old.id === id);
+          
+          let prefix = '';
+          if (node.attrs.listType && node.attrs.listType !== 'none' && node.attrs.listPrefix) {
+             prefix = node.attrs.listPrefix + ' ';
+          }
+          
           newHeadings.push({
-            level: node.attrs.level,
-            text: node.textContent,
+            level: detectedLevel,
+            text: (prefix + node.textContent).trim(),
             customText: existing?.customText,
-            id: node.attrs.id,
+            id: id,
             pos,
             pageNumStr
           });
@@ -48,9 +118,18 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
       const currentHeadingsStr = JSON.stringify(node?.attrs?.headings || []);
       const newHeadingsStr = JSON.stringify(newHeadings);
       
-      if (currentHeadingsStr !== newHeadingsStr) {
+      const newFontFamily = firstFontFamily || 'inherit';
+      const newFontSize = firstFontSize || 'inherit';
+      const currentFontFamily = node?.attrs?.baseFontFamily || 'inherit';
+      const currentFontSize = node?.attrs?.baseFontSize || 'inherit';
+      
+      if (currentHeadingsStr !== newHeadingsStr || currentFontFamily !== newFontFamily || currentFontSize !== newFontSize) {
         setHeadings(newHeadings);
-        updateAttributes({ headings: newHeadings });
+        updateAttributes({ 
+          headings: newHeadings, 
+          baseFontFamily: newFontFamily, 
+          baseFontSize: newFontSize 
+        });
       }
     };
     
@@ -92,7 +171,13 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
   }, [editor]);
 
   return (
-    <NodeViewWrapper className="toc-wrapper my-4">
+    <NodeViewWrapper 
+      className="toc-wrapper my-4"
+      style={{
+        fontFamily: node.attrs.baseFontFamily || 'inherit',
+        fontSize: node.attrs.baseFontSize || 'inherit'
+      }}
+    >
       <div 
         className="font-bold text-[14pt] text-center mb-4 outline-none"
         contentEditable
@@ -116,9 +201,11 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
                   borderTop: `${spacers[idx]}px solid transparent`,
                   backgroundClip: 'padding-box',
                   marginTop: 0, // override margin with border to act as a spacer that respects layout better
-                } : {})
+                } : {}),
+                fontSize: 'inherit',
+                fontFamily: 'inherit'
               }}
-              className="text-sm flex items-end gap-2 group"
+              className="flex items-end gap-2 group"
             >
               <span
                 title="Ctrl+Click (Windows) atau Cmd+Click (Mac) untuk menuju ke bagian ini"
@@ -163,7 +250,7 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
               </span>
               <div className="flex-grow border-b-2 border-dotted border-slate-400 mb-1 opacity-50 group-hover:opacity-100 transition-opacity min-w-[20px]"></div>
               {h.pageNumStr && (
-                <span className="flex-shrink-0 font-['Times_New_Roman',Times,serif] text-slate-700">
+                <span className="flex-shrink-0 text-slate-700" style={{ fontFamily: 'inherit' }}>
                   {h.pageNumStr}
                 </span>
               )}
@@ -179,6 +266,7 @@ export const TableOfContents = Node.create({
   name: 'tableOfContents',
   group: 'block',
   atom: true, // it shouldn't have editable content inside it
+  marks: '_', // allow all marks (e.g. textStyle, bold, italic) to wrap this node
   
   addAttributes() {
     return {
@@ -199,6 +287,16 @@ export const TableOfContents = Node.create({
         renderHTML: attributes => {
           return { 'data-headings': JSON.stringify(attributes.headings || []) };
         }
+      },
+      baseFontFamily: {
+        default: 'inherit',
+        parseHTML: element => element.getAttribute('data-font-family') || 'inherit',
+        renderHTML: attributes => ({ 'data-font-family': attributes.baseFontFamily }),
+      },
+      baseFontSize: {
+        default: 'inherit',
+        parseHTML: element => element.getAttribute('data-font-size') || 'inherit',
+        renderHTML: attributes => ({ 'data-font-size': attributes.baseFontSize }),
       }
     };
   },
@@ -216,9 +314,9 @@ export const TableOfContents = Node.create({
       return [
         'li',
         { style: `display: flex; align-items: flex-end; margin-bottom: 4px; margin-left: ${indent}em;` },
-        ['a', { href: `#${h.id}`, style: 'margin-right: 4px; color: black; text-decoration: none;' }, h.customText || h.text],
-        ['span', { style: 'flex-grow: 1; border-bottom: 2px dotted black; opacity: 0.3; margin: 0 4px 4px 0; min-width: 20px;' }],
-        ['span', { style: 'white-space: nowrap; font-family: "Times New Roman", Times, serif;' }, h.pageNumStr || '']
+        ['a', { href: `#${h.id}`, style: 'margin-right: 4px; color: inherit; text-decoration: none;' }, h.customText || h.text],
+        ['span', { style: 'flex-grow: 1; border-bottom: 2px dotted currentColor; opacity: 0.3; margin: 0 4px 4px 0; min-width: 20px;' }],
+        ['span', { style: 'white-space: nowrap;' }, h.pageNumStr || '']
       ];
     });
 
@@ -226,9 +324,11 @@ export const TableOfContents = Node.create({
       ? ['div', { style: 'color: #94a3b8; font-size: 0.875rem;' }, 'Belum ada heading di dokumen ini.']
       : ['ul', { style: 'list-style: none; padding: 0; margin: 0;' }, ...items];
 
+    const baseStyle = `margin-top: 1em; margin-bottom: 2em; page-break-inside: avoid; font-family: ${node.attrs.baseFontFamily || 'inherit'}; font-size: ${node.attrs.baseFontSize || 'inherit'};`;
+
     return [
       'div', 
-      mergeAttributes(HTMLAttributes, { 'data-toc': '', style: 'margin-top: 1em; margin-bottom: 2em; page-break-inside: avoid;' }),
+      mergeAttributes(HTMLAttributes, { 'data-toc': '', style: baseStyle }),
       ['div', { style: 'text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 1em;' }, title],
       ulOrEmpty
     ];

@@ -389,4 +389,29 @@ ${assumptionRule}`;
       ],
     };
   }
+
+  async translateText(text: string, targetLanguage: 'english' | 'indonesian'): Promise<string> {
+    const sl = targetLanguage === 'english' ? 'id' : 'en';
+    const tl = targetLanguage === 'english' ? 'en' : 'id';
+    
+    try {
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Google Translate API Error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data && data[0] && Array.isArray(data[0])) {
+        return data[0].map((segment: any[]) => segment[0]).join('');
+      }
+      
+      return text;
+    } catch (error: any) {
+      console.error('Error translating text:', error);
+      throw new Error('Gagal menerjemahkan teks: ' + error.message);
+    }
+  }
 }

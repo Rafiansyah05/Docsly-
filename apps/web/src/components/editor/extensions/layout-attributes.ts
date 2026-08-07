@@ -100,7 +100,7 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
     return [
       new Plugin({
         key: new PluginKey('syncListMarks'),
-        appendTransaction: (transactions, oldState, newState) => {
+        appendTransaction: (transactions: any[], oldState: any, newState: any) => {
           if (!transactions.some((tr: any) => tr.docChanged)) return null;
 
           let tr = newState.tr;

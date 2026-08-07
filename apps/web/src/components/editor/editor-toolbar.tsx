@@ -35,6 +35,7 @@ import {
   Loader2,
   Paperclip,
   Wand2,
+  Languages,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageCropModal } from './image-crop-modal';
@@ -44,7 +45,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { analyzeDocument } from '@/lib/editor/heading-engine';
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -70,8 +70,8 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
   const [isExportingPdf, setIsExportingPdf] = React.useState(false);
   const [isExportingDocx, setIsExportingDocx] = React.useState(false);
   const [isFontFamilyOpen, setIsFontFamilyOpen] = React.useState(false);
-  const [isAnalyzing, setIsAnalyzing] = React.useState(false);
-  const [isAnalysisDone, setIsAnalysisDone] = React.useState(false);
+  const [isTranslating, setIsTranslating] = React.useState<'english' | 'indonesian' | null>(null);
+  const [savedSelection, setSavedSelection] = React.useState<{from: number, to: number} | null>(null);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const supabase = createClient();
@@ -86,32 +86,50 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
     };
   }, [editor]);
 
-  const applyIndependentHeading = (level: 1 | 2 | 3 | 4 | 5 | 6) => {
+  const handleTranslate = async (targetLang: 'english' | 'indonesian') => {
     if (!editor) return;
-    const { from, to, empty } = editor.state.selection;
     
-    if (empty) {
-      editor.chain().focus().toggleHeading({ level }).run();
+    // Gunakan savedSelection jika ada (dari dropdown), atau fallback ke selection saat ini
+    const from = savedSelection?.from ?? editor.state.selection.from;
+    const to = savedSelection?.to ?? editor.state.selection.to;
+
+    if (from === to) {
+      toast.error('Pilih teks yang ingin ditranslate terlebih dahulu.');
       return;
     }
     
-    const state = editor.state;
-    const $from = state.doc.resolve(from);
-    const $to = state.doc.resolve(to);
-    
-    const isWholeBlock = $from.parentOffset === 0 && $to.parentOffset === $to.parent.content.size;
-    
-    if (isWholeBlock || $from.parent.type.name === 'heading') {
-      editor.chain().focus().toggleHeading({ level }).run();
-    } else {
-      const tr = state.tr;
-      if ($to.parentOffset < $to.parent.content.size) tr.split(to);
-      if ($from.parentOffset > 0) tr.split(from);
-      editor.view.dispatch(tr);
-      
-      setTimeout(() => {
-        editor.chain().focus().toggleHeading({ level }).run();
-      }, 10);
+    const selectedText = editor.state.doc.textBetween(from, to, '\n');
+    if (!selectedText.trim()) {
+      toast.error('Teks yang dipilih kosong.');
+      return;
+    }
+
+    setIsTranslating(targetLang);
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+      const response = await fetch(`${baseUrl}/ai/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: selectedText, targetLanguage: targetLang }),
+      });
+
+      if (!response.ok) throw new Error('Translasi gagal');
+
+      const data = await response.json();
+      if (data.result) {
+        // Use ProseMirror's native insertText to perfectly preserve font family, size, and other marks
+        const tr = editor.state.tr.insertText(data.result, from, to);
+        editor.view.dispatch(tr);
+        editor.commands.focus();
+      } else {
+        throw new Error('Hasil kosong');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Gagal menerjemahkan teks.');
+    } finally {
+      setIsTranslating(null);
+      setSavedSelection(null);
     }
   };
 
@@ -387,80 +405,41 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
 
         <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
 
-        {/* Headings */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 1 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => applyIndependentHeading(1)}
-        >
-          <Heading1 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 2 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => applyIndependentHeading(2)}
-        >
-          <Heading2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('heading', { level: 3 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}
-          onClick={() => applyIndependentHeading(3)}
-        >
-          <Heading3 className="h-4 w-4" />
-        </Button>
-
-        {/* Auto Heading Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isAnalyzing || isAnalysisDone}
-          className={`h-8 ml-2 px-2 border-zinc-200 dark:border-zinc-700 transition-colors ${
-            isAnalysisDone 
-              ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800' 
-              : 'text-zinc-700 dark:text-zinc-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400'
-          }`}
-          onClick={() => {
-            if (!editor) return;
-            setIsAnalyzing(true);
-            
-            // Allow UI to show loading state before heavy processing
-            setTimeout(() => {
-              try {
-                const res = analyzeDocument(editor);
-                if (res.totalFound > 0) {
-                  toast.success(`Berhasil membuat ${res.totalFound} Heading otomatis! Daftar isi dapat diperbarui.`);
-                } else {
-                  toast.info('Tidak ada teks yang terdeteksi sebagai heading. Pastikan kalimat cukup pendek dan jelas.');
-                }
-              } catch (e) {
-                console.error(e);
-                toast.error('Gagal menganalisis dokumen.');
-              } finally {
-                setIsAnalyzing(false);
-                setIsAnalysisDone(true);
-                setTimeout(() => {
-                  setIsAnalysisDone(false);
-                }, 2000); // Reset after 2 seconds
-              }
-            }, 100); // slight delay for React to render loading state
-          }}
-          title="Auto Heading (Rule-Based Analyzer)"
-        >
-          {isAnalyzing ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : isAnalysisDone ? (
-            <Check className="h-4 w-4 mr-1.5" />
-          ) : (
-            <Wand2 className="h-4 w-4 mr-1.5" />
-          )}
-          <span className="text-xs font-medium">
-            {isAnalyzing ? 'Memproses...' : isAnalysisDone ? 'Selesai' : 'Auto Heading'}
-          </span>
-        </Button>
+        {/* Translate */}
+        <DropdownMenu onOpenChange={(open) => {
+          if (open) {
+            setSavedSelection({ from: editor.state.selection.from, to: editor.state.selection.to });
+          } else if (!isTranslating) {
+            setSavedSelection(null);
+          }
+        }}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isTranslating !== null}
+              className="h-8 px-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+              title="Translate"
+            >
+              {isTranslating !== null ? <Loader2 className="h-4 w-4 mr-1 animate-spin text-zinc-900 dark:text-zinc-100" /> : <Languages className="h-4 w-4 mr-1" />}
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-40 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <DropdownMenuItem
+              onClick={() => handleTranslate('english')}
+              className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-200"
+            >
+              ID ➔ EN
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleTranslate('indonesian')}
+              className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-200"
+            >
+              EN ➔ ID
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1 ml-2"></div>
 

@@ -87,6 +87,20 @@ let AiController = class AiController {
             res.end();
         }
     }
+    async translate(body, res) {
+        try {
+            if (!body.text || !body.targetLanguage) {
+                res.status(400).json({ error: 'Text and targetLanguage are required' });
+                return;
+            }
+            const translatedText = await this.taskExecutor.translateText(body.text, body.targetLanguage);
+            res.status(200).json({ result: translatedText });
+        }
+        catch (error) {
+            console.error('[AiController] Translate Error:', error);
+            res.status(500).json({ error: error?.message || 'Gagal melakukan translasi.' });
+        }
+    }
     getIntentLabel(intent) {
         const map = {
             generate_outline: 'Buat Kerangka Dokumen',
@@ -108,6 +122,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "execute", null);
+__decorate([
+    (0, common_1.Post)('translate'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AiController.prototype, "translate", null);
 exports.AiController = AiController = __decorate([
     (0, common_1.Controller)('ai'),
     __metadata("design:paramtypes", [intent_service_1.IntentClassifier,

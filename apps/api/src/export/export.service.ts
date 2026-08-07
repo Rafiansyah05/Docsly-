@@ -18,6 +18,9 @@ import {
   convertInchesToTwip,
   convertMillimetersToTwip,
   UnderlineType,
+  Header,
+  Footer,
+  PageNumber
 } from 'docx';
 import { toRoman } from './page-numbers.utils';
 
@@ -176,6 +179,60 @@ function convertNode(node: TipTapNode): (Paragraph | Table)[] {
   const type = node.type;
   const attrs = node.attrs || {};
   const alignment = getAlignment(attrs);
+
+  // ── Table of Contents ──────────────────────────────────────────────────────
+  if (type === 'tableOfContents') {
+    const title = attrs.title || 'DAFTAR ISI';
+    const headings = attrs.headings || [];
+    let baseFontFamily = attrs.baseFontFamily || DEFAULT_FONT;
+    if (baseFontFamily === 'inherit') baseFontFamily = DEFAULT_FONT;
+    
+    let baseFontSize = DEFAULT_SIZE; // 11pt
+    if (attrs.baseFontSize && attrs.baseFontSize.endsWith('pt')) {
+       baseFontSize = PT(parseFloat(attrs.baseFontSize));
+    }
+    
+    const paragraphs: Paragraph[] = [];
+    
+    // TOC Title
+    paragraphs.push(new Paragraph({
+      children: [new TextRun({ text: title, bold: true, font: baseFontFamily, size: PT(14) })],
+      alignment: AlignmentType.CENTER,
+      spacing: { line: LINE_SPACING, before: TWIP(12), after: TWIP(12) },
+    }));
+
+    if (headings.length === 0) {
+      paragraphs.push(new Paragraph({
+        children: [new TextRun({ text: 'Belum ada heading di dokumen ini.', font: baseFontFamily, size: PT(11), color: '94a3b8' })],
+        spacing: { line: LINE_SPACING, before: 0, after: 0 },
+      }));
+    } else {
+      for (const h of headings) {
+        const indentLeft = (h.level - 1) * TWIP(18); // 1.5rem = 18pt
+        const text = h.customText || h.text || '';
+        const pageNumStr = h.pageNumStr || '';
+        
+        paragraphs.push(new Paragraph({
+          children: [
+            new TextRun({ text: text, font: baseFontFamily, size: baseFontSize }),
+            new TextRun({ text: '\t', font: baseFontFamily, size: baseFontSize }),
+            new TextRun({ text: pageNumStr, font: baseFontFamily, size: baseFontSize }),
+          ],
+          tabStops: [
+            {
+              type: "right",
+              position: TWIP(430), // Align page numbers to the right
+              leader: "dot",
+            },
+          ],
+          indent: { left: indentLeft },
+          spacing: { line: LINE_SPACING, before: 0, after: TWIP(4) }, 
+        }));
+      }
+    }
+    
+    return paragraphs;
+  }
 
   // ── Heading ────────────────────────────────────────────────────────────────
   if (type === 'heading') {
@@ -677,6 +734,7 @@ export class ExportService {
               },
             },
           },
+          ...(this.buildPageNumberSettings(documentJson?.attrs?.pageSettings)),
           children: docChildren,
         },
       ],
@@ -691,6 +749,28 @@ export class ExportService {
     const doc = new Document(docOptions);
 
     return await Packer.toBuffer(doc);
+  }
+
+  private buildPageNumberSettings(pageSettings: any): { headers?: any, footers?: any } {
+    if (!pageSettings || !pageSettings.enabled) return {};
+
+    const position = pageSettings.position || 'bottom';
+    const align = pageSettings.align || 'center';
+    
+    let alignment: any = AlignmentType.CENTER;
+    if (align === 'left') alignment = AlignmentType.LEFT;
+    if (align === 'right') alignment = AlignmentType.RIGHT;
+    
+    const pageNumberParagraph = new Paragraph({
+      children: [new TextRun({ children: [PageNumber.CURRENT], font: DEFAULT_FONT, size: DEFAULT_SIZE })],
+      alignment: alignment,
+    });
+
+    if (position === 'top') {
+      return { headers: { default: new Header({ children: [pageNumberParagraph] }) } };
+    } else {
+      return { footers: { default: new Footer({ children: [pageNumberParagraph] }) } };
+    }
   }
 
   private async generateDocxFromHtmlFallback(title: string, html: string): Promise<Buffer> {

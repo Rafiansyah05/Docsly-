@@ -106,6 +106,22 @@ export class AiController {
     }
   }
 
+  @Post('translate')
+  async translate(@Body() body: { text: string; targetLanguage: 'english' | 'indonesian' }, @Res() res: Response): Promise<void> {
+    try {
+      if (!body.text || !body.targetLanguage) {
+        res.status(400).json({ error: 'Text and targetLanguage are required' });
+        return;
+      }
+      
+      const translatedText = await this.taskExecutor.translateText(body.text, body.targetLanguage);
+      res.status(200).json({ result: translatedText });
+    } catch (error: any) {
+      console.error('[AiController] Translate Error:', error);
+      res.status(500).json({ error: error?.message || 'Gagal melakukan translasi.' });
+    }
+  }
+
   private getIntentLabel(intent: string): string {
     const map: Record<string, string> = {
       generate_outline: 'Buat Kerangka Dokumen',

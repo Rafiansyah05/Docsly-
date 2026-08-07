@@ -50,4 +50,5 @@ export declare class TaskExecutor {
     private parseAttachments;
     private getSystemPrompt;
     private getMockResponse;
+    translateText(text: string, targetLanguage: 'english' | 'indonesian'): Promise<string>;
 }

@@ -157,6 +157,53 @@ function convertNode(node) {
     const type = node.type;
     const attrs = node.attrs || {};
     const alignment = getAlignment(attrs);
+    if (type === 'tableOfContents') {
+        const title = attrs.title || 'DAFTAR ISI';
+        const headings = attrs.headings || [];
+        let baseFontFamily = attrs.baseFontFamily || DEFAULT_FONT;
+        if (baseFontFamily === 'inherit')
+            baseFontFamily = DEFAULT_FONT;
+        let baseFontSize = DEFAULT_SIZE;
+        if (attrs.baseFontSize && attrs.baseFontSize.endsWith('pt')) {
+            baseFontSize = PT(parseFloat(attrs.baseFontSize));
+        }
+        const paragraphs = [];
+        paragraphs.push(new docx_1.Paragraph({
+            children: [new docx_1.TextRun({ text: title, bold: true, font: baseFontFamily, size: PT(14) })],
+            alignment: docx_1.AlignmentType.CENTER,
+            spacing: { line: LINE_SPACING, before: TWIP(12), after: TWIP(12) },
+        }));
+        if (headings.length === 0) {
+            paragraphs.push(new docx_1.Paragraph({
+                children: [new docx_1.TextRun({ text: 'Belum ada heading di dokumen ini.', font: baseFontFamily, size: PT(11), color: '94a3b8' })],
+                spacing: { line: LINE_SPACING, before: 0, after: 0 },
+            }));
+        }
+        else {
+            for (const h of headings) {
+                const indentLeft = (h.level - 1) * TWIP(18);
+                const text = h.customText || h.text || '';
+                const pageNumStr = h.pageNumStr || '';
+                paragraphs.push(new docx_1.Paragraph({
+                    children: [
+                        new docx_1.TextRun({ text: text, font: baseFontFamily, size: baseFontSize }),
+                        new docx_1.TextRun({ text: '\t', font: baseFontFamily, size: baseFontSize }),
+                        new docx_1.TextRun({ text: pageNumStr, font: baseFontFamily, size: baseFontSize }),
+                    ],
+                    tabStops: [
+                        {
+                            type: "right",
+                            position: TWIP(430),
+                            leader: "dot",
+                        },
+                    ],
+                    indent: { left: indentLeft },
+                    spacing: { line: LINE_SPACING, before: 0, after: TWIP(4) },
+                }));
+            }
+        }
+        return paragraphs;
+    }
     if (type === 'heading') {
         const level = attrs.level || 1;
         const baseIndentTwips = HEADING_INDENT[level] || 0;
@@ -601,6 +648,7 @@ let ExportService = class ExportService {
                             },
                         },
                     },
+                    ...(this.buildPageNumberSettings(documentJson?.attrs?.pageSettings)),
                     children: docChildren,
                 },
             ],
@@ -612,6 +660,27 @@ let ExportService = class ExportService {
         }
         const doc = new docx_1.Document(docOptions);
         return await docx_1.Packer.toBuffer(doc);
+    }
+    buildPageNumberSettings(pageSettings) {
+        if (!pageSettings || !pageSettings.enabled)
+            return {};
+        const position = pageSettings.position || 'bottom';
+        const align = pageSettings.align || 'center';
+        let alignment = docx_1.AlignmentType.CENTER;
+        if (align === 'left')
+            alignment = docx_1.AlignmentType.LEFT;
+        if (align === 'right')
+            alignment = docx_1.AlignmentType.RIGHT;
+        const pageNumberParagraph = new docx_1.Paragraph({
+            children: [new docx_1.TextRun({ children: [docx_1.PageNumber.CURRENT], font: DEFAULT_FONT, size: DEFAULT_SIZE })],
+            alignment: alignment,
+        });
+        if (position === 'top') {
+            return { headers: { default: new docx_1.Header({ children: [pageNumberParagraph] }) } };
+        }
+        else {
+            return { footers: { default: new docx_1.Footer({ children: [pageNumberParagraph] }) } };
+        }
     }
     async generateDocxFromHtmlFallback(title, html) {
         const HTMLtoDOCX = require('html-to-docx');
