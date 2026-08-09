@@ -64,7 +64,7 @@ const HEADING_LEVELS_MAP: Record<number, any> = {
 
 const DEFAULT_FONT = 'Times New Roman';
 const DEFAULT_SIZE = PT(11);   // 11pt = 22 half-points
-const LINE_SPACING = 276;      // 1.15 line spacing (240 = single, 276 = 1.15, 360 = 1.5)
+const LINE_SPACING = 360;      // 1.5 line spacing (240 = single, 276 = 1.15, 360 = 1.5)
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -440,7 +440,7 @@ function convertNode(node: TipTapNode): (Paragraph | Table)[] {
 @Injectable()
 export class ExportService {
 
-  async generatePdf(title: string, html: string, pageSettings: any): Promise<Buffer> {
+  async generatePdf(title: string, html: string, pageSettings: any, layout?: any, pageRanges?: string): Promise<Buffer> {
     let browser = null;
     try {
       const cheerio = require('cheerio');
@@ -467,21 +467,40 @@ export class ExportService {
           <meta charset="utf-8">
           <title>${title || 'Dokumen'}</title>
           <script src="https://cdn.tailwindcss.com"></script>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
           <style>
+            :root {
+              --font-sans: 'Plus Jakarta Sans', sans-serif;
+            }
             body {
-              font-family: 'Times New Roman', Times, serif;
               background: white;
-              color: #000000;
-              font-size: 11pt;
-              line-height: 1.15;
               margin: 0;
               padding: 0;
             }
+            .editor-prose {
+              font-family: 'Times New Roman', Times, serif;
+              color: #000000;
+              font-size: 12pt;
+              line-height: 1.5;
+              padding: 0;
+              margin: 0;
+              display: flow-root;
+              overflow-wrap: break-word;
+              word-break: break-word;
+              white-space: pre-wrap;
+            }
+            .editor-prose * { max-width: 100%; }
+            .editor-prose > *:first-child { margin-top: 0 !important; }
+            .editor-prose [style*="nowrap"] { white-space: pre-wrap !important; }
+            .editor-prose p { margin-top: 0 !important; margin-bottom: 0 !important; }
+            .editor-prose table { border: none !important; }
+            
             .prose { max-width: none; }
-            .prose p { margin-top: 0; margin-bottom: 0; font-size: 11pt; }
-            .prose h1 { font-size: 16pt; font-weight: bold; margin-top: 0; margin-bottom: 0; page-break-after: avoid; }
-            .prose h2 { font-size: 14pt; font-weight: bold; margin-top: 0; margin-bottom: 0; page-break-after: avoid; }
-            .prose h3 { font-size: 13pt; font-weight: bold; margin-top: 0; margin-bottom: 0; page-break-after: avoid; }
+            .prose h1 { font-size: 16pt; font-weight: bold; page-break-after: avoid; }
+            .prose h2 { font-size: 14pt; font-weight: bold; page-break-after: avoid; }
+            .prose h3 { font-size: 13pt; font-weight: bold; page-break-after: avoid; }
             .prose h4, .prose h5, .prose h6 { font-size: 12pt; font-weight: bold; margin-top: 0; margin-bottom: 0; }
             .prose img { display: block; max-width: 100%; height: auto; margin: 0; }
             .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; page-break-inside: avoid; }
@@ -492,22 +511,33 @@ export class ExportService {
             .prose .heading-level-4 { margin-left: 4.5rem; }
             .prose [data-list-type]:not([data-list-type='none']) { position: relative; padding-left: 32px; }
             .prose [data-list-type]:not([data-list-type='none'])::before { content: attr(data-list-prefix); position: absolute; left: 0; top: 0; width: 28px; padding-right: 4px; white-space: nowrap; text-align: right; font-weight: 400; color: inherit; }
-            @page { size: A4; margin: 2.54cm; }
+            @page { size: A4; }
           </style>
-        </head>
-        <body>
-          <div class="prose">${html}</div>
-        </body>
+          </head>
+          <body>
+            <div class="prose editor-prose max-w-none text-justify">
+              ${html}
+            </div>
+          </body>
         </html>
       `;
 
       await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' });
       
+      // Editor canvas uses 96 DPI pixels. Puppeteer works in mm.
+      // 1px (96 DPI) = 25.4mm / 96 = 0.264583mm
+      const pxToMm = (px: number) => `${(px * 25.4 / 96).toFixed(3)}mm`;
+      const topMargin = layout?.top != null ? pxToMm(layout.top) : '25.4mm';   // Default 1 inch
+      const rightMargin = layout?.right != null ? pxToMm(layout.right) : '25.4mm';
+      const bottomMargin = layout?.bottom != null ? pxToMm(layout.bottom) : '25.4mm';
+      const leftMargin = layout?.left != null ? pxToMm(layout.left) : '25.4mm';
+
       const pdfBufferOrig = await page.pdf({
         format: 'A4',
         printBackground: true,
         displayHeaderFooter: false,
-        margin: { top: '2.54cm', right: '2.54cm', bottom: '2.54cm', left: '2.54cm' },
+        margin: { top: topMargin, right: rightMargin, bottom: bottomMargin, left: leftMargin },
+        pageRanges: pageRanges || '',
       });
 
       await browser.close();

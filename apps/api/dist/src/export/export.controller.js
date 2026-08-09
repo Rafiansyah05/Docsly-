@@ -44,10 +44,10 @@ let ExportController = class ExportController {
     async exportPdf(req, body, res) {
         try {
             await this.verifyAuth(req);
-            const { title, html, pageSettings } = body;
+            const { title, html, pageSettings, layout, pageRanges } = body;
             if (!html)
                 throw new common_1.BadRequestException('HTML content is required');
-            const pdfBuffer = await this.exportService.generatePdf(title, html, pageSettings);
+            const pdfBuffer = await this.exportService.generatePdf(title, html, pageSettings, layout, pageRanges);
             res.setHeader('Content-Disposition', `attachment; filename="${title || 'Dokumen'}.pdf"`);
             res.setHeader('Content-Type', 'application/pdf');
             res.status(200).send(pdfBuffer);

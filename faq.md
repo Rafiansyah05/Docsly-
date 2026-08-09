@@ -57,8 +57,7 @@ Tentu! Anda bisa mengunggah file **PDF** atau **Word (DOCX)** ke Docsly. Sistem 
 ---
 
 ### 4. Manajemen Sitasi & Referensi
-**Apakah Docsly mendukung penulisan kutipan akademik?**
-Ya, Docsly mendukung format standar Indonesia dan internasional seperti **APA 7** dan **Harvard**. Anda dapat memasukkan data sumber referensi, dan AI akan otomatis membuat *in-text citation* (kutipan dalam teks) dan menyusun Daftar Pustaka secara kronologis atau alfabetis.
+ustaka secara kronologis atau alfabetis.
 
 ---
 

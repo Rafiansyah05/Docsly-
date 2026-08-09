@@ -78,7 +78,6 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
   const [showPageNumberModal, setShowPageNumberModal] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; page: number } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [limitModal, setLimitModal] = useState<{
     isOpen: boolean;
     plan: string;
@@ -86,6 +85,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
   }>({ isOpen: false, plan: 'Free', maxMb: 100 });
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -171,7 +171,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
     content: initialContent,
     editorProps: {
       attributes: {
-        class: 'prose editor-prose max-w-none focus:outline-none w-full min-h-[1056px] text-justify',
+        class: 'prose editor-prose max-w-none focus:outline-none w-full min-h-full text-justify',
         style: `font-family: "Times New Roman", Times, serif; color: #000000; font-size: ${16 * 0.75}pt;`, // Default to 12pt (16px * 0.75)
       },
     },
@@ -325,7 +325,8 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
         if (wrapper) wrapper.style.height = prevWrapperH;
         if (outer) outer.style.minHeight = prevOuterMin;
 
-        const FULL_STEP = 1163; // 1123px height + 40px gap
+        const PAGE_HEIGHT = 1123;
+        const FULL_STEP = PAGE_HEIGHT + 40;
         const UNPRINTABLE_GAP = layout.bottom + 40 + layout.top;
 
         // total pages calculation
@@ -392,7 +393,8 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
     if (!dom) return;
 
     const pageToDelete = typeof targetPage === 'number' ? targetPage : currentPage;
-    const FULL_STEP = 1163;
+    const PAGE_HEIGHT = 1123;
+    const FULL_STEP = PAGE_HEIGHT + 40;
     const UNPRINTABLE_GAP = layout.bottom + 40 + layout.top;
     const nodesToDelete: { from: number; to: number }[] = [];
     let hasTextContent = false;
@@ -580,6 +582,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
           title,
           html: editor.getHTML(),
           pageSettings: editor.state.doc.attrs.pageSettings,
+          layout: layout,
         }),
       });
       if (!response.ok) throw new Error('Export failed');
@@ -599,6 +602,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
       setIsExportingPdf(false);
     }
   };
+
 
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(
     initialContent?.attrs?.pageSettings as PageSettings | null || null
@@ -716,7 +720,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
                 e.preventDefault();
                 const rect = e.currentTarget.getBoundingClientRect();
                 const relativeY = e.clientY - rect.top;
-                const page = Math.floor(relativeY / 1163) + 1;
+                const page = Math.floor(relativeY / (297 * 96 / 25.4 + 40)) + 1;
 
                 if (page <= totalPages) {
                   setContextMenu({
@@ -738,7 +742,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
               </div>
 
               {/* Editor Foreground */}
-              <div className="relative z-10 w-full text-black" style={{ minHeight: `${totalPages * 1163 - 40}px` }}>
+              <div className="relative z-10 w-full text-black" style={{ minHeight: `calc(${totalPages} * 1123px + ${Math.max(0, totalPages - 1)} * 40px)` }}>
                 <div
                   className="w-full h-full document-layout-wrapper"
                   style={{

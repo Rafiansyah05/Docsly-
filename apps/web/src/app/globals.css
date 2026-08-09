@@ -16,6 +16,8 @@
     --font-sans: var(--font-sans);
   }
   :root {
+    --page-width: 210mm;
+    --page-height: 297mm;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -176,6 +178,7 @@
 
     /* Set MS Word style default font */
     font-family: 'Times New Roman', Times, serif;
+    line-height: 1.5 !important;
   }
 
   /* Anti-Overflow Aggressive Rules for Pasted Content (e.g. from Excel, Web, Word) */
@@ -197,9 +200,26 @@
     word-break: break-all !important;
   }
 
+  /* Reset margins on all Tiptap NodeViewWrapper so Tailwind Typography doesn't add unwanted spacing */
+  .editor-prose [data-node-view-wrapper] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
   .editor-prose p {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+  }
+
+  /* Remove Tailwind Typography auto-margins from TOC node so it can sit flush at page top margin */
+  .editor-prose .toc-wrapper,
+  .editor-prose [data-node-view-wrapper].toc-wrapper,
+  .editor-prose div.toc-wrapper,
+  .editor-prose div[data-toc] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
 
   /* Hancurkan border tabel luar yang menyebabkan garis lurus saat page break */
@@ -283,6 +303,16 @@
 
   /* PDF Export / Print Rules */
   @media print {
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+
     .page-break-spacer {
       height: 0 !important;
       break-after: page;

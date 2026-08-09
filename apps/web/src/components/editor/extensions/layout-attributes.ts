@@ -46,7 +46,8 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
             default: '',
             parseHTML: element => element.style.fontSize || '',
             renderHTML: attributes => {
-              if (!attributes.listFontSize) return {};
+              // only render for lists to avoid conflicts, baseFontSize handles the block style
+              if (!attributes.listFontSize || attributes.listType === 'none') return {};
               return { style: `font-size: ${attributes.listFontSize}` };
             },
           },
@@ -54,7 +55,7 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
             default: '',
             parseHTML: element => element.style.fontFamily || '',
             renderHTML: attributes => {
-              if (!attributes.listFontFamily) return {};
+              if (!attributes.listFontFamily || attributes.listType === 'none') return {};
               return { style: `font-family: ${attributes.listFontFamily}` };
             },
           },
@@ -62,7 +63,7 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
             default: '',
             parseHTML: element => element.style.color || '',
             renderHTML: attributes => {
-              if (!attributes.listColor) return {};
+              if (!attributes.listColor || attributes.listType === 'none') return {};
               return { style: `color: ${attributes.listColor}` };
             },
           },
@@ -70,7 +71,7 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
             default: '',
             parseHTML: element => element.style.fontWeight || '',
             renderHTML: attributes => {
-              if (!attributes.listFontWeight) return {};
+              if (!attributes.listFontWeight || attributes.listType === 'none') return {};
               return { style: `font-weight: ${attributes.listFontWeight}` };
             },
           },
@@ -78,7 +79,7 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
             default: '',
             parseHTML: element => element.style.fontStyle || '',
             renderHTML: attributes => {
-              if (!attributes.listFontStyle) return {};
+              if (!attributes.listFontStyle || attributes.listType === 'none') return {};
               return { style: `font-style: ${attributes.listFontStyle}` };
             },
           },
@@ -86,8 +87,25 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
             default: '',
             parseHTML: element => element.style.textDecoration || '',
             renderHTML: attributes => {
-              if (!attributes.listTextDecoration) return {};
+              if (!attributes.listTextDecoration || attributes.listType === 'none') return {};
               return { style: `text-decoration: ${attributes.listTextDecoration}` };
+            },
+          },
+          // New generic block formatting to persist fonts on Enter
+          baseFontSize: {
+            default: '',
+            parseHTML: element => element.style.fontSize || '',
+            renderHTML: attributes => {
+              if (!attributes.baseFontSize) return {};
+              return { style: `font-size: ${attributes.baseFontSize}` };
+            },
+          },
+          baseFontFamily: {
+            default: '',
+            parseHTML: element => element.style.fontFamily || '',
+            renderHTML: attributes => {
+              if (!attributes.baseFontFamily) return {};
+              return { style: `font-family: ${attributes.baseFontFamily}` };
             },
           },
         },
@@ -106,65 +124,86 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
           let tr = newState.tr;
           let modified = false;
 
+          let globalLastWeight = '';
+          let globalLastStyle = '';
+          let globalLastDecoration = '';
+          let globalLastFontSize = '';
+          let globalLastFontFamily = '';
+          let globalLastColor = '';
+
           newState.doc.descendants((node: any, pos: number) => {
             if (this.options.types.includes(node.type.name)) {
-              if (node.attrs.listType && node.attrs.listType !== 'none') {
-                let firstWeight = '';
-                let firstStyle = '';
-                let firstDecoration = '';
-                let firstFontSize = '';
-                let firstFontFamily = '';
-                let firstColor = '';
-                
-                let found = false;
-                node.descendants((child: any) => {
-                  if (found) return false;
-                  if (child.isText) {
-                    child.marks.forEach((mark: any) => {
-                      if (mark.type.name === 'bold') firstWeight = 'bold';
-                      if (mark.type.name === 'italic') firstStyle = 'italic';
-                      if (mark.type.name === 'underline') firstDecoration = 'underline';
-                      if (mark.type.name === 'strike') firstDecoration = firstDecoration ? `${firstDecoration} line-through` : 'line-through';
-                      if (mark.type.name === 'textStyle') {
-                        if (mark.attrs.fontSize) firstFontSize = mark.attrs.fontSize;
-                        if (mark.attrs.fontFamily) firstFontFamily = mark.attrs.fontFamily;
-                        if (mark.attrs.color) firstColor = mark.attrs.color;
-                      }
-                    });
-                    found = true;
-                    return false;
-                  }
-                });
-
-                // If the block is completely empty (no text node), keep existing attributes
-                if (!found) {
-                  firstWeight = node.attrs.listFontWeight || '';
-                  firstStyle = node.attrs.listFontStyle || '';
-                  firstDecoration = node.attrs.listTextDecoration || '';
-                  firstFontSize = node.attrs.listFontSize || '';
-                  firstFontFamily = node.attrs.listFontFamily || '';
-                  firstColor = node.attrs.listColor || '';
-                }
-                
-                if (
-                  node.attrs.listFontWeight !== firstWeight ||
-                  node.attrs.listFontStyle !== firstStyle ||
-                  node.attrs.listTextDecoration !== firstDecoration ||
-                  node.attrs.listFontSize !== firstFontSize ||
-                  node.attrs.listFontFamily !== firstFontFamily ||
-                  node.attrs.listColor !== firstColor
-                ) {
-                  tr.setNodeMarkup(pos, undefined, {
-                    ...node.attrs,
-                    listFontWeight: firstWeight,
-                    listFontStyle: firstStyle,
-                    listTextDecoration: firstDecoration,
-                    listFontSize: firstFontSize,
-                    listFontFamily: firstFontFamily,
-                    listColor: firstColor,
+              
+              let firstWeight = '';
+              let firstStyle = '';
+              let firstDecoration = '';
+              let firstFontSize = node.attrs.baseFontSize || node.attrs.listFontSize || '';
+              let firstFontFamily = node.attrs.baseFontFamily || node.attrs.listFontFamily || '';
+              let firstColor = node.attrs.listColor || '';
+              
+              let found = false;
+              node.descendants((child: any) => {
+                if (found) return false;
+                if (child.isText) {
+                  child.marks.forEach((mark: any) => {
+                    if (mark.type.name === 'bold') firstWeight = 'bold';
+                    if (mark.type.name === 'italic') firstStyle = 'italic';
+                    if (mark.type.name === 'underline') firstDecoration = 'underline';
+                    if (mark.type.name === 'strike') firstDecoration = firstDecoration ? `${firstDecoration} line-through` : 'line-through';
+                    if (mark.type.name === 'textStyle') {
+                      if (mark.attrs.fontSize) firstFontSize = mark.attrs.fontSize;
+                      if (mark.attrs.fontFamily) firstFontFamily = mark.attrs.fontFamily;
+                      if (mark.attrs.color) firstColor = mark.attrs.color;
+                    }
                   });
-                  modified = true;
+                  found = true;
+                  return false;
                 }
+              });
+
+              // If block is empty, retain its existing properties so they carry over when typing
+              // If it doesn't have any, inherit from the previous block (fixes splitListItem / empty lines)
+              if (!found) {
+                firstWeight = node.attrs.listFontWeight || globalLastWeight || '';
+                firstStyle = node.attrs.listFontStyle || globalLastStyle || '';
+                firstDecoration = node.attrs.listTextDecoration || globalLastDecoration || '';
+                firstFontSize = firstFontSize || globalLastFontSize || '';
+                firstFontFamily = firstFontFamily || globalLastFontFamily || '';
+                firstColor = firstColor || globalLastColor || '';
+              }
+              
+              globalLastWeight = firstWeight;
+              globalLastStyle = firstStyle;
+              globalLastDecoration = firstDecoration;
+              globalLastFontSize = firstFontSize;
+              globalLastFontFamily = firstFontFamily;
+              globalLastColor = firstColor;
+
+              // We sync list styling if it's a list, AND we sync base styling globally
+              const isList = node.attrs.listType && node.attrs.listType !== 'none';
+              
+              const updates: any = {};
+              let hasUpdates = false;
+
+              if (isList) {
+                if (node.attrs.listFontWeight !== firstWeight) { updates.listFontWeight = firstWeight; hasUpdates = true; }
+                if (node.attrs.listFontStyle !== firstStyle) { updates.listFontStyle = firstStyle; hasUpdates = true; }
+                if (node.attrs.listTextDecoration !== firstDecoration) { updates.listTextDecoration = firstDecoration; hasUpdates = true; }
+                if (node.attrs.listFontSize !== firstFontSize) { updates.listFontSize = firstFontSize; hasUpdates = true; }
+                if (node.attrs.listFontFamily !== firstFontFamily) { updates.listFontFamily = firstFontFamily; hasUpdates = true; }
+                if (node.attrs.listColor !== firstColor) { updates.listColor = firstColor; hasUpdates = true; }
+              }
+
+              // Always sync base font family/size for ALL paragraphs/headings to fix the "Enter resets font" issue
+              if (node.attrs.baseFontSize !== firstFontSize) { updates.baseFontSize = firstFontSize; hasUpdates = true; }
+              if (node.attrs.baseFontFamily !== firstFontFamily) { updates.baseFontFamily = firstFontFamily; hasUpdates = true; }
+
+              if (hasUpdates) {
+                tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  ...updates
+                });
+                modified = true;
               }
             }
           });
@@ -175,3 +214,4 @@ export const LayoutAttributes = Extension.create<LayoutAttributesOptions>({
     ];
   },
 });
+

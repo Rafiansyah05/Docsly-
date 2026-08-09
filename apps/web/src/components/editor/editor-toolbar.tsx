@@ -326,6 +326,20 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
     }
   };
 
+  const currentFontFamily = 
+    editor.getAttributes('textStyle').fontFamily || 
+    editor.getAttributes('paragraph').baseFontFamily || 
+    editor.getAttributes('heading').baseFontFamily || 
+    editor.getAttributes('paragraph').listFontFamily || 
+    'Times New Roman';
+    
+  const currentFontSize = 
+    editor.getAttributes('textStyle').fontSize || 
+    editor.getAttributes('paragraph').baseFontSize || 
+    editor.getAttributes('heading').baseFontSize || 
+    editor.getAttributes('paragraph').listFontSize || 
+    '11pt';
+
   return (
     <div className="w-full flex flex-col border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 mt-0">
       {/* Formatting Tools */}
@@ -334,7 +348,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex items-center h-8 text-xs font-medium w-36 justify-between px-2 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 outline-none transition-colors text-zinc-900 dark:text-zinc-200">
             <span className="truncate text-left w-full">
-              {editor.getAttributes('textStyle').fontFamily ? FONTS.find((f) => editor.getAttributes('textStyle').fontFamily.includes(f.value.split(',')[0]))?.name || 'Times New Roman' : 'Times New Roman'}
+              {FONTS.find((f) => currentFontFamily.includes(f.value.split(',')[0]))?.name || 'Times New Roman'}
             </span>
             <ChevronDown className="h-3 w-3 opacity-50 ml-1 shrink-0" />
           </DropdownMenuTrigger>
@@ -346,14 +360,14 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
                   e.preventDefault();
                   (editor.chain().focus() as any)
                     .setFontFamily(font.value)
-                    .updateAttributes('paragraph', { listFontFamily: font.value })
-                    .updateAttributes('heading', { listFontFamily: font.value })
+                    .updateAttributes('paragraph', { listFontFamily: font.value, baseFontFamily: font.value })
+                    .updateAttributes('heading', { listFontFamily: font.value, baseFontFamily: font.value })
                     .run();
                 }}
                 className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-200"
               >
                 <span style={{ fontFamily: font.value }}>{font.name}</span>
-                {editor.isActive('textStyle', { fontFamily: font.value }) && <Check className="h-4 w-4 ml-auto text-blue-600" />}
+                {currentFontFamily.includes(font.value.split(',')[0]) && <Check className="h-4 w-4 ml-auto text-blue-600" />}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -362,7 +376,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
         {/* Font Size */}
         <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex items-center h-8 text-xs font-medium w-32 justify-between px-2 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 outline-none transition-colors text-zinc-900 dark:text-zinc-200">
-            <span className="truncate">{editor.getAttributes('textStyle').fontSize || '11pt'}</span>
+            <span className="truncate">{currentFontSize}</span>
             <ChevronDown className="h-3 w-3 opacity-50 shrink-0" />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="rounded-xl shadow-lg border-zinc-200 dark:border-zinc-800 min-w-[8rem] w-32 z-50 bg-white dark:bg-zinc-900">
@@ -373,14 +387,14 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
                   e.preventDefault();
                   (editor.chain().focus() as any)
                     .setFontSize(size)
-                    .updateAttributes('paragraph', { listFontSize: size })
-                    .updateAttributes('heading', { listFontSize: size })
+                    .updateAttributes('paragraph', { listFontSize: size, baseFontSize: size })
+                    .updateAttributes('heading', { listFontSize: size, baseFontSize: size })
                     .run();
                 }}
                 className="text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 justify-center text-zinc-900 dark:text-zinc-200"
               >
                 {size}
-                {editor.isActive('textStyle', { fontSize: size }) && <Check className="h-3 w-3 ml-2 text-blue-600 absolute right-2" />}
+                {currentFontSize === size && <Check className="h-3 w-3 ml-2 text-blue-600 absolute right-2" />}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

@@ -172,10 +172,12 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
 
   return (
     <NodeViewWrapper 
-      className="toc-wrapper my-4"
+      className="toc-wrapper"
       style={{
         fontFamily: node.attrs.baseFontFamily || 'inherit',
-        fontSize: node.attrs.baseFontSize || 'inherit'
+        fontSize: node.attrs.baseFontSize || 'inherit',
+        margin: 0,
+        padding: 0,
       }}
     >
       <div 
@@ -324,7 +326,7 @@ export const TableOfContents = Node.create({
       ? ['div', { style: 'color: #94a3b8; font-size: 0.875rem;' }, 'Belum ada heading di dokumen ini.']
       : ['ul', { style: 'list-style: none; padding: 0; margin: 0;' }, ...items];
 
-    const baseStyle = `margin-top: 1em; margin-bottom: 2em; page-break-inside: avoid; font-family: ${node.attrs.baseFontFamily || 'inherit'}; font-size: ${node.attrs.baseFontSize || 'inherit'};`;
+    const baseStyle = `margin-top: 1em; margin-bottom: 2em; font-family: ${node.attrs.baseFontFamily || 'inherit'}; font-size: ${node.attrs.baseFontSize || 'inherit'};`;
 
     return [
       'div', 
