@@ -481,7 +481,6 @@ let ExportService = class ExportService {
                 margin: { top: topMargin, right: rightMargin, bottom: bottomMargin, left: leftMargin },
                 pageRanges: pageRanges || '',
             });
-            await browser.close();
             let finalPdfBuffer = pdfBufferOrig;
             if (pageSettings?.enabled && pageSettings.sections?.length > 0) {
                 const pdfDoc = await pdf_lib_1.PDFDocument.load(pdfBufferOrig);
@@ -526,10 +525,13 @@ let ExportService = class ExportService {
             }
             return Buffer.from(finalPdfBuffer);
         }
-        catch (error) {
-            if (browser)
-                await browser.close();
-            throw error;
+        finally {
+            if (browser) {
+                try {
+                    await browser.close();
+                }
+                catch (e) { }
+            }
         }
     }
     async generateDocx(title, documentJson, html) {

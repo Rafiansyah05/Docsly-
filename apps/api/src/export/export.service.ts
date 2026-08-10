@@ -548,8 +548,6 @@ export class ExportService {
         pageRanges: pageRanges || '',
       });
 
-      await browser.close();
-
       let finalPdfBuffer = pdfBufferOrig;
 
       if (pageSettings?.enabled && pageSettings.sections?.length > 0) {
@@ -598,9 +596,10 @@ export class ExportService {
       }
 
       return Buffer.from(finalPdfBuffer);
-    } catch (error) {
-      if (browser) await browser.close();
-      throw error;
+    } finally {
+      if (browser) {
+        try { await browser.close(); } catch (e) {}
+      }
     }
   }
 

@@ -13,21 +13,21 @@ export async function POST(req: Request) {
     const body = await req.json();
     const baseUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-    let backendResponse;
-    try {
-      backendResponse = await fetch(`${baseUrl}/api/export/pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(body),
-      });
-    } catch (fetchErr) {
-      // Fallback attempt to port 3005 if default baseUrl localhost:3001 connection failed
-      if (baseUrl.includes('localhost:3001')) {
-        const fallbackUrl = 'http://localhost:3005';
-        backendResponse = await fetch(`${fallbackUrl}/api/export/pdf`, {
+    const targetUrls = Array.from(new Set([
+      baseUrl,
+      'http://localhost:3005',
+      'http://127.0.0.1:3005',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+    ]));
+
+    let backendResponse: Response | null = null;
+    let lastError: any = null;
+
+    for (const url of targetUrls) {
+      try {
+        const targetEndpoint = `${url.replace(/\/$/, '')}/api/export/pdf`;
+        const res = await fetch(targetEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -35,14 +35,20 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify(body),
         });
-      } else {
-        throw fetchErr;
+
+        if (res.ok) {
+          backendResponse = res;
+          break;
+        } else {
+          lastError = new Error(`HTTP ${res.status}: ${await res.text()}`);
+        }
+      } catch (err) {
+        lastError = err;
       }
     }
 
-    if (!backendResponse.ok) {
-      const errText = await backendResponse.text();
-      return NextResponse.json({ error: `PDF Export Error: ${errText}` }, { status: backendResponse.status });
+    if (!backendResponse) {
+      throw lastError || new Error('Backend export service unreachable');
     }
 
     const pdfBuffer = await backendResponse.arrayBuffer();
