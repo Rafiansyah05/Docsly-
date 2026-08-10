@@ -142,6 +142,7 @@ export function DocumentNavbar({ editor, saveState, documentId, initialTitle, wo
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-md">
               <DropdownMenuItem 
+                onSelect={(e) => { e.preventDefault(); onExportPdf(); }}
                 onClick={onExportPdf} 
                 disabled={isExportingPdf}
                 className="hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:bg-zinc-100 dark:focus:bg-zinc-900 cursor-pointer"
@@ -149,6 +150,7 @@ export function DocumentNavbar({ editor, saveState, documentId, initialTitle, wo
                 Export PDF
               </DropdownMenuItem>
               <DropdownMenuItem 
+                onSelect={(e) => { e.preventDefault(); onExportDocx(); }}
                 onClick={onExportDocx} 
                 disabled={isExportingDocx}
                 className="hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:bg-zinc-100 dark:focus:bg-zinc-900 cursor-pointer"

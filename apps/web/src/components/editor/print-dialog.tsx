@@ -25,22 +25,39 @@ export function PrintDialog({ children, editor, layout }: PrintDialogProps) {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      
-      const response = await fetch(`${baseUrl}/api/export/pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({
-          title,
-          html: editor.getHTML(),
-          pageSettings: editor.state.doc.attrs.pageSettings,
-          layout: layout,
-          pageRanges: '', // Print all pages by default
-        }),
-      });
+      let response;
+      try {
+        response = await fetch('/api/export/pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            title,
+            html: editor.getHTML(),
+            pageSettings: editor.state.doc.attrs.pageSettings,
+            layout: layout,
+            pageRanges: '',
+          }),
+        });
+      } catch (err) {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        response = await fetch(`${baseUrl}/api/export/pdf`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            title,
+            html: editor.getHTML(),
+            pageSettings: editor.state.doc.attrs.pageSettings,
+            layout: layout,
+            pageRanges: '',
+          }),
+        });
+      }
 
       if (!response.ok) throw new Error('Preview failed');
       

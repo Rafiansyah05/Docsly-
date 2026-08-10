@@ -524,23 +524,38 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
   };
 
   const exportDocx = async () => {
+    if (!editor) return;
     setIsExportingDocx(true);
     try {
       const titleInput = document.querySelector('input[placeholder="Ketik judul dokumen..."]') as HTMLInputElement;
       const title = titleInput && titleInput.value.trim() !== '' ? titleInput.value : 'Dokumen';
-      const documentJson = editor.getJSON(); // Send JSON, not HTML — avoids corruption
+      const documentJson = editor.getJSON();
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${baseUrl}/api/export/docx`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({ title, documentJson }),
-      });
+      // Call relative Next.js API proxy route first, with fallback to baseUrl
+      let response;
+      try {
+        response = await fetch('/api/export/docx', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({ title, documentJson }),
+        });
+      } catch (err) {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        response = await fetch(`${baseUrl}/api/export/docx`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({ title, documentJson }),
+        });
+      }
+
       if (!response.ok) {
         const errText = await response.text();
         throw new Error(`Export failed: ${errText}`);
@@ -554,9 +569,10 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
+      toast.success('Dokumen DOCX berhasil diunduh.');
+    } catch (err: any) {
       console.error(err);
-      toast.error('Gagal mengekspor dokumen.');
+      toast.error(err.message || 'Gagal mengekspor dokumen.');
     } finally {
       setIsExportingDocx(false);
     }
@@ -564,6 +580,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
 
 
   const exportPdf = async () => {
+    if (!editor) return;
     setIsExportingPdf(true);
     try {
       const titleInput = document.querySelector('input[placeholder="Ketik judul dokumen..."]') as HTMLInputElement;
@@ -571,21 +588,39 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${baseUrl}/api/export/pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({
-          title,
-          html: editor.getHTML(),
-          pageSettings: editor.state.doc.attrs.pageSettings,
-          layout: layout,
-        }),
-      });
-      if (!response.ok) throw new Error('Export failed');
+      let response;
+      try {
+        response = await fetch('/api/export/pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            title,
+            html: editor.getHTML(),
+            pageSettings: editor.state.doc.attrs.pageSettings,
+            layout: layout,
+          }),
+        });
+      } catch (err) {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        response = await fetch(`${baseUrl}/api/export/pdf`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            title,
+            html: editor.getHTML(),
+            pageSettings: editor.state.doc.attrs.pageSettings,
+            layout: layout,
+          }),
+        });
+      }
+
+      if (!response.ok) throw new Error('Export PDF gagal.');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -595,9 +630,10 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
+      toast.success('Dokumen PDF berhasil diunduh.');
+    } catch (err: any) {
       console.error(err);
-      toast.error('Gagal mengekspor dokumen PDF.');
+      toast.error(err.message || 'Gagal mengekspor dokumen PDF.');
     } finally {
       setIsExportingPdf(false);
     }
