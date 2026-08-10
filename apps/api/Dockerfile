@@ -1,5 +1,17 @@
 FROM node:20-alpine
 
+# Install Chromium and required font/library packages for Puppeteer in Alpine
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Set working directory ke /app
 WORKDIR /app
 

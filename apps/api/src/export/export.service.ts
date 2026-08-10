@@ -453,11 +453,19 @@ export class ExportService {
       });
       html = $('body').html() || html;
 
-      browser = await puppeteer.launch({
+      const launchOptions: any = {
         headless: true,
-        channel: 'chrome',
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+      };
+      if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      }
+      browser = await puppeteer.launch(launchOptions);
       const page = await browser.newPage();
 
       const fullHtml = `
