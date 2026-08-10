@@ -13,7 +13,7 @@ COPY package*.json ./
 # Di sini saya berikan versi produksi murni. Jika Anda ingin menggunakan `nest start` langsung tanpa build,
 # Anda harus mengganti baris di bawah dengan `RUN npm install`. 
 # Namun untuk performa produksi, mari gunakan build:
-RUN npm ci
+RUN npm install
 
 # Salin sisa kode program
 COPY . .

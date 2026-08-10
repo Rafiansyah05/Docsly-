@@ -5,10 +5,14 @@ set -e
 
 echo "Memulai proses deployment backend..."
 
+# 0. Menarik kode terbaru dari repository GitHub (branch main)
+echo "0. Menarik pembaruan kode terbaru dari branch main..."
+git pull origin main
+
 # a. Menghentikan dan menghapus container lama bernama docsly-backend-beta jika sedang berjalan
 echo "1. Menghentikan dan menghapus container lama (jika ada)..."
-docker stop docsly-backend-beta || true
-docker rm docsly-backend-beta || true
+docker stop docsly-backend-beta 2>/dev/null || true
+docker rm docsly-backend-beta 2>/dev/null || true
 
 # b. Mem-build ulang image Docker dari kode terbaru dengan tag docsly-backend:latest
 echo "2. Mem-build ulang image Docker..."
