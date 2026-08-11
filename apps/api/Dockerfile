@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 # 1. Install Chromium dan dependensi font/library untuk Puppeteer di Alpine Linux
 RUN apk add --no-cache \
