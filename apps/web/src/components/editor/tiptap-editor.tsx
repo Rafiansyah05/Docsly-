@@ -545,7 +545,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
           body: JSON.stringify({ title, documentJson }),
         });
       } catch (err) {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
         response = await fetch(`${baseUrl}/api/export/docx`, {
           method: 'POST',
           headers: {
@@ -604,7 +604,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
           }),
         });
       } catch (err) {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
         response = await fetch(`${baseUrl}/api/export/pdf`, {
           method: 'POST',
           headers: {

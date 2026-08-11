@@ -75,7 +75,7 @@ export async function signInWithGoogle() {
   const headersList = headers();
   const host = headersList.get('x-forwarded-host') || headersList.get('host');
   const protocol = headersList.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
-  const siteUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const siteUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'https://docsly.space';
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -117,7 +117,7 @@ export async function sendResetPasswordEmail(email: string) {
     const headersList = headers();
     const host = headersList.get('x-forwarded-host') || headersList.get('host');
     const protocol = headersList.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
-    const siteUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const siteUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'https://docsly.space';
 
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',

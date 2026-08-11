@@ -42,7 +42,7 @@ export function PrintDialog({ children, editor, layout }: PrintDialogProps) {
           }),
         });
       } catch (err) {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
         response = await fetch(`${baseUrl}/api/export/pdf`, {
           method: 'POST',
           headers: {

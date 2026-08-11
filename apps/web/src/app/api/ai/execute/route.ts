@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     // Forward to NestJS AI Microservice
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
     const payload = {
       ...body,
       plan: limitCheck.plan || 'Free'

@@ -106,7 +106,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
 
     setIsTranslating(targetLang);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
       const response = await fetch(`${baseUrl}/ai/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -252,7 +252,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
       const response = await fetch(`${baseUrl}/api/export/docx`, {
         method: 'POST',
         headers: { 
@@ -293,7 +293,7 @@ export function EditorToolbar({ editor, onUploadImage }: EditorToolbarProps) {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
       const response = await fetch(`${baseUrl}/api/export/pdf`, {
         method: 'POST',
         headers: { 

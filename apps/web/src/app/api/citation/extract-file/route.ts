@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     // Forward the FormData to NestJS Citation Microservice
     const formData = await req.formData();
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
     const aiResponse = await fetch(`${baseUrl}/api/citation/extract-file`, {
       method: 'POST',
       body: formData,

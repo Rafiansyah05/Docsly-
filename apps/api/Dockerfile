@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-# Install Chromium and required font/library packages for Puppeteer in Alpine
+# 1. Install Chromium dan dependensi font/library untuk Puppeteer di Alpine Linux
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -9,35 +9,27 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont
 
+# 2. Set Environment Variable agar Puppeteer memakai Chromium bawaan Alpine
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-# Set working directory ke /app
+# 3. Set Working Directory
 WORKDIR /app
 
-# Salin file package.json (dan package-lock.json jika ada)
+# 4. Copy package.json & package-lock.json (jika ada)
 COPY package*.json ./
 
-# Catatan Penting: 
-# Karena backend NestJS Anda memerlukan tahap kompilasi (TypeScript ke JavaScript)
-# yang membutuhkan devDependencies, kita menggunakan multi-stage atau menginstal semua dependensi sementara.
-# Sesuai instruksi Anda, jika Anda mem-build di server, Anda perlu menginstal devDependencies dulu, lalu build.
-# Di sini saya berikan versi produksi murni. Jika Anda ingin menggunakan `nest start` langsung tanpa build,
-# Anda harus mengganti baris di bawah dengan `RUN npm install`. 
-# Namun untuk performa produksi, mari gunakan build:
+# 5. Install seluruh dependensi (termasuk devDependencies untuk kebutuhan Nest CLI & build)
 RUN npm install
 
-# Salin sisa kode program
+# 6. Copy seluruh source code project ke /app
 COPY . .
 
-# Lakukan build aplikasi
+# 7. Jalankan build NestJS (menghasilkan folder /app/dist)
 RUN npm run build
 
-# Opsional: Bersihkan devDependencies dan gunakan hanya versi produksi
-# RUN npm ci --only=production
-
-# Lakukan EXPOSE pada port internal 3001
+# 8. Expose port internal
 EXPOSE 3001
 
-# Set CMD default untuk menjalankan aplikasi produksi (node dist/main)
+# 9. Jalankan aplikasi produksi
 CMD ["npm", "run", "start:prod"]

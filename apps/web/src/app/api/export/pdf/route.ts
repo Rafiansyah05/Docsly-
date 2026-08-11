@@ -11,15 +11,9 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const baseUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
 
-    const targetUrls = Array.from(new Set([
-      baseUrl,
-      'http://localhost:3005',
-      'http://127.0.0.1:3005',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-    ]));
+    const targetUrls = [baseUrl];
 
     let backendResponse: Response | null = null;
     let lastError: any = null;

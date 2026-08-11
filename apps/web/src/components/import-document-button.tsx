@@ -32,7 +32,7 @@ export function ImportDocumentButton({ workspaceId }: { workspaceId: string }) {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
       const res = await fetch(`${baseUrl}/api/export/import`, {
         method: 'POST',
         headers: {
