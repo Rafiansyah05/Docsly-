@@ -17,7 +17,7 @@ export function ProblemSolution() {
             transition={{ duration: 0.5 }}
             className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-6"
           >
-            Creating documents shouldn't feel complicated.
+            Mengatur Format Dokumen Seringkali Memusingkan.
           </motion.h2>
           
           <motion.p 
@@ -27,7 +27,7 @@ export function ProblemSolution() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-lg text-slate-600 mb-12"
           >
-            People spend hours formatting documents, fixing structure, managing references, and rewriting content. Docsly changes that.
+            Kebanyakan converter online merusak struktur dokumen Word. Margin berubah, font hilang, atau format berantakan. Docsly hadir dengan pendekatan baru.
           </motion.p>
           
           <div className="grid md:grid-cols-[1fr_auto_1fr] gap-8 items-center max-w-[800px] mx-auto">
@@ -40,9 +40,10 @@ export function ProblemSolution() {
               className="bg-slate-50 border border-slate-100 rounded-2xl p-6 text-left"
             >
               <div className="flex items-center gap-3 text-slate-500 mb-4 font-medium">
-                <FileWarning className="w-5 h-5 text-red-400" /> Before Docsly
+                <FileWarning className="w-5 h-5 text-red-400" /> Web Converter Biasa
               </div>
               <div className="space-y-3">
+                <div className="text-xs text-red-500 mb-1">Format rusak & margin berubah</div>
                 <div className="h-2 w-3/4 bg-slate-200 rounded-full" />
                 <div className="h-2 w-full bg-slate-200 rounded-full" />
                 <div className="h-2 w-5/6 bg-slate-200 rounded-full" />
@@ -68,12 +69,13 @@ export function ProblemSolution() {
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.5, delay: 0.3 }}
               className="bg-white border border-slate-200 rounded-2xl p-6 text-left"
-              style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }} // extremely subtle edge
+              style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }}
             >
               <div className="flex items-center gap-3 text-slate-900 mb-4 font-medium">
-                <FileCheck className="w-5 h-5 text-blue-600" /> With Docsly
+                <FileCheck className="w-5 h-5 text-blue-600" /> Docsly
               </div>
               <div className="space-y-3">
+                <div className="text-xs text-blue-600 mb-1">Struktur XML aman terjaga 100%</div>
                 <div className="h-2 w-3/4 bg-slate-800 rounded-full" />
                 <div className="h-2 w-full bg-slate-400 rounded-full" />
                 <div className="h-2 w-5/6 bg-slate-400 rounded-full" />
@@ -92,16 +94,16 @@ export function ProblemSolution() {
             className="text-center mb-16"
           >
             <h3 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-4">
-              Meet Docsly AI Workspace
+              Kenapa Memilih Docsly?
             </h3>
-            <p className="text-slate-600">One place to create, improve, and manage documents.</p>
+            <p className="text-slate-600">Alat andalan untuk memfinalisasi dokumen penting Anda.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { title: "AI Writing", desc: "AI membantu membuat isi, menyusun struktur bab, dan menulis draf awal dengan cepat." },
-              { title: "Smart Editing", desc: "Perbaikan format otomatis, ejaan, grammar, dan gaya bahasa baku." },
-              { title: "Collaboration", desc: "Kerja bersama dokumen Anda dengan feedback AI secara real-time." }
+              { title: "Tanpa Login", desc: "Langsung unggah dan proses dokumen Anda. Tanpa perlu mendaftar akun atau mengingat kata sandi." },
+              { title: "Gratis 100%", desc: "Nikmati seluruh fitur premium kami secara gratis. Tanpa trial, tanpa langganan, dan tanpa iklan yang mengganggu." },
+              { title: "Privasi Terjamin", desc: "File Anda diproses di memori (RAM) lalu otomatis dihapus. Kami tidak menyimpan dokumen pengguna di database." }
             ].map((item, i) => (
               <motion.div
                 key={i}

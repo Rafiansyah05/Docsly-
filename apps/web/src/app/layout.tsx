@@ -32,18 +32,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", jakarta.variable, righteous.variable)}>
       <head>
-        <meta httpEquiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://snap-assets.midtrans.com https://api.midtrans.com https://app.midtrans.com https://app.sandbox.midtrans.com https://pay.google.com https://gwk.gopayapi.com;" />
-        <script dangerouslySetInnerHTML={{__html: `
-          if (typeof window !== 'undefined' && window.location.hash) {
-            var params = new URLSearchParams(window.location.hash.substring(1));
-            if (params.get('type') === 'recovery' && window.location.pathname !== '/auth/reset-password') {
-              window.location.href = '/auth/reset-password' + window.location.hash;
-            } else if (params.has('error_description') || params.has('error')) {
-              var errorMsg = params.get('error_description') || params.get('error') || '';
-              window.location.href = '/auth/login?error=' + encodeURIComponent(errorMsg);
-            }
-          }
-        `}} />
       </head>
       <body className="antialiased bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-300 transition-colors duration-300">
         <ThemeProvider

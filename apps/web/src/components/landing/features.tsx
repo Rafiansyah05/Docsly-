@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Bot, Wand2, BookOpen } from 'lucide-react';
+import { Wand2, BookOpen, FileText } from 'lucide-react';
 
 export function Features() {
   return (
@@ -26,22 +26,14 @@ export function Features() {
             >
               <div className="bg-white rounded-2xl border border-slate-200 p-8 h-[300px] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-slate-50/50" />
-                <div className="relative z-10 w-full max-w-[320px] bg-white border border-slate-100 rounded-xl p-4" style={{ boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
-                  <div className="flex gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <Bot className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600">
-                      Buatkan proposal usaha katering rumahan untuk pengajuan pinjaman UMKM.
-                    </div>
+                <div className="relative z-10 w-full max-w-[320px] bg-white border border-slate-100 rounded-xl p-4 shadow-sm text-center">
+                  <div className="h-8 w-8 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                    <Wand2 className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="h-[1px] w-full bg-slate-100 my-4" />
-                  <div className="space-y-2">
-                    <div className="h-2 w-1/3 bg-slate-800 rounded-full mb-4" />
-                    <div className="h-2 w-full bg-slate-200 rounded-full" />
-                    <div className="h-2 w-full bg-slate-200 rounded-full" />
-                    <div className="h-2 w-4/5 bg-slate-200 rounded-full" />
-                  </div>
+                  <div className="text-sm font-medium text-slate-800 mb-1">Struktur XML Aman</div>
+                  <div className="text-xs text-slate-500 mb-4">Kami tidak mengonversi ke teks</div>
+                  <div className="h-2 w-full bg-slate-200 rounded-full mb-2" />
+                  <div className="h-2 w-5/6 bg-slate-200 rounded-full mx-auto" />
                 </div>
               </div>
             </motion.div>
@@ -52,11 +44,11 @@ export function Features() {
               className="order-1 md:order-2"
             >
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
-                <Bot className="w-6 h-6 text-blue-600" />
+                <Wand2 className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">AI Document Agent</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">100% Format Terjaga</h3>
               <p className="text-lg text-slate-600 leading-relaxed">
-                Asisten AI interaktif yang bekerja di dalam dokumen Anda. Dari menyusun kerangka, menulis isi, hingga merevisi bagian tertentu dengan panduan instruksi sederhana.
+                Tidak seperti converter online lainnya, kami menggunakan manipulasi XML murni. Artinya margin, font, cover, dan struktur dokumen Word Anda tidak akan berubah sedikit pun.
               </p>
             </motion.div>
           </div>
@@ -69,11 +61,11 @@ export function Features() {
               viewport={{ once: true, margin: "-100px" }}
             >
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
-                <Wand2 className="w-6 h-6 text-blue-600" />
+                <BookOpen className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Smart Formatting</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Penomoran Fleksibel</h3>
               <p className="text-lg text-slate-600 leading-relaxed">
-                Tidak perlu lagi mengatur spasi, margin, atau font secara manual. Docsly otomatis merapikan dokumen berantakan menjadi format profesional standar Indonesia.
+                Tambahkan nomor halaman secara instan dengan format penomoran Arab atau Romawi, dan tentukan letaknya sesuai dengan pedoman karya tulis ilmiah Anda.
               </p>
             </motion.div>
             <motion.div 
@@ -82,23 +74,14 @@ export function Features() {
               viewport={{ once: true, margin: "-100px" }}
             >
               <div className="bg-white rounded-2xl border border-slate-200 p-8 h-[300px] flex items-center justify-center relative overflow-hidden">
-                <div className="flex gap-4 w-full">
-                  <div className="flex-1 opacity-50 space-y-3">
-                    <div className="text-xs text-slate-400 mb-2 font-mono">text berantakan</div>
-                    <div className="h-2 w-full bg-slate-200 rounded-full" />
-                    <div className="h-2 w-3/4 bg-slate-200 rounded-full" />
-                    <div className="h-2 w-5/6 bg-slate-200 rounded-full" />
-                  </div>
-                  <div className="w-[1px] bg-slate-100" />
-                  <div className="flex-1 space-y-4">
-                    <div className="text-xs text-blue-600 mb-2 font-mono">document profesional</div>
-                    <div className="h-3 w-1/2 bg-slate-800 rounded-full" />
-                    <div className="space-y-2">
-                      <div className="h-2 w-full bg-slate-400 rounded-full" />
-                      <div className="h-2 w-full bg-slate-400 rounded-full" />
-                      <div className="h-2 w-4/5 bg-slate-400 rounded-full" />
-                    </div>
-                  </div>
+                <div className="flex gap-4 w-full justify-center">
+                   <div className="w-[180px] h-[240px] bg-white border shadow-md relative p-4 flex flex-col justify-between">
+                     <div className="space-y-2">
+                       <div className="h-2 w-full bg-slate-200 rounded-full" />
+                       <div className="h-2 w-3/4 bg-slate-200 rounded-full" />
+                     </div>
+                     <div className="text-[10px] text-center font-mono font-bold">12</div>
+                   </div>
                 </div>
               </div>
             </motion.div>
@@ -114,7 +97,7 @@ export function Features() {
             >
               <div className="bg-white rounded-2xl border border-slate-200 p-8 h-[300px] flex items-center justify-center relative overflow-hidden">
                 <div className="w-full max-w-[280px] bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4">
-                  <div className="h-2 w-1/3 bg-slate-300 rounded-full" />
+                  <div className="text-sm font-bold text-center mb-2">Daftar Pustaka</div>
                   <div className="space-y-2 pl-4 border-l-2 border-blue-200">
                     <div className="h-2 w-full bg-slate-400 rounded-full" />
                     <div className="h-2 w-4/5 bg-slate-400 rounded-full" />
@@ -133,11 +116,11 @@ export function Features() {
               className="order-1 md:order-2"
             >
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
-                <BookOpen className="w-6 h-6 text-blue-600" />
+                <FileText className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Citation Assistant</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Daftar Pustaka Instan</h3>
               <p className="text-lg text-slate-600 leading-relaxed">
-                Kelola referensi dengan mudah. AI akan menyusun in-text citation dan daftar pustaka secara otomatis sesuai format APA 7 atau Harvard.
+                Cukup paste teks daftar referensi Anda, dan sistem kami akan menyisipkannya di halaman baru paling belakang dengan identasi menggantung (hanging indent) sesuai standar.
               </p>
             </motion.div>
           </div>

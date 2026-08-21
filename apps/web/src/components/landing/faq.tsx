@@ -9,50 +9,20 @@ import React from 'react';
 
 const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
   {
-    q: "Apa bedanya Docsly dengan ChatGPT atau AI teks biasa?",
-    a: "Docsly bukan sekadar generator teks, melainkan AI Office Agent. Docsly dirancang khusus untuk memproduksi dokumen formal dan profesional (Skripsi, Laporan, Proposal, Surat Dinas, dll). AI Docsly akan menyusun kerangka, mengatur format, memperbaiki gaya bahasa (PUEBI), membuat daftar isi, merapikan tabel, dan menyusun sitasi, hingga siap diekspor dalam format dokumen resmi."
+    q: "Apakah layanan ini benar-benar gratis?",
+    a: "Ya, 100% gratis. Anda tidak perlu membuat akun, tidak ada batasan jumlah dokumen, dan tidak ada watermark pada hasil akhir dokumen Anda."
   },
   {
-    q: "Apakah Docsly menggunakan dokumen saya untuk melatih AI?",
-    a: (
-      <div className="space-y-4">
-        <p>Tidak. Dokumen pengguna tidak digunakan untuk melatih atau meningkatkan model AI tanpa persetujuan pengguna.</p>
-        <p>Docsly dirancang dengan prinsip bahwa dokumen yang dibuat dan disimpan oleh pengguna adalah milik pengguna sepenuhnya. Dokumen tersebut digunakan hanya untuk menyediakan fitur yang diminta oleh pengguna, seperti membantu menulis, memperbaiki isi dokumen, memberikan saran, melakukan analisis, atau membantu menyelesaikan pekerjaan di dalam workspace.</p>
-        <p>Ketika pengguna menggunakan fitur AI Docsly, sistem hanya memproses informasi yang diperlukan untuk memberikan respons yang relevan terhadap permintaan pengguna, bukan untuk mengambil kepemilikan atau menggunakan isi dokumen tersebut sebagai data pelatihan model AI.</p>
-        <p>Selain itu:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Dokumen pengguna tidak digunakan untuk membuat model AI menjadi lebih pintar tanpa izin.</li>
-          <li>Dokumen antar pengguna tidak dicampurkan atau digunakan untuk memberikan jawaban kepada pengguna lain.</li>
-          <li>Workspace dan dokumen setiap pengguna tetap terisolasi sesuai dengan sistem akses yang berlaku.</li>
-          <li>Pengguna tetap memiliki kendali penuh terhadap dokumen mereka, termasuk mengedit, menghapus, membagikan, atau mengatur siapa saja yang dapat mengaksesnya.</li>
-        </ul>
-        <p>Jika pengguna menggunakan fitur collaboration, akses terhadap dokumen hanya diberikan kepada pengguna yang memang mendapatkan izin dari pemilik dokumen. Pengguna lain tetap tidak dapat melihat dokumen atau aktivitas pribadi yang tidak dibagikan kepada mereka.</p>
-      </div>
-    )
+    q: "Apakah format dokumen asli saya akan berubah?",
+    a: "Tidak. Docsly menggunakan metode manipulasi struktur XML murni (tanpa konversi ke teks/HTML). Artinya margin, font, cover, dan tata letak dokumen Word Anda akan 100% dipertahankan sama seperti aslinya."
   },
   {
-    q: "Apakah AI Docsly akan terus bertanya sebelum membuat dokumen?",
-    a: "Docsly dilengkapi dengan Smart Question Engine. AI hanya akan bertanya (maksimal 3-5 pertanyaan) jika informasi penting dari prompt Anda sangat kurang (contoh: di bawah 40% kelengkapan). Jika prompt Anda sudah cukup detail, AI akan langsung membuatkan kerangka outline tanpa bertanya."
+    q: "Apakah dokumen yang saya unggah aman?",
+    a: "Sangat aman. Dokumen Anda hanya diproses di dalam memori server selama beberapa detik dan langsung dihapus setelah proses selesai. Kami tidak pernah menyimpan dokumen Anda di database atau membagikannya kepada pihak ketiga."
   },
   {
-    q: "Apakah dokumen saya aman di dalam server Docsly?",
-    a: (
-      <div className="space-y-4">
-        <p>Sangat aman. Infrastruktur Docsly dibangun dengan standar keamanan tingkat tinggi untuk memastikan data Anda terlindungi dengan maksimal.</p>
-        <p>Praktik keamanan kami mencakup:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Setiap akun memiliki isolasi ruang kerja (workspace) yang ketat sehingga dokumen tidak mungkin bercampur dengan pengguna lain.</li>
-          <li>Seluruh koneksi antara perangkat Anda dan server kami dilindungi menggunakan protokol SSL/TLS yang kokoh.</li>
-          <li>Akses terhadap basis data dibatasi oleh lapisan autentikasi ganda dan kebijakan firewall modern.</li>
-          <li>Tim internal kami tidak memiliki akses langsung untuk membaca isi dokumen Anda demi menjaga kerahasiaan penuh ide dan riset Anda.</li>
-        </ul>
-        <p>Anda dapat berfokus menyusun dokumen berkualitas tanpa perlu khawatir mengenai integritas maupun keamanan data Anda di ekosistem kami.</p>
-      </div>
-    )
-  },
-  {
-    q: "Format dokumen apa saja yang bisa diekspor?",
-    a: "Docsly mendukung ekspor dokumen tingkat tinggi (high fidelity) ke format PDF dan DOCX (Microsoft Word). Seluruh layout, margin, daftar isi, heading, hingga gambar akan dipertahankan agar terlihat identik dengan di editor."
+    q: "Format penomoran halaman apa saja yang didukung?",
+    a: "Kami mendukung penomoran angka Arab (1, 2, 3), angka desimal (01, 02, 03), angka Romawi besar (I, II, III), angka Romawi kecil (i, ii, iii), dan abjad (A, B, C)."
   }
 ];
 

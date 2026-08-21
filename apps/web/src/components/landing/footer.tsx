@@ -10,15 +10,15 @@ export function Footer() {
             <Image src="/images/logo2.png" alt="Docsly Logo" width={120} height={40} className="object-contain h-8 w-auto mix-blend-multiply" />
           </Link>
           <p className="text-slate-500 max-w-[280px]">
-            AI Office Agent that transforms the way professionals create, format, and manage documents.
+            Alat utilitas dokumen gratis untuk menambahkan nomor halaman dan daftar pustaka tanpa merusak format.
           </p>
         </div>
 
         <div>
           <h4 className="font-semibold text-slate-900 mb-6">Product</h4>
           <ul className="space-y-4">
+            <li><Link href="#tool" className="text-slate-500 hover:text-slate-900 text-sm">Utility Tool</Link></li>
             <li><Link href="#features" className="text-slate-500 hover:text-slate-900 text-sm">Features</Link></li>
-            <li><Link href="#pricing" className="text-slate-500 hover:text-slate-900 text-sm">Pricing</Link></li>
           </ul>
         </div>
 

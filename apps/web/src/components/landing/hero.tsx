@@ -23,8 +23,8 @@ export function Hero({ avgRating }: { avgRating: string }) {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-4xl md:text-6xl font-bold text-slate-900 leading-[1.1] tracking-tight mb-6"
           >
-            Create better documents,<br />
-            with an AI that <span className="text-blue-600">understands your work.</span>
+            Sempurnakan Dokumen Word Anda <br />
+            secara <span className="text-blue-600">Instan & Gratis.</span>
           </motion.h1>
 
           <motion.p
@@ -33,7 +33,7 @@ export function Hero({ avgRating }: { avgRating: string }) {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg md:text-xl text-slate-600 mb-8 max-w-[480px] leading-relaxed"
           >
-            Docsly combines AI writing, document editing, and formatting in one intelligent workspace.
+            Docsly adalah alat utilitas cerdas untuk menambahkan Penomoran Halaman dan Daftar Pustaka otomatis tanpa merusak format asli file DOCX Anda.
           </motion.p>
 
           <motion.div
@@ -41,40 +41,10 @@ export function Hero({ avgRating }: { avgRating: string }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link href="/auth/register" className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-12 px-8 text-base shadow-sm")}>
-                Start Free Trial
+            <div className="flex flex-col sm:flex-row items-center justify-start gap-4 pt-4">
+              <Link href="#tool" className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-12 px-8 text-base shadow-sm")}>
+                Gunakan Alat Sekarang
               </Link>
-              <Link href="#demo" className={cn(buttonVariants({ size: "lg", variant: "outline" }), "w-full sm:w-auto rounded-lg px-10 h-14 text-lg font-medium text-slate-700 hover:text-blue-700 border-slate-300 hover:border-blue-300 bg-white shadow-sm")}>
-                See how it works
-              </Link>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-8 pt-6 w-full sm:w-auto"
-          >
-            <div className="flex flex-col items-start gap-1">
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const parsedRating = parseFloat(avgRating);
-                    const ratingValue = isNaN(parsedRating) ? 0.0 : parsedRating;
-                    if (ratingValue >= star) {
-                      return <Star key={star} className="w-5 h-5 fill-[#F59E0B] text-[#F59E0B]" />;
-                    } else if (ratingValue >= star - 0.5) {
-                      return <StarHalf key={star} className="w-5 h-5 fill-[#F59E0B] text-[#F59E0B]" />;
-                    } else {
-                      return <Star key={star} className="w-5 h-5 text-slate-300" />;
-                    }
-                  })}
-                </div>
-                <span className="text-base font-bold text-slate-900 ml-1">{avgRating}</span>
-              </div>
-              <span className="text-sm font-medium text-slate-500">Average AI Quality Rating</span>
             </div>
           </motion.div>
         </div>

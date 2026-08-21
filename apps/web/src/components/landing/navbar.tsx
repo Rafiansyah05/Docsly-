@@ -34,18 +34,14 @@ export function Navbar() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="#product" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Product</Link>
-          <Link href="#features" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Features</Link>
-          <Link href="#pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Pricing</Link>
+          <Link href="#tool" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Utility Tool</Link>
+          <Link href="#features" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Fitur</Link>
           <Link href="#faq" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">FAQ</Link>
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/auth/login" className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium text-base h-12 px-6 rounded-lg")}>
-            Login
-          </Link>
-          <Link href="/auth/register" className={cn(buttonVariants({ size: "lg" }), "bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg h-12 px-8 text-base shadow-sm")}>
-            Start Free Trial
+          <Link href="#tool" className={cn(buttonVariants({ size: "lg" }), "bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg h-12 px-8 text-base shadow-sm")}>
+            Coba Gratis
           </Link>
         </div>
 
@@ -61,16 +57,12 @@ export function Navbar() {
       {/* Mobile Nav */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 py-4 px-6 flex flex-col gap-4 shadow-lg">
-          <Link href="#product" className="text-sm font-medium text-slate-600 py-2 border-b border-slate-50" onClick={() => setMobileMenuOpen(false)}>Product</Link>
-          <Link href="#features" className="text-sm font-medium text-slate-600 py-2 border-b border-slate-50" onClick={() => setMobileMenuOpen(false)}>Features</Link>
-          <Link href="#pricing" className="text-sm font-medium text-slate-600 py-2 border-b border-slate-50" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+          <Link href="#tool" className="text-sm font-medium text-slate-600 py-2 border-b border-slate-50" onClick={() => setMobileMenuOpen(false)}>Utility Tool</Link>
+          <Link href="#features" className="text-sm font-medium text-slate-600 py-2 border-b border-slate-50" onClick={() => setMobileMenuOpen(false)}>Fitur</Link>
           <Link href="#faq" className="text-sm font-medium text-slate-600 py-2 border-b border-slate-50" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
           <div className="flex flex-col gap-2 pt-2">
-            <Link href="/auth/login" className={cn(buttonVariants({ size: "lg", variant: "outline" }), "w-full justify-center text-blue-600 border-blue-200 hover:bg-blue-50 h-12 text-base rounded-lg")}>
-              Login
-            </Link>
-            <Link href="/auth/register" className={cn(buttonVariants({ size: "lg" }), "w-full justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-12 text-base shadow-sm")}>
-              Start Free Trial
+            <Link href="#tool" onClick={() => setMobileMenuOpen(false)} className={cn(buttonVariants({ size: "lg" }), "w-full justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-12 text-base shadow-sm")}>
+              Coba Gratis
             </Link>
           </div>
         </div>
