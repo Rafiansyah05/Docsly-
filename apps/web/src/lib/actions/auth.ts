@@ -92,7 +92,7 @@ export async function signInWithGoogle() {
   }
 
   if (data.url) {
-    redirect(data.url); // Redirect to Google OAuth URL
+    return { url: data.url };
   }
 }
 

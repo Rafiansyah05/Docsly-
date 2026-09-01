@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const supabase = createClient();
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     
-    if (!exchangeError) {
+    console.error("Exchange Error:", exchangeError); if (!exchangeError) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: existingProfile } = await supabase.from('profiles').select('id').eq('id', user.id).single();

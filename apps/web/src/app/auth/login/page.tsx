@@ -48,7 +48,7 @@ function LoginForm() {
 
   async function clientAction(formData: FormData) {
     const result = await login(formData);
-    if (result?.error) {
+    if (result?.url) { window.location.href = result.url; } else if (result?.error) {
       setError(result.error);
     } else if (result?.success) {
       router.push('/w');
@@ -121,7 +121,7 @@ function LoginForm() {
 
       <form action={async () => {
         const result = await signInWithGoogle();
-        if (result?.error) {
+        if (result?.url) { window.location.href = result.url; } else if (result?.error) {
           setError(result.error);
         }
       }}>

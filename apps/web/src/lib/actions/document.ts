@@ -106,27 +106,41 @@ export async function updateDocumentTitle(documentId: string, judul: string) {
 export async function deleteDocument(documentId: string, workspaceId: string) {
   const supabase = createClient();
   
+  // Verifikasi bahwa user adalah pemilik dokumen ini (lewat RLS)
+  const { data: doc, error: docError } = await supabase
+    .from('documents')
+    .select('id')
+    .eq('id', documentId)
+    .single();
+
+  if (docError || !doc) {
+    return { error: 'Dokumen tidak ditemukan atau bukan milik Anda' };
+  }
+
+  // Gunakan Admin Client untuk menghapus data berelasi (melewati RLS delete yang mungkin belum ada)
+  const { createClient: createSupabaseJs } = await import('@supabase/supabase-js');
+  const adminSupabase = createSupabaseJs(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  
   // 1. ai_conversations (and prompt_history)
-  const { data: convs } = await supabase.from('ai_conversations').select('id').eq('document_id', documentId);
+  const { data: convs } = await adminSupabase.from('ai_conversations').select('id').eq('document_id', documentId);
   if (convs && convs.length > 0) {
-    const convIds = convs.map(c => c.id);
-    await supabase.from('prompt_history').delete().in('conversation_id', convIds);
-    await supabase.from('ai_conversations').delete().in('id', convIds);
+    const convIds = convs.map((c: { id: string }) => c.id);
+    await adminSupabase.from('prompt_history').delete().in('conversation_id', convIds);
+    await adminSupabase.from('ai_conversations').delete().in('id', convIds);
   }
   
-  // 2. document_versions
-  await supabase.from('document_versions').delete().eq('document_id', documentId);
+  // Hapus secara paralel semua data anak
+  await Promise.all([
+    adminSupabase.from('document_versions').delete().eq('document_id', documentId),
+    adminSupabase.from('attachments').delete().eq('document_id', documentId),
+    adminSupabase.from('image_placeholders').delete().eq('document_id', documentId),
+    adminSupabase.from('bibliography_entries').delete().eq('document_id', documentId)
+  ]);
   
-  // 3. attachments
-  await supabase.from('attachments').delete().eq('document_id', documentId);
-  
-  // 4. image_placeholders
-  await supabase.from('image_placeholders').delete().eq('document_id', documentId);
-  
-  // 5. bibliography_entries
-  await supabase.from('bibliography_entries').delete().eq('document_id', documentId);
-  
-  const { error } = await supabase
+  const { error } = await adminSupabase
     .from('documents')
     .delete()
     .eq('id', documentId);
@@ -204,3 +218,4 @@ export async function restoreVersion(documentId: string, versionId: string) {
   revalidatePath('/', 'layout');
   return { success: true, content: version.konten_json_snapshot };
 }
+

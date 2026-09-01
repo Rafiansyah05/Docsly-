@@ -111,7 +111,7 @@ export default function RegisterPage() {
 
     const result = await sendOtp(email, nama_lengkap);
     
-    if (result?.error) {
+    if (result?.url) { window.location.href = result.url; } else if (result?.error) {
       setError(result.error);
     } else if (result?.success) {
       setStep('otp');
@@ -139,7 +139,7 @@ export default function RegisterPage() {
 
     const result = await verifyAndRegister(verificationData);
 
-    if (result?.error) {
+    if (result?.url) { window.location.href = result.url; } else if (result?.error) {
       setError(result.error);
       setIsPending(false);
     } else if (result?.success) {
@@ -230,7 +230,7 @@ export default function RegisterPage() {
 
             <form action={async () => {
               const result = await signInWithGoogle();
-              if (result?.error) {
+              if (result?.url) { window.location.href = result.url; } else if (result?.error) {
                 setError(result.error);
               }
             }}>
