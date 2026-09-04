@@ -13,7 +13,7 @@ import { useTour } from '@/components/ui/tour';
 
 const navItems = [
   { label: 'Home', href: '/w', icon: Home },
-  { label: 'Template', href: '/w/template', icon: LayoutGrid },
+  // { label: 'Template', href: '/w/template', icon: LayoutGrid },
   { label: 'Panduan', href: '/w/panduan', icon: BookOpen },
   { label: 'Notifikasi', href: '/w/notifications', icon: Bell },
   { label: 'Billing & Akun', href: '/w/billing', icon: CreditCard },
