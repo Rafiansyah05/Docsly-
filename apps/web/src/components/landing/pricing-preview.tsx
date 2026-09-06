@@ -33,7 +33,7 @@ export function PricingPreview() {
             <h3 className="text-2xl font-bold mb-2">Free Trial</h3>
             <div className="flex items-baseline gap-1 mb-6">
               <span className="text-4xl font-bold">Rp 0</span>
-              <span className="text-slate-400">/ 30 hari</span>
+              <span className="text-slate-400">/ 7 hari</span>
             </div>
             
             <p className="text-slate-300 mb-8 pb-8 border-b border-white/10">

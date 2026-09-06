@@ -6,9 +6,9 @@ export type PlanType = 'free' | 'pro' | 'premium' | 'trial';
 export const PLAN_LIMITS = {
   free: {
     ai_credits: 25,
-    ai_cooldown_hours: 3,
+    ai_cooldown_hours: 10,
     citations: 25, 
-    citations_cooldown_hours: 3,
+    citations_cooldown_hours: 10,
     storage_mb: 100,
   },
   pro: {

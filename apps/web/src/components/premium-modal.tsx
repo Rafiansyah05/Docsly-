@@ -122,7 +122,7 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
                 </div>
 
                 <ul className="space-y-4 mb-8 flex-1 mt-2">
-                  {['25 AI Credit / 3 Jam', '25 Sitasi Otomatis / 3 Jam', 'Editor & Ekspor Dasar', 'Storage 100MB'].map((feature, i) => (
+                  {['25 AI Credit / 10 Jam', '25 Sitasi Otomatis / 10 Jam', 'Editor & Ekspor Dasar', 'Storage 100MB'].map((feature, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-slate-600 dark:text-zinc-300">
                       <CheckCircle2 className="h-5 w-5 text-slate-400 dark:text-zinc-500 shrink-0" />
                       <span className="leading-tight">{feature}</span>
@@ -149,7 +149,7 @@ export function PremiumModal({ compact = false, className = '', currentPlan = 'F
                 </div>
 
                 <ul className="space-y-4 mb-8 flex-1 mt-2">
-                  {['500 AI Credit / 1 Jam', '50 Sitasi Otomatis / 1 Jam', 'Template Akademik Premium', 'Storage 2GB'].map((feature, i) => (
+                  {['500 AI Credit / 1 Jam', '50 Sitasi Otomatis / 1 Jam', 'Waktu Tunggu (Cooldown) Cepat', 'Storage 2GB'].map((feature, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-zinc-200 font-medium">
                       <CheckCircle2 className="h-5 w-5 text-[#2563EB] dark:text-blue-400 shrink-0" />
                       <span className="leading-tight">{feature}</span>
