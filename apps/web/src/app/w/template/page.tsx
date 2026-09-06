@@ -3,8 +3,11 @@
 import { createClient } from '@/lib/supabase/server';
 import React from 'react';
 import { TemplateList } from '@/components/template-list';
+import { redirect } from 'next/navigation';
 
 export default async function TemplatePage() {
+  redirect('/w'); // TODO: Hapus redirect ini jika fitur template sudah siap ditampilkan
+
   const supabase = createClient();
   const { data: userData } = await supabase.auth.getUser();
 
