@@ -20,8 +20,40 @@ const righteous = Righteous({
 });
 
 export const metadata: Metadata = {
-  title: "Docsly - Platform Dokumen Cerdas",
-  description: "Platform dokumen cerdas generasi baru untuk mengelola workspace dan dokumen Anda dengan mudah.",
+  metadataBase: new URL("https://docsly.space"),
+  title: {
+    default: "Docsly - Platform Dokumen Cerdas",
+    template: "%s | Docsly"
+  },
+  description: "Platform dokumen cerdas generasi baru untuk mengelola workspace dan dokumen Anda dengan mudah, dilengkapi dengan fitur kolaborasi dan AI.",
+  keywords: ["docsly", "platform dokumen", "manajemen dokumen", "workspace", "dokumen cerdas", "kolaborasi"],
+  authors: [{ name: "Docsly Team" }],
+  creator: "Docsly",
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: "https://docsly.space",
+    title: "Docsly - Platform Dokumen Cerdas",
+    description: "Platform dokumen cerdas generasi baru untuk mengelola workspace dan dokumen Anda dengan mudah.",
+    siteName: "Docsly",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Docsly - Platform Dokumen Cerdas",
+    description: "Platform dokumen cerdas generasi baru untuk mengelola workspace dan dokumen Anda dengan mudah.",
+    creator: "@docsly",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
