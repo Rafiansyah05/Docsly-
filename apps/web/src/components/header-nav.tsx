@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client';
 /** Peta label + ikon untuk setiap tab nav */
 const PAGE_META: Record<string, { label: string; Icon: React.ElementType }> = {
   '/w': { label: 'Home', Icon: Home },
-  '/w/template': { label: 'Template', Icon: LayoutGrid },
+  // '/w/template': { label: 'Template', Icon: LayoutGrid },
   '/w/panduan': { label: 'Panduan', Icon: BookOpen },
   '/w/notifications': { label: 'Notifikasi', Icon: Bell },
   '/w/billing': { label: 'Billing & Akun', Icon: CreditCard },
