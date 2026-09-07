@@ -23,9 +23,8 @@ const SECTIONS = [
   { id: 'ai-agent', title: '15. AI Agent' },
   { id: 'export', title: '16. Export Dokumen' },
   { id: 'layout', title: '17. Pengaturan Halaman' },
-  { id: 'template', title: '18. Template Dokumen' },
-  { id: 'theme', title: '19. Tampilan Light/Dark Mode' },
-  { id: 'faq', title: '20. Pertanyaan Umum (FAQ)' },
+  { id: 'theme', title: '18. Tampilan Light/Dark Mode' },
+  { id: 'faq', title: '19. Pertanyaan Umum (FAQ)' },
 ];
 
 export default function PanduanPage() {
@@ -86,7 +85,7 @@ export default function PanduanPage() {
               
               <h3>Cara Daftar Akun Baru</h3>
               <ol>
-                <li>Buka <strong>docsly.id</strong> di browser kamu.</li>
+                <li>Buka <strong>docsly.space</strong> di browser kamu.</li>
                 <li>Klik tombol <strong>"Daftar"</strong> atau <strong>"Mulai Gratis"</strong>.</li>
                 <li>Isi formulir dengan nama lengkap, alamat email aktif, dan password (minimal 8 karakter).</li>
                 <li>Klik <strong>"Buat Akun"</strong> — kamu akan langsung masuk ke dashboard.</li>
@@ -94,7 +93,7 @@ export default function PanduanPage() {
 
               <h3>Cara Masuk (Login)</h3>
               <ol>
-                <li>Buka <strong>docsly.id</strong> dan klik <strong>"Masuk"</strong>.</li>
+                <li>Buka <strong>docsly.space</strong> dan klik <strong>"Masuk"</strong>.</li>
                 <li>Masukkan email dan password kamu, lalu klik <strong>"Masuk"</strong>.</li>
               </ol>
               <blockquote><strong>Lupa Password?</strong> Klik "Lupa Password?" di halaman login, masukkan emailmu, dan ikuti instruksi yang dikirim ke email kamu.</blockquote>
@@ -204,14 +203,6 @@ export default function PanduanPage() {
 
             <section id="toolbar" className="scroll-mt-24 mb-12">
               <h2>7. Toolbar Pemformatan</h2>
-              
-              <h3>Heading (Judul Bab)</h3>
-              <p>Gunakan Heading (H1, H2, H3) untuk membuat struktur dokumen. Heading sangat penting karena otomatis menjadi bagian dari <strong>Daftar Isi</strong>.</p>
-              <ul>
-                <li><strong>H1:</strong> Judul Bab utama (misal: BAB I PENDAHULUAN)</li>
-                <li><strong>H2:</strong> Sub-bab (misal: 1.1 Latar Belakang)</li>
-                <li><strong>H3:</strong> Sub-sub-bab (misal: 1.1.1 Rumusan Masalah)</li>
-              </ul>
               
               <h3>Perataan Teks (Alignment)</h3>
               <p>Tersedia perataan Rata Kiri, Rata Tengah, Rata Kanan, dan Rata Penuh (Justify). Ini juga berlaku untuk Heading.</p>
@@ -332,22 +323,15 @@ export default function PanduanPage() {
 
             <hr className="my-10 opacity-10 dark:opacity-20" />
 
-            <section id="template" className="scroll-mt-24 mb-12">
-              <h2>18. Template Dokumen</h2>
-              <p>Akses menu <strong>"Template"</strong> di sidebar kiri untuk menggunakan format Akademik, Bisnis, Surat, dan lainnya. Sangat mempercepat kerja daripada mulai dari nol!</p>
-            </section>
-
-            <hr className="my-10 opacity-10 dark:opacity-20" />
-
             <section id="theme" className="scroll-mt-24 mb-12">
-              <h2>19. Tampilan Light/Dark Mode</h2>
+              <h2>18. Tampilan Light/Dark Mode</h2>
               <p>Ganti tema lewat ikon profil/pengaturan di kiri bawah. <strong>Ingat:</strong> Apapun temanya, kertas dokumen tetap berwarna putih bersih agar sesuai dengan hasil cetak.</p>
             </section>
 
             <hr className="my-10 opacity-10 dark:opacity-20" />
 
             <section id="faq" className="scroll-mt-24 mb-12">
-              <h2>20. Pertanyaan Umum & Tips</h2>
+              <h2>19. Pertanyaan Umum & Tips</h2>
               <ul>
                 <li><strong>Dokumen tidak tersimpan?</strong> Cek koneksi internet. Jika nyangkut, copy teks manual lalu refresh halaman.</li>
                 <li><strong>Heading tidak masuk daftar isi?</strong> Pastikan menggunakan format Heading asli dari toolbar, bukan sekadar membesarkan ukuran font.</li>

@@ -78,7 +78,7 @@ Untuk mendapatkan dokumen terbaik dari AI Office Agent kami, gunakan struktur in
 
 ## 📞 Contact Support
 Jika pertanyaan Anda tidak terjawab di FAQ, Anda bisa menghubungi kami melalui:
-- **Email:** support@docsly.id
+- **Email:** support@docsly.space
 - **Live Chat:** Tersedia di jam kerja (09.00 - 17.00 WIB)
 - **WhatsApp Support:** +62-812-4320-5089
 

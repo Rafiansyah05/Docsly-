@@ -24,25 +24,23 @@
 15. [AI Agent — Asisten Cerdasmu](#15-ai-agent--asisten-cerdasmu)
 16. [Export Dokumen (PDF & DOCX)](#16-export-dokumen-pdf--docx)
 17. [Pengaturan Halaman (Margin & Ukuran Kertas)](#17-pengaturan-halaman-margin--ukuran-kertas)
-18. [Template Dokumen](#18-template-dokumen)
-19. [Tampilan Light/Dark Mode](#19-tampilan-lightdark-mode)
-20. [Pertanyaan Umum & Solusi Masalah](#20-pertanyaan-umum--solusi-masalah)
+18. [Tampilan Light/Dark Mode](#18-tampilan-lightdark-mode)
+19. [Pertanyaan Umum & Solusi Masalah](#19-pertanyaan-umum--solusi-masalah)
 
 ---
 
 ## 1. Memulai: Daftar & Masuk
 
 ### Cara Daftar Akun Baru
-1. Buka **docsly.id** di browser kamu.
+1. Buka **docsly.space** di browser kamu.
 2. Klik tombol **"Daftar"** atau **"Mulai Gratis"**.
-3. Isi formulir dengan:
-   - **Nama lengkap**
-   - **Alamat email** aktif
-   - **Password** minimal 8 karakter
+3. Isi formulir dengan nama lengkap, alamat email aktif, dan password (minimal 8 karakter).
 4. Klik **"Buat Akun"** — kamu akan langsung masuk ke dashboard.
 
+---
+
 ### Cara Masuk (Login)
-1. Buka **docsly.id** dan klik **"Masuk"**.
+1. Buka **docsly.space** dan klik **"Masuk"**.
 2. Masukkan email dan password kamu.
 3. Klik **"Masuk"**.
 
@@ -188,18 +186,6 @@ Toolbar berada tepat di bawah navbar dokumen. Berikut semua fungsinya:
 | **Dropdown Font** | Pilih jenis huruf: Plus Jakarta Sans, Times New Roman, Arial, Calibri |
 | **Dropdown Ukuran** | Pilih ukuran: 10pt, 11pt, 12pt, 14pt, 16pt, 20pt, 24pt |
 | **Palet Warna** | Klik kotak warna untuk memilih warna teks kustom |
-
-### Heading (Judul Bab)
-Heading digunakan untuk membuat struktur dokumen yang rapi.
-| Tombol | Fungsi |
-|--------|--------|
-| **H1** | Judul Bab utama (misal: BAB I PENDAHULUAN) |
-| **H2** | Sub-bab (misal: 1.1 Latar Belakang) |
-| **H3** | Sub-sub-bab (misal: 1.1.1 Rumusan Masalah) |
-
-> **Tips:** Semua heading yang kamu buat akan otomatis masuk ke **Daftar Isi** bila kamu menyisipkannya.
-
-> **Heading juga bisa dilipat!** Arahkan kursor ke heading, lalu klik ikon panah (▶/▼) yang muncul di sisi kiri untuk melipat/membuka isi di bawah heading tersebut. Sangat berguna untuk dokumen panjang.
 
 ### Pemformatan Teks Dasar
 | Tombol | Shortcut | Fungsi |
@@ -510,30 +496,7 @@ Kamu bisa mengatur tata letak halaman dokumen sesuai kebutuhan.
 
 ---
 
-## 18. Template Dokumen
-
-Docsly menyediakan berbagai template dokumen siap pakai untuk mempercepat pekerjaanmu.
-
-### Kategori Template yang Tersedia
-| Kategori | Contoh Dokumen |
-|----------|----------------|
-| 🎓 **Akademik** | Makalah, laporan praktikum, proposal penelitian |
-| 💼 **Bisnis** | Proposal usaha, laporan keuangan, memo |
-| 📋 **Laporan** | Laporan kegiatan, laporan kerja, LPJ |
-| 📝 **Surat** | Surat dinas, surat pengantar, surat izin |
-| 🏆 **Presentasi** | Kerangka presentasi, ringkasan eksekutif |
-
-### Cara Menggunakan Template
-1. Klik **"Template"** di sidebar kiri.
-2. Browse atau cari template yang sesuai.
-3. Klik template untuk melihat pratinjaunya.
-4. Klik **"Gunakan Template"**.
-5. Pilih workspace tujuan.
-6. Klik **"Buat Dokumen"** — dokumen dengan isi template akan langsung terbuka.
-
----
-
-## 19. Tampilan Light/Dark Mode
+## 18. Tampilan Light/Dark Mode
 
 Docsly mendukung dua mode tampilan untuk kenyamanan matamu.
 
@@ -544,7 +507,7 @@ Klik ikon **profil** atau **pengaturan** di pojok kiri bawah sidebar, lalu pilih
 
 ---
 
-## 20. Pertanyaan Umum & Solusi Masalah
+## 19. Pertanyaan Umum & Solusi Masalah
 
 ### ❓ Dokumen saya tidak tersimpan, apa yang harus dilakukan?
 **Penyebab umum & solusi:**
