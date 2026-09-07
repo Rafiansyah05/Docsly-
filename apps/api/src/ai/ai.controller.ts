@@ -10,6 +10,7 @@ import { ContextBuilder } from './context.service';
 import { TaskExecutor } from './executor.service';
 import { SmartQuestionService } from './smart-question.service';
 import { LanguageComplianceService } from './language-compliance.service';
+import { WebSearchService } from './web-search.service';
 
 @Controller('ai')
 export class AiController {
@@ -19,6 +20,7 @@ export class AiController {
     private taskExecutor: TaskExecutor,
     private smartQuestion: SmartQuestionService,
     private languageCompliance: LanguageComplianceService,
+    private webSearch: WebSearchService,
   ) {}
 
   /**
@@ -78,11 +80,20 @@ export class AiController {
         }
       }
 
+      // Stage 3.5 - Web Search Check
+      send('progress', { stage: 'search', label: 'Memeriksa kebutuhan pencarian internet...', percent: 60 });
+      const searchData = await this.webSearch.searchIfNeeded(prompt);
+      let enhancedPrompt = prompt;
+      if (searchData) {
+        send('progress', { stage: 'search_done', label: 'Menambahkan konteks dari internet...', percent: 65 });
+        enhancedPrompt = `${searchData}\n\nUser Request: ${prompt}`;
+      }
+
       // Stage 4 — Execute AI
       send('progress', { stage: 'execute', label: 'AI sedang menulis & memproses...', percent: 70 });
       let result = await this.taskExecutor.execute(
         intent as UserIntent,
-        prompt,
+        enhancedPrompt,
         context,
         action === 'skip_questions',
         attachments,

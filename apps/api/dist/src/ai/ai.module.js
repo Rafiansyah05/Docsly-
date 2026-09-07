@@ -14,6 +14,7 @@ const context_service_1 = require("./context.service");
 const executor_service_1 = require("./executor.service");
 const smart_question_service_1 = require("./smart-question.service");
 const language_compliance_service_1 = require("./language-compliance.service");
+const web_search_service_1 = require("./web-search.service");
 let AiAgentModule = class AiAgentModule {
 };
 exports.AiAgentModule = AiAgentModule;
@@ -27,6 +28,7 @@ exports.AiAgentModule = AiAgentModule = __decorate([
             executor_service_1.TaskExecutor,
             smart_question_service_1.SmartQuestionService,
             language_compliance_service_1.LanguageComplianceService,
+            web_search_service_1.WebSearchService,
         ],
         exports: [
             intent_service_1.IntentClassifier,
@@ -34,6 +36,7 @@ exports.AiAgentModule = AiAgentModule = __decorate([
             executor_service_1.TaskExecutor,
             smart_question_service_1.SmartQuestionService,
             language_compliance_service_1.LanguageComplianceService,
+            web_search_service_1.WebSearchService,
         ],
     })
 ], AiAgentModule);

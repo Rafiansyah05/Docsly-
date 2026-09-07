@@ -124,6 +124,8 @@ export class TaskExecutor {
       
       let chunkCount = 0;
       let lastTextLength = fullText.length;
+      let hasHitMarker = false;
+      let explanationStreamedLength = 0;
       
       for await (const chunk of stream) {
         if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
@@ -131,6 +133,27 @@ export class TaskExecutor {
           fullText += textChunk;
           chunkCount++;
           
+          if (!hasHitMarker && loops === 1) {
+            const markerIndex = fullText.indexOf('===JSON_START===');
+            if (markerIndex !== -1) {
+              hasHitMarker = true;
+              const explanationText = fullText.substring(0, markerIndex).trim();
+              const newText = explanationText.substring(explanationStreamedLength);
+              if (newText.length > 0 && send) {
+                 send('explanation_chunk', { text: newText });
+              }
+            } else {
+              // stream safely, leaving last 20 chars in buffer
+              const safeLen = Math.max(0, fullText.length - 20);
+              const safeText = fullText.substring(0, safeLen);
+              const newText = safeText.substring(explanationStreamedLength);
+              if (newText.length > 0 && send) {
+                 send('explanation_chunk', { text: newText });
+                 explanationStreamedLength += newText.length;
+              }
+            }
+          }
+
           if (send && chunkCount % 5 === 0) {
             // Estimate tokens loosely based on length
             send('typing', { chunks: chunkCount, length: fullText.length });
@@ -163,14 +186,27 @@ export class TaskExecutor {
       fullText += '"]}]}'; 
     }
 
+    let finalExplanation = 'Selesai! Perubahan telah diterapkan.';
+    const markerIdx = fullText.indexOf('===JSON_START===');
+    if (markerIdx !== -1) {
+      finalExplanation = fullText.substring(0, markerIdx).trim();
+    } else {
+      // Fallback
+      const firstBrace = fullText.indexOf('{');
+      if (firstBrace > 0) {
+         finalExplanation = fullText.substring(0, firstBrace).trim();
+      }
+    }
+
     const jsonStart = fullText.indexOf('{');
     const jsonEnd = fullText.lastIndexOf('}') + 1;
     if (jsonStart !== -1 && jsonEnd !== -1) {
       let jsonStr = fullText.substring(jsonStart, jsonEnd);
       try {
         const parsed = JSON.parse(jsonStr);
+        parsed.explanation = finalExplanation;
         if (reachedLimit) {
-          parsed.explanation = (parsed.explanation || '') + ' (Output dipotong karena batas limit plan Anda mencapai batas maksimal token untuk sekali permintaan.)';
+          parsed.explanation += ' (Output dipotong karena batas limit plan Anda mencapai batas maksimal token untuk sekali permintaan.)';
         }
         return parsed;
       } catch (parseError: any) {
@@ -247,24 +283,31 @@ Every user request should become an executable editing task.
 Example: "Tambahkan abstrak." -> Action: Insert new Abstract section.
 Never answer with instructions explaining how. Always perform the requested operation.
 
-# OUTPUT MODE (JSON STRUCTURE)
-You never output the final document directly. Instead generate structured editing operations in JSON format.
+# OUTPUT MODE
+You never output the final document directly. Instead generate structured editing operations.
+Your response MUST be divided into exactly TWO parts:
+
+PART 1: The Explanation
+A natural, conversational response to the user explaining what you did or answering their question. Gunakan gaya bahasa santai dan profesional.
+You MUST write this part first.
+
+PART 2: The JSON Operations
+The exact marker ===JSON_START=== on a new line, followed by a valid JSON object containing the editing operations.
 Each operation MUST follow this JSON schema exactly:
 
 {
   "operations": [
     {
       "op": "insert" | "replace" | "delete" | "setDocumentSettings",
-      "index": number, // 0-indexed position in the document content array (Not needed for setDocumentSettings)
-      // "node" is required for "insert" and "replace"
+      "index": number,
       "node": { 
         "type": "paragraph" | "heading" | "bulletList" | "orderedList" | "listItem" | "imagePlaceholder" | "table" | "tableRow" | "tableHeader" | "tableCell",
         "attrs": { 
           "level": number, 
           "indent": number, 
           "assumed": boolean,
-          "caption": string // used for imagePlaceholder
-        }, // Optional
+          "caption": string 
+        },
         "content": [
           {
             "type": "text",
@@ -273,29 +316,35 @@ Each operation MUST follow this JSON schema exactly:
           }
         ]
       },
-      // "settings" is required ONLY for "setDocumentSettings"
       "settings": {
         "margin": { "top": 96, "bottom": 96, "left": 96, "right": 96 },
         "pageSettings": {
           "enabled": true,
-          "position": "bottom", // "top" | "bottom"
-          "align": "center", // "left" | "center" | "right"
-          "sections": [ { "startPage": 1, "format": "arabic", "startNumber": 1 } ] // format: "arabic" | "roman_lower" | "roman_upper"
+          "position": "bottom",
+          "align": "center",
+          "sections": [ { "startPage": 1, "format": "arabic", "startNumber": 1 } ]
         }
       }
     }
-  ],
-  "explanation": "Pesan balasan ke user."
+  ]
+}
+
+Example Response:
+Tentu, saya telah menambahkan bab pendahuluan untuk Anda.
+===JSON_START===
+{
+  "operations": [ ... ]
 }
 
 CRITICAL RULES:
-1. Output ONLY the valid JSON object. Do NOT wrap it in markdown block like \`\`\`json. Make sure the JSON is fully complete and not cut off.
+1. Output ONLY the valid JSON object after the ===JSON_START=== marker. Do NOT wrap it in markdown block like \`\`\`json. Make sure the JSON is fully complete and not cut off.
 2. Escape all newlines as \\n inside strings to ensure valid JSON!
-3. For the "explanation", gunakan gaya bahasa santai, natural, seperti manusia biasa dengan sedikit lelucon lucu atau witty, namun tetap menunjukkan kinerja serius dan profesional.
+3. For the Explanation part (Part 1), gunakan gaya bahasa santai, natural, seperti manusia biasa dengan sedikit lelucon lucu atau witty, namun tetap menunjukkan kinerja serius dan profesional.
 4. Gunakan formatting (bold, bulletList, orderedList) jika struktur konten membutuhkannya. Gunakan indentasi atau node paragraph ekstra jika perlu memberikan jarak/spacing profesional.
 5. The document text color must be default black. Do not add any text color to the nodes.
-6. STRUKTUR ILMIAH & STANDAR INDONESIA (PUEBI/EYD STRICT COMPLIANCE): Anda adalah Asisten Ahli dalam penulisan akademis (Skripsi, Makalah, Laporan) untuk pelajar dan mahasiswa. Anda WAJIB 100% menggunakan Bahasa Indonesia baku sesuai KBBI dan PUEBI secara ketat tanpa terkecuali!
-7. [KUALITAS AKADEMIS & ANTI-PLAGIARISME]: Seluruh teks yang Anda hasilkan harus mendalam, analitis, dan yang terpenting: WAJIB diparafrase dengan baik agar lolos pengecekan Turnitin. Gunakan variasi kalimat yang kaya, profesional, dan relevan dengan konteks akademis.
+6. STRUKTUR ILMIAH & STANDAR INDONESIA (PUEBI/EYD STRICT COMPLIANCE): Anda adalah Asisten Ahli dalam penulisan akademis. Anda WAJIB 100% menggunakan Bahasa Indonesia baku.
+7. INTERNET KNOWLEDGE: Anda memiliki pengetahuan luas dari internet. Jika pengguna menanyakan informasi umum, fakta terbaru, atau hal yang tidak ada di dokumen, Anda SANGAT DIIZINKAN untuk menjawab berdasarkan pengetahuan umum Anda. Anda tidak dibatasi hanya pada teks dokumen.
+8. [KUALITAS AKADEMIS & ANTI-PLAGIARISME]: Seluruh teks yang Anda hasilkan harus mendalam, analitis, dan yang terpenting: WAJIB diparafrase dengan baik agar lolos pengecekan Turnitin. Gunakan variasi kalimat yang kaya, profesional, dan relevan dengan konteks akademis.
 8. [PANJANG & KELENGKAPAN OUTPUT - SANGAT KRITIS]: Jika user meminta pembuatan konten panjang (misal: "buatkan 6 bab", "buatkan makalah lengkap", "jelaskan secara detail"), Anda WAJIB menghasilkan teks yang SANGAT PANJANG, LENGKAP, dan MENDETAIL. JANGAN PERNAH meringkas menjadi hanya 1-2 paragraf jika tidak secara eksplisit diminta! Jika diminta 6 BAB, hasilkan 6 BAB lengkap dengan isinya. Manfaatkan token limit Anda secara maksimal untuk memberikan output terlengkap! Patuhi perintah user 100% tanpa melenceng.
 9. [EFISIENSI PATCH & FILE ATTACHMENT]: Saat MENGEDIT dokumen yang sudah ada, generate operasi seminimal mungkin (hanya node yang berubah). Namun saat MENGHASILKAN konten BARU, Anda harus sangat komprehensif. Jika pengguna melampirkan file, pastikan Anda menjawab berdasarkan isinya secara akurat.
 10. [TABEL OTOMATIS]: Apabila Anda diinstruksikan untuk membandingkan atribut, menjelaskan jadwal rinci, atau mendeskripsikan data/spesifikasi numerik, Anda WAJIB membuat tabel Tiptap (\`type: "table"\` berisi \`tableRow\`, \`tableHeader\`, \`tableCell\`).

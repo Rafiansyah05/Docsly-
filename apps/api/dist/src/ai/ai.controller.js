@@ -19,18 +19,21 @@ const context_service_1 = require("./context.service");
 const executor_service_1 = require("./executor.service");
 const smart_question_service_1 = require("./smart-question.service");
 const language_compliance_service_1 = require("./language-compliance.service");
+const web_search_service_1 = require("./web-search.service");
 let AiController = class AiController {
     intentClassifier;
     contextBuilder;
     taskExecutor;
     smartQuestion;
     languageCompliance;
-    constructor(intentClassifier, contextBuilder, taskExecutor, smartQuestion, languageCompliance) {
+    webSearch;
+    constructor(intentClassifier, contextBuilder, taskExecutor, smartQuestion, languageCompliance, webSearch) {
         this.intentClassifier = intentClassifier;
         this.contextBuilder = contextBuilder;
         this.taskExecutor = taskExecutor;
         this.smartQuestion = smartQuestion;
         this.languageCompliance = languageCompliance;
+        this.webSearch = webSearch;
     }
     async execute(body, res) {
         const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments, plan = 'Free' } = body;
@@ -70,8 +73,15 @@ let AiController = class AiController {
                     return;
                 }
             }
+            send('progress', { stage: 'search', label: 'Memeriksa kebutuhan pencarian internet...', percent: 60 });
+            const searchData = await this.webSearch.searchIfNeeded(prompt);
+            let enhancedPrompt = prompt;
+            if (searchData) {
+                send('progress', { stage: 'search_done', label: 'Menambahkan konteks dari internet...', percent: 65 });
+                enhancedPrompt = `${searchData}\n\nUser Request: ${prompt}`;
+            }
             send('progress', { stage: 'execute', label: 'AI sedang menulis & memproses...', percent: 70 });
-            let result = await this.taskExecutor.execute(intent, prompt, context, action === 'skip_questions', attachments, plan, send);
+            let result = await this.taskExecutor.execute(intent, enhancedPrompt, context, action === 'skip_questions', attachments, plan, send);
             if (result.operations && result.operations.length > 0) {
                 send('progress', { stage: 'compliance', label: 'Memeriksa tata bahasa & PUEBI...', percent: 90 });
                 result.operations = await this.languageCompliance.verify(result.operations);
@@ -136,6 +146,7 @@ exports.AiController = AiController = __decorate([
         context_service_1.ContextBuilder,
         executor_service_1.TaskExecutor,
         smart_question_service_1.SmartQuestionService,
-        language_compliance_service_1.LanguageComplianceService])
+        language_compliance_service_1.LanguageComplianceService,
+        web_search_service_1.WebSearchService])
 ], AiController);
 //# sourceMappingURL=ai.controller.js.map

@@ -447,7 +447,11 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
       console.error(e);
     }
 
-    setMessages((prev) => [...prev, { role: 'user', content: userMessage, attachments: uploadedAttachments }]);
+    setMessages((prev) => [
+      ...prev, 
+      { role: 'user', content: userMessage, attachments: uploadedAttachments },
+      { role: 'assistant', content: '' } // Placeholder for streaming
+    ]);
     setProgress(15);
     setStageLabel('Menghubungi server AI...');
 
@@ -580,6 +584,18 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
               }
             }
 
+            if (eventType === 'explanation_chunk') {
+              setMessages((prev) => {
+                const newMessages = [...prev];
+                const lastMsg = newMessages[newMessages.length - 1];
+                if (lastMsg && lastMsg.role === 'assistant') {
+                  lastMsg.content += data.text;
+                }
+                return newMessages;
+              });
+              setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+            }
+
             if (eventType === 'typing') {
               const tr = editor.state.tr;
               editor.state.doc.descendants((node: any, pos: number) => {
@@ -650,13 +666,16 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                   .then(); // fire and forget
               }
 
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: 'assistant',
-                  content: responseContent,
-                },
-              ]);
+              setMessages((prev) => {
+                const newMessages = [...prev];
+                const lastMsg = newMessages[newMessages.length - 1];
+                if (lastMsg && lastMsg.role === 'assistant') {
+                  lastMsg.content = responseContent;
+                } else {
+                  newMessages.push({ role: 'assistant', content: responseContent });
+                }
+                return newMessages;
+              });
             }
 
             if (eventType === 'error') {

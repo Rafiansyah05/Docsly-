@@ -5,6 +5,7 @@ import { ContextBuilder } from './context.service';
 import { TaskExecutor } from './executor.service';
 import { SmartQuestionService } from './smart-question.service';
 import { LanguageComplianceService } from './language-compliance.service';
+import { WebSearchService } from './web-search.service';
 
 @Module({
   imports: [],
@@ -15,6 +16,7 @@ import { LanguageComplianceService } from './language-compliance.service';
     TaskExecutor,
     SmartQuestionService,
     LanguageComplianceService,
+    WebSearchService,
   ],
   exports: [
     IntentClassifier,
@@ -22,6 +24,7 @@ import { LanguageComplianceService } from './language-compliance.service';
     TaskExecutor,
     SmartQuestionService,
     LanguageComplianceService,
+    WebSearchService,
   ],
 })
 export class AiAgentModule {}

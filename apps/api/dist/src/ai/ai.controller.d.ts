@@ -4,13 +4,15 @@ import { ContextBuilder } from './context.service';
 import { TaskExecutor } from './executor.service';
 import { SmartQuestionService } from './smart-question.service';
 import { LanguageComplianceService } from './language-compliance.service';
+import { WebSearchService } from './web-search.service';
 export declare class AiController {
     private intentClassifier;
     private contextBuilder;
     private taskExecutor;
     private smartQuestion;
     private languageCompliance;
-    constructor(intentClassifier: IntentClassifier, contextBuilder: ContextBuilder, taskExecutor: TaskExecutor, smartQuestion: SmartQuestionService, languageCompliance: LanguageComplianceService);
+    private webSearch;
+    constructor(intentClassifier: IntentClassifier, contextBuilder: ContextBuilder, taskExecutor: TaskExecutor, smartQuestion: SmartQuestionService, languageCompliance: LanguageComplianceService, webSearch: WebSearchService);
     execute(body: {
         prompt: string;
         documentJson: any;
