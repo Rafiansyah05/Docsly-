@@ -15,6 +15,7 @@ const AiTypingComponent = (props: any) => {
   const currentStage = node.attrs.stage || 'classify';
   const percent = node.attrs.percent || 15;
   const words = node.attrs.words || 0;
+  const draftText = node.attrs.draftText || '';
   
   // Find current stage index based on keys
   let currentIndex = 0;
@@ -42,7 +43,7 @@ const AiTypingComponent = (props: any) => {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                  Docsly AI Agent sedang bekerja...
+                  Docsly AI Agent sedang menulis...
                 </span>
                 <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
               </div>
@@ -59,6 +60,14 @@ const AiTypingComponent = (props: any) => {
               </div>
             </div>
           </div>
+
+          {/* Draft Text Preview */}
+          {draftText && (
+            <div className="mt-3 ml-14 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50 text-sm text-gray-700 dark:text-gray-300 font-serif leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+              {draftText}
+              <span className="inline-block w-1.5 h-4 ml-1 bg-blue-500 animate-pulse align-middle"></span>
+            </div>
+          )}
           
           {/* Stages List */}
           <div className="flex flex-col gap-2.5 ml-14 mt-2">
@@ -83,15 +92,6 @@ const AiTypingComponent = (props: any) => {
                       <span className="ml-2 text-blue-500 font-normal opacity-80">(~{words} kata)</span>
                     )}
                   </span>
-                  
-                  {/* Typing dots if current */}
-                  {isCurrent && (
-                    <div className="flex gap-1 ml-1">
-                      <div className="h-1 w-1 rounded-full bg-blue-400 animate-[bounce_1s_infinite_0ms]"></div>
-                      <div className="h-1 w-1 rounded-full bg-blue-400 animate-[bounce_1s_infinite_200ms]"></div>
-                      <div className="h-1 w-1 rounded-full bg-blue-400 animate-[bounce_1s_infinite_400ms]"></div>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -110,6 +110,7 @@ export const AiTyping = Node.create({
   addAttributes() {
     return {
       text: { default: 'Docsly AI sedang memproses...' },
+      draftText: { default: '' },
       stage: { default: 'classify' },
       percent: { default: 15 },
       words: { default: 0 },

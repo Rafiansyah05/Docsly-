@@ -59,24 +59,11 @@ const simulateTyping = async (editor: any, operations: any[]) => {
   // Sort operations by index to apply them in order visually
   const sortedOps = [...operations].sort((a, b) => (a.index || 0) - (b.index || 0));
   
-  for (const op of sortedOps) {
-    // Apply single operation
-    editor.commands.applyAiOperations([op]);
-    
-    // Auto scroll to cursor / newly inserted content
-    editor.commands.scrollIntoView();
-    
-    // Calculate a dynamic delay based on content size to simulate typing
-    // Approx 30-40 characters per second = ~25ms per char. 
-    // We cap it at 1.5 seconds per block to not make the user wait forever.
-    const textLength = JSON.stringify(op).length;
-    let delay = Math.min(Math.max(textLength * 5, 200), 1500); 
-    
-    // Add randomness for natural feel
-    delay = delay + (Math.random() * 200 - 100);
-    
-    await new Promise(res => setTimeout(res, delay));
-  }
+  // Apply all operations immediately since we already showed real-time streaming preview
+  editor.commands.applyAiOperations(sortedOps);
+  
+  // Auto scroll to cursor / newly inserted content
+  editor.commands.scrollIntoView();
 };
 
 export function AiSidebar({ editor, documentId }: AiSidebarProps) {
@@ -594,6 +581,24 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 return newMessages;
               });
               setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+            }
+
+            if (eventType === 'draft_text') {
+              const tr = editor.state.tr;
+              let found = false;
+              editor.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'aiTyping') {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    draftText: (node.attrs.draftText || '') + data.text
+                  });
+                  found = true;
+                }
+              });
+              if (found) {
+                editor.view.dispatch(tr);
+                editor.commands.scrollIntoView();
+              }
             }
 
             if (eventType === 'typing') {

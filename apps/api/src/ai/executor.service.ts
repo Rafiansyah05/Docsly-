@@ -109,9 +109,15 @@ export class TaskExecutor {
     let isComplete = false;
     let loops = 0;
     
-    // Dynamic Limits
-    const MAX_LOOPS = plan.toLowerCase() === 'free' ? 1 : (isLightTask ? 2 : 4);
+    // Dynamic Limits (Fixed to avoid cut off limit)
+    const MAX_LOOPS = plan.toLowerCase() === 'free' ? 2 : 50;
     let reachedLimit = false;
+
+    // State for extracting text for real-time preview
+    let windowBuf = '';
+    let inStr = false;
+    let esc = false;
+    let explanationEnded = false;
 
     while (!isComplete && loops < MAX_LOOPS) {
       loops++;
@@ -137,6 +143,7 @@ export class TaskExecutor {
             const markerIndex = fullText.indexOf('===JSON_START===');
             if (markerIndex !== -1) {
               hasHitMarker = true;
+              explanationEnded = true;
               const explanationText = fullText.substring(0, markerIndex).trim();
               const newText = explanationText.substring(explanationStreamedLength);
               if (newText.length > 0 && send) {
@@ -154,8 +161,36 @@ export class TaskExecutor {
             }
           }
 
+          // Real-time Text Streaming Extraction
+          if (explanationEnded) {
+            for (const char of textChunk) {
+              if (inStr) {
+                if (esc) {
+                  if (char === 'n') {
+                    if (send) send('draft_text', { text: '\n' });
+                  } else {
+                    if (send) send('draft_text', { text: char });
+                  }
+                  esc = false;
+                } else if (char === '\\') {
+                  esc = true;
+                } else if (char === '"') {
+                  inStr = false;
+                  if (send) send('draft_text', { text: ' ' }); // space after a text block
+                } else {
+                  if (send) send('draft_text', { text: char });
+                }
+              } else {
+                windowBuf += char;
+                if (windowBuf.length > 20) windowBuf = windowBuf.slice(-20);
+                if (windowBuf.endsWith('"text": "') || windowBuf.endsWith('"text":"')) {
+                  inStr = true;
+                }
+              }
+            }
+          }
+
           if (send && chunkCount % 5 === 0) {
-            // Estimate tokens loosely based on length
             send('typing', { chunks: chunkCount, length: fullText.length });
           }
         }

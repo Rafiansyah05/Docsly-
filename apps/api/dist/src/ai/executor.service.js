@@ -98,8 +98,12 @@ let TaskExecutor = class TaskExecutor {
         let fullText = '';
         let isComplete = false;
         let loops = 0;
-        const MAX_LOOPS = plan.toLowerCase() === 'free' ? 1 : (isLightTask ? 2 : 4);
+        const MAX_LOOPS = plan.toLowerCase() === 'free' ? 2 : 50;
         let reachedLimit = false;
+        let windowBuf = '';
+        let inStr = false;
+        let esc = false;
+        let explanationEnded = false;
         while (!isComplete && loops < MAX_LOOPS) {
             loops++;
             const stream = await this.anthropic.messages.stream({
@@ -121,6 +125,7 @@ let TaskExecutor = class TaskExecutor {
                         const markerIndex = fullText.indexOf('===JSON_START===');
                         if (markerIndex !== -1) {
                             hasHitMarker = true;
+                            explanationEnded = true;
                             const explanationText = fullText.substring(0, markerIndex).trim();
                             const newText = explanationText.substring(explanationStreamedLength);
                             if (newText.length > 0 && send) {
@@ -134,6 +139,43 @@ let TaskExecutor = class TaskExecutor {
                             if (newText.length > 0 && send) {
                                 send('explanation_chunk', { text: newText });
                                 explanationStreamedLength += newText.length;
+                            }
+                        }
+                    }
+                    if (explanationEnded) {
+                        for (const char of textChunk) {
+                            if (inStr) {
+                                if (esc) {
+                                    if (char === 'n') {
+                                        if (send)
+                                            send('draft_text', { text: '\n' });
+                                    }
+                                    else {
+                                        if (send)
+                                            send('draft_text', { text: char });
+                                    }
+                                    esc = false;
+                                }
+                                else if (char === '\\') {
+                                    esc = true;
+                                }
+                                else if (char === '"') {
+                                    inStr = false;
+                                    if (send)
+                                        send('draft_text', { text: ' ' });
+                                }
+                                else {
+                                    if (send)
+                                        send('draft_text', { text: char });
+                                }
+                            }
+                            else {
+                                windowBuf += char;
+                                if (windowBuf.length > 20)
+                                    windowBuf = windowBuf.slice(-20);
+                                if (windowBuf.endsWith('"text": "') || windowBuf.endsWith('"text":"')) {
+                                    inStr = true;
+                                }
                             }
                         }
                     }
