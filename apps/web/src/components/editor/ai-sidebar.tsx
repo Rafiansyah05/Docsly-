@@ -621,11 +621,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
               setIsLoading(false);
               setProgress(0);
 
-              if (data.operations) {
-                await simulateTyping(editor, data.operations);
-              }
-
-              // After typing is done, delete the aiTyping node
+              // Delete the aiTyping node before applying operations to avoid position shifting
               const tr = editor.state.tr;
               let deleted = false;
               const positions: number[] = [];
@@ -642,6 +638,10 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 }
               });
               if (deleted) editor.view.dispatch(tr);
+
+              if (data.operations) {
+                await simulateTyping(editor, data.operations);
+              }
 
               let responseContent = data.explanation || 'Selesai! Perubahan telah diterapkan ke dokumen.';
 
