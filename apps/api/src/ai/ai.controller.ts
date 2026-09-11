@@ -64,6 +64,8 @@ export class AiController {
       const context = this.contextBuilder.build(documentJson, activeBlockIndex);
 
       // Stage 3 — Smart Question Engine Check
+      // Skipped as per request to avoid asking questions and execute directly.
+      /*
       if (action !== 'skip_questions' && action !== 'submit_answers') {
         send('progress', { stage: 'analyze_requirements', label: 'Menganalisis kelengkapan informasi...', percent: 55 });
         const analysis = await this.smartQuestion.analyzeCompleteness(prompt, intent as UserIntent, context);
@@ -79,6 +81,7 @@ export class AiController {
           return;
         }
       }
+      */
 
       // Stage 3.5 - Web Search Check
       send('progress', { stage: 'search', label: 'Memeriksa kebutuhan pencarian internet...', percent: 60 });

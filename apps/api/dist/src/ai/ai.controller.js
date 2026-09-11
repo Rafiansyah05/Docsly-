@@ -59,20 +59,6 @@ let AiController = class AiController {
             send('progress', { stage: 'classified', label: `Terdeteksi: ${intentLabel}`, percent: 30 });
             send('progress', { stage: 'context', label: 'Membaca isi dokumen...', percent: 45 });
             const context = this.contextBuilder.build(documentJson, activeBlockIndex);
-            if (action !== 'skip_questions' && action !== 'submit_answers') {
-                send('progress', { stage: 'analyze_requirements', label: 'Menganalisis kelengkapan informasi...', percent: 55 });
-                const analysis = await this.smartQuestion.analyzeCompleteness(prompt, intent, context);
-                if (analysis.needsQuestions && analysis.questions && analysis.questions.length > 0) {
-                    send('progress', { stage: 'questions_needed', label: 'Menunggu detail tambahan...', percent: 100 });
-                    send('result', {
-                        intent: 'ask_questions',
-                        questions: analysis.questions,
-                        assumedFields: analysis.assumedFields,
-                        explanation: 'Saya memerlukan beberapa informasi tambahan untuk menyusun dokumen yang sempurna.'
-                    });
-                    return;
-                }
-            }
             send('progress', { stage: 'search', label: 'Memeriksa kebutuhan pencarian internet...', percent: 60 });
             const searchData = await this.webSearch.searchIfNeeded(prompt);
             let enhancedPrompt = prompt;
