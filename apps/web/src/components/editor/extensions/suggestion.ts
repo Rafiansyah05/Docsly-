@@ -57,32 +57,28 @@ export const Suggestion = Extension.create({
   addCommands() {
     return {
       applyAiOperations: (operations: any[]) => ({ tr, state, dispatch }) => {
-        // Sort operations descending by index to prevent index shifting issues
-        const sortedOps = [...operations].sort((a, b) => b.index - a.index);
+        // Map block indices to original positions in the document
+        const originalPositions = new Map<number, number>();
+        const originalNodes = new Map<number, any>();
+        let idx = 0;
+        state.doc.forEach((node, offset) => {
+          originalPositions.set(idx, offset);
+          originalNodes.set(idx, node);
+          idx++;
+        });
 
-        sortedOps.forEach(op => {
-          // Find the Prosemirror position for the block at op.index
-          let currentIndex = 0;
-          let targetPos = -1;
-          let targetNode: any = null;
+        // We will maintain an "append" position for out-of-bounds inserts
+        let appendPos = state.doc.content.size;
 
-          tr.doc.forEach((node, offset) => {
-            if (currentIndex === op.index) {
-              targetPos = offset;
-              targetNode = node;
-            }
-            currentIndex++;
-          });
+        operations.forEach(op => {
+          let targetPos = originalPositions.has(op.index) ? originalPositions.get(op.index)! : -1;
+          let targetNode = originalNodes.has(op.index) ? originalNodes.get(op.index)! : null;
 
-          if (targetPos === -1) {
-            // If index is out of bounds, default to end of document
-            targetPos = tr.doc.content.size;
-          }
+          let mappedPos = targetPos !== -1 ? tr.mapping.map(targetPos) : tr.mapping.map(appendPos);
 
           if (op.op === 'delete') {
-            if (targetNode) {
-              // Mark as deleted
-              tr.setNodeMarkup(targetPos, undefined, {
+            if (targetNode && targetPos !== -1) {
+              tr.setNodeMarkup(mappedPos, undefined, {
                 ...targetNode.attrs,
                 suggestion: 'delete',
               });
@@ -95,16 +91,18 @@ export const Suggestion = Extension.create({
                 suggestion: 'insert',
               },
             });
-            tr.insert(targetPos, newNode);
+            tr.insert(mappedPos, newNode);
+            // After inserting at appendPos, the appendPos conceptually shifts forward
+            if (targetPos === -1) {
+              appendPos += newNode.nodeSize;
+            }
           } else if (op.op === 'replace') {
-            if (targetNode) {
-              // Mark current as deleted
-              tr.setNodeMarkup(targetPos, undefined, {
+            if (targetNode && targetPos !== -1) {
+              tr.setNodeMarkup(mappedPos, undefined, {
                 ...targetNode.attrs,
                 suggestion: 'delete',
               });
               
-              // Insert new one after it
               const newNode = state.schema.nodeFromJSON({
                 ...op.node,
                 attrs: {
@@ -112,10 +110,9 @@ export const Suggestion = Extension.create({
                   suggestion: 'insert',
                 },
               });
-              tr.insert(targetPos + targetNode.nodeSize, newNode);
+              tr.insert(mappedPos + targetNode.nodeSize, newNode);
             }
           } else if (op.op === 'setDocumentSettings' && op.settings) {
-            // Apply Document Level Settings directly
             if (op.settings.margin) {
               const currentLayout = tr.doc.attrs.layout || { top: 96, bottom: 96, left: 96, right: 96 };
               tr.setDocAttribute('layout', { ...currentLayout, ...op.settings.margin });

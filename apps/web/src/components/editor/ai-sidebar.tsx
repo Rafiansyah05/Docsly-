@@ -56,11 +56,8 @@ const formatMessageContent = (content: string) => {
 };
 
 const simulateTyping = async (editor: any, operations: any[]) => {
-  // Sort operations by index to apply them in order visually
-  const sortedOps = [...operations].sort((a, b) => (a.index || 0) - (b.index || 0));
-  
   // Apply all operations immediately since we already showed real-time streaming preview
-  editor.commands.applyAiOperations(sortedOps);
+  editor.commands.applyAiOperations(operations);
   
   // Auto scroll to cursor / newly inserted content
   editor.commands.scrollIntoView();
