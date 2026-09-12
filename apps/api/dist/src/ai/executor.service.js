@@ -208,22 +208,26 @@ let TaskExecutor = class TaskExecutor {
         }
         let finalExplanation = 'Selesai! Perubahan telah diterapkan.';
         const markerIdx = fullText.indexOf('===JSON_START===');
+        let jsonStart = -1;
         if (markerIdx !== -1) {
             finalExplanation = fullText.substring(0, markerIdx).trim();
+            jsonStart = fullText.indexOf('{', markerIdx);
         }
         else {
-            const firstBrace = fullText.indexOf('{');
-            if (firstBrace > 0) {
-                finalExplanation = fullText.substring(0, firstBrace).trim();
+            jsonStart = fullText.indexOf('{');
+            if (jsonStart > 0) {
+                finalExplanation = fullText.substring(0, jsonStart).trim();
             }
         }
-        const jsonStart = fullText.indexOf('{');
         const jsonEnd = fullText.lastIndexOf('}') + 1;
-        if (jsonStart !== -1 && jsonEnd !== -1) {
+        if (jsonStart !== -1 && jsonEnd > jsonStart) {
             let jsonStr = fullText.substring(jsonStart, jsonEnd);
             try {
                 const parsed = JSON.parse(jsonStr);
                 parsed.explanation = finalExplanation;
+                if (!Array.isArray(parsed.operations)) {
+                    parsed.operations = [];
+                }
                 if (reachedLimit) {
                     parsed.explanation += ' (Output dipotong karena batas limit plan Anda mencapai batas maksimal token untuk sekali permintaan.)';
                 }

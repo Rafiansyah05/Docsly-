@@ -73,6 +73,7 @@ let AiController = class AiController {
                 result.operations = await this.languageCompliance.verify(result.operations);
             }
             send('progress', { stage: 'done', label: 'Selesai!', percent: 100 });
+            console.log(`[AiController] Sending result with ${result.operations?.length} operations`);
             send('result', { intent, ...result });
         }
         catch (error) {

@@ -111,6 +111,7 @@ export class AiController {
       }
 
       send('progress', { stage: 'done', label: 'Selesai!', percent: 100 });
+      console.log(`[AiController] Sending result with ${result.operations?.length} operations`);
       send('result', { intent, ...result });
     } catch (error: any) {
       console.error('[AiController] Error:', error);
