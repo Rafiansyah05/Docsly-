@@ -22,7 +22,8 @@ export class WebSearchService {
       const checkResponse = await this.anthropic.messages.create({
         model: 'claude-haiku-4-5',
         max_tokens: 100,
-        system: `You are a Web Search Decider. Does the user's prompt require fetching real-time facts, current events, specific external data, or general knowledge from the internet that might not be in the current document context?
+        system: `You are a Web Search Decider for an Academic Writing AI. Does the user's prompt require fetching real-time facts, statistical data, specific external data, or general knowledge from the internet?
+CRITICAL: If the user asks to write a "Latar Belakang" (Background), Introduction, or any section that needs public data, facts, or statistics to be credible, you MUST output needsSearch: true and create a query to find the relevant data on the internet.
 Output a JSON object exactly like this:
 { "needsSearch": boolean, "query": "search query if true, else empty string" }
 Do not output anything else.`,
