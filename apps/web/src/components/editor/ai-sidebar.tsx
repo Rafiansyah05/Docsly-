@@ -516,6 +516,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
       const decoder = new TextDecoder();
       let buffer = '';
 
+      let gotResult = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -618,6 +619,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
             }
 
             if (eventType === 'result') {
+              gotResult = true;
               setIsLoading(false);
               setProgress(0);
 
@@ -684,6 +686,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
             }
 
             if (eventType === 'error') {
+              gotResult = true;
               throw new Error(data.message || 'Kesalahan dari server AI.');
             }
           } catch (parseErr) {
@@ -691,6 +694,43 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           }
         }
       }
+
+      // Cleanup logic if connection ends without a result event (e.g. timeout)
+      if (!gotResult) {
+        setIsLoading(false);
+        setProgress(0);
+        
+        // Remove stuck aiTyping node
+        const tr = editor.state.tr;
+        let deleted = false;
+        const positions: number[] = [];
+        editor.state.doc.descendants((node: any, pos: number) => {
+          if (node.type.name === 'aiTyping') {
+            positions.push(pos);
+          }
+        });
+        positions.reverse().forEach(pos => {
+          const node = tr.doc.nodeAt(pos);
+          if (node) {
+            tr.delete(pos, pos + node.nodeSize);
+            deleted = true;
+          }
+        });
+        if (deleted) editor.view.dispatch(tr);
+
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          const timeoutMsg = 'Maaf, permintaan ini terlalu besar dan kompleks sehingga terputus karena batas waktu (timeout). Cobalah memecah permintaan Anda (misalnya membagi per bab).';
+          if (lastMsg && lastMsg.role === 'assistant') {
+            lastMsg.content = timeoutMsg;
+          } else {
+            newMessages.push({ role: 'assistant', content: timeoutMsg });
+          }
+          return newMessages;
+        });
+      }
+
     } catch (error: any) {
       console.error('Error sending message:', error);
       setIsLoading(false);
