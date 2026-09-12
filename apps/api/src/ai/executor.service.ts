@@ -109,8 +109,8 @@ export class TaskExecutor {
     let isComplete = false;
     let loops = 0;
     
-    // Dynamic Limits (Fixed to avoid cut off limit)
-    const MAX_LOOPS = plan.toLowerCase() === 'free' ? 2 : 50;
+    // Dynamic Limits: We allow up to 50 loops (approx 400k tokens) so the AI acts like a proper agent that doesn't stop until finished.
+    const MAX_LOOPS = 50;
     let reachedLimit = false;
 
     // State for extracting text for real-time preview
@@ -204,12 +204,14 @@ export class TaskExecutor {
           isComplete = true; // Force stop
         } else {
           // Keep looping to get more tokens
-          const newText = fullText.substring(lastTextLength);
-          messages.push({ role: 'assistant', content: newText });
-          messages.push({ 
-            role: 'user', 
-            content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.' 
-          });
+          // Use Anthropic's Assistant Prefill feature:
+          // Provide the generated text so far as the last assistant message.
+          // Claude will seamlessly continue from this exact point without conversational fluff.
+          if (messages.length === 1) {
+            messages.push({ role: 'assistant', content: fullText });
+          } else {
+            messages[1].content = fullText;
+          }
         }
       } else {
         isComplete = true;

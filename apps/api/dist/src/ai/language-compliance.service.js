@@ -42,7 +42,7 @@ You will receive the JSON array of operations. You MUST return ONLY the modified
 DO NOT wrap in \`\`\`json. DO NOT change the "op" or "index" fields. ONLY modify the "node" contents.
 Return valid JSON. Escape newlines as \\n. Make sure the entire JSON array is complete and properly closed.`;
         const MAX_LCL_TOKENS = 8000;
-        const MAX_LOOPS = 3;
+        const MAX_LOOPS = 20;
         try {
             const messages = [
                 {
@@ -65,11 +65,12 @@ Return valid JSON. Escape newlines as \\n. Make sure the entire JSON array is co
                 const text = textBlock ? textBlock.text : '';
                 fullText += text;
                 if (response.stop_reason === 'max_tokens' && loops < MAX_LOOPS) {
-                    messages.push({ role: 'assistant', content: text });
-                    messages.push({
-                        role: 'user',
-                        content: 'Lanjutkan output JSON dari karakter terakhir yang terpotong. JANGAN mengulang dari awal. Pastikan output JSON array ditutup dengan benar.',
-                    });
+                    if (messages.length === 1) {
+                        messages.push({ role: 'assistant', content: fullText });
+                    }
+                    else {
+                        messages[1].content = fullText;
+                    }
                 }
                 else {
                     isComplete = true;

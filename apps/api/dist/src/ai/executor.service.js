@@ -98,7 +98,7 @@ let TaskExecutor = class TaskExecutor {
         let fullText = '';
         let isComplete = false;
         let loops = 0;
-        const MAX_LOOPS = plan.toLowerCase() === 'free' ? 2 : 50;
+        const MAX_LOOPS = 50;
         let reachedLimit = false;
         let windowBuf = '';
         let inStr = false;
@@ -191,12 +191,12 @@ let TaskExecutor = class TaskExecutor {
                     isComplete = true;
                 }
                 else {
-                    const newText = fullText.substring(lastTextLength);
-                    messages.push({ role: 'assistant', content: newText });
-                    messages.push({
-                        role: 'user',
-                        content: 'Lanjutkan sintaks JSON persis dari karakter terakhir yang terpotong. JANGAN mengulang dari awal, dan JANGAN memberikan teks pembuka/penutup apapun.'
-                    });
+                    if (messages.length === 1) {
+                        messages.push({ role: 'assistant', content: fullText });
+                    }
+                    else {
+                        messages[1].content = fullText;
+                    }
                 }
             }
             else {
