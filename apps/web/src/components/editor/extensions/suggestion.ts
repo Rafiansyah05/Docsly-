@@ -67,14 +67,11 @@ export const Suggestion = Extension.create({
           idx++;
         });
 
-        // We will maintain an "append" position for out-of-bounds inserts
-        let appendPos = state.doc.content.size;
-
         operations.forEach(op => {
           let targetPos = originalPositions.has(op.index) ? originalPositions.get(op.index)! : -1;
           let targetNode = originalNodes.has(op.index) ? originalNodes.get(op.index)! : null;
 
-          let mappedPos = targetPos !== -1 ? tr.mapping.map(targetPos) : tr.mapping.map(appendPos);
+          let mappedPos = targetPos !== -1 ? tr.mapping.map(targetPos) : tr.doc.content.size;
 
           if (op.op === 'delete') {
             if (targetNode && targetPos !== -1) {
@@ -92,10 +89,6 @@ export const Suggestion = Extension.create({
               },
             });
             tr.insert(mappedPos, newNode);
-            // After inserting at appendPos, the appendPos conceptually shifts forward
-            if (targetPos === -1) {
-              appendPos += newNode.nodeSize;
-            }
           } else if (op.op === 'replace') {
             if (targetNode && targetPos !== -1) {
               tr.setNodeMarkup(mappedPos, undefined, {
