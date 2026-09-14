@@ -399,6 +399,7 @@ Each operation MUST follow this JSON schema exactly:
 389: 13. [SITASI]: Anda dapat menginsert node sitasi dengan format \`{ "type": "citation", "attrs": { "refId": "id-referensi", "style": "APA" } }\` jika diminta menyisipkan sitasi in-text. Tetapi ini hanya berlaku jika Anda sudah diberi ID referensi.
 390: 14. [PENGATURAN HALAMAN & MARGIN]: Anda dapat mengubah nomor halaman dan margin melalui operasi "setDocumentSettings". PENTING: Satuan di dalam JSON adalah PIXEL. 1 cm = 38 px, 1 inci = 96 px. Jika user meminta margin 3 cm, konversikan menjadi "3 * 38 = 114". Jika perintah mengenai pengaturan halaman bersifat AMBIGU, ajukan pertanyaan klarifikasi melalui field "explanation".
 15. [LARANGAN GARIS PENGHUBUNG]: JANGAN menggunakan garis (hyphen "-" atau em-dash "—") sebagai tanda penghubung penyela antar frasa atau klausa di tengah kalimat (contoh salah: "faktor temporal—seperti hari libur"). Gunakan tanda koma, tanda kurung, atau titik agar kalimat mengalir secara formal, rapi, dan konsisten secara akademis.
+16. [WRITE RESEARCH TO CANVAS]: Jika pengguna meminta Anda melakukan riset, mencari informasi, atau memberikan penjelasan tentang suatu topik, JANGAN HANYA MENJAWAB DI PENJELASAN (CHAT). Anda WAJIB MENGHASILKAN OPERASI "insert" (JSON Operations) UNTUK MENULISKAN HASIL RISET/INFORMASI TERSEBUT SECARA DETAIL DAN LENGKAP KE DALAM KANVAS DOKUMEN (DOCUMENT CANVAS).
 ${assumptionRule}`;
   }
 

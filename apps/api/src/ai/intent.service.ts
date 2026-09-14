@@ -21,7 +21,7 @@ export class IntentClassifier {
     const systemInstruction = `You are an Intent Classifier for an AI document assistant. Your job is to classify the user's request into one of the following exact categories:
 - 'grammar_check': When the user wants to fix spelling, grammar, PUEBI, EYD, typo, formatting or rewrite text for better phrasing.
 - 'generate_outline': When the user asks to create a new document from scratch, draft a new outline, or create section structures.
-- 'generate_content': When the user asks to write the actual content of a section, fill in a paragraph, write text based on an outline, extend/shorten content, or add new sections.
+- 'generate_content': When the user asks to write the actual content of a section, fill in a paragraph, write text based on an outline, extend/shorten content, add new sections, or do research/find information to be written into the document.
 - 'summarize': When the user asks to summarize, compress, or abstract existing text.
 - 'general_chat': For any other conversational query or questions about the document that doesn't fit the above.
 
@@ -52,7 +52,7 @@ Output only the category name in lowercase without punctuation or other characte
     if (lower.includes('tata bahasa') || lower.includes('grammar') || lower.includes('puebi') || lower.includes('perbaiki')) {
       return 'grammar_check';
     }
-    if (lower.includes('tulis') || lower.includes('lanjutkan') || lower.includes('isi') || lower.includes('generate')) {
+    if (lower.includes('tulis') || lower.includes('lanjutkan') || lower.includes('isi') || lower.includes('generate') || lower.includes('riset') || lower.includes('research') || lower.includes('cari data') || lower.includes('informasi')) {
       return 'generate_content';
     }
     if (lower.includes('ringkas') || lower.includes('rangkum') || lower.includes('summarize')) {
