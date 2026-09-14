@@ -268,7 +268,7 @@ export class TaskExecutor {
 
   private async parseAttachments(attachments: any[]): Promise<string> {
     let combinedText = '';
-    const MAX_CHARS_PER_FILE = 15000;
+    const MAX_CHARS_PER_FILE = 300000;
 
     for (const file of attachments) {
       try {
@@ -350,7 +350,8 @@ Each operation MUST follow this JSON schema exactly:
           "listType": "bullet" | "decimal" | "none",
           "listPrefix": string,
           "assumed": boolean,
-          "caption": string 
+          "caption": string,
+          "hangingIndent": boolean
         },
         "content": [
           {
@@ -401,6 +402,7 @@ CRITICAL RULES:
 14. [PENGATURAN HALAMAN & MARGIN]: Anda dapat mengubah nomor halaman dan margin melalui operasi "setDocumentSettings". PENTING: Satuan di dalam JSON adalah PIXEL. 1 cm = 38 px, 1 inci = 96 px. Jika user meminta margin 3 cm, konversikan menjadi "3 * 38 = 114". Jika perintah mengenai pengaturan halaman bersifat AMBIGU, ajukan pertanyaan klarifikasi melalui field "explanation".
 15. [LARANGAN GARIS PENGHUBUNG]: JANGAN menggunakan garis (hyphen "-" atau em-dash "—") sebagai tanda penghubung penyela antar frasa atau klausa di tengah kalimat (contoh salah: "faktor temporal—seperti hari libur"). Gunakan tanda koma, tanda kurung, atau titik agar kalimat mengalir secara formal, rapi, dan konsisten secara akademis.
 16. [WRITE RESEARCH TO CANVAS]: Jika pengguna meminta Anda melakukan riset, mencari informasi, atau memberikan penjelasan tentang suatu topik, JANGAN HANYA MENJAWAB DI PENJELASAN (CHAT). Anda WAJIB MENGHASILKAN OPERASI "insert" (JSON Operations) UNTUK MENULISKAN HASIL RISET/INFORMASI TERSEBUT SECARA DETAIL DAN LENGKAP KE DALAM KANVAS DOKUMEN (DOCUMENT CANVAS).
+17. [DAFTAR PUSTAKA]: Jika Anda menggunakan referensi atau sumber (seperti file attachment), Anda WAJIB membuat bagian "DAFTAR PUSTAKA" di akhir dokumen. Setiap referensi harus ditulis sebagai node "paragraph" biasa dengan gaya APA dan WAJIB menambahkan atribut \`"hangingIndent": true\` di dalam \`"attrs"\` agar format menjorok ke dalam (hanging indent / auto layout) terbentuk secara otomatis.
 ${assumptionRule}`;
   }
 
