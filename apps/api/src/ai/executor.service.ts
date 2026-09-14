@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { UserIntent } from './intent.service';
 const { PDFParse } = require('pdf-parse');
 import * as mammoth from 'mammoth';
+import { jsonrepair } from 'jsonrepair';
 
 export interface ProseMirrorTextNode {
   type: 'text';
@@ -218,11 +219,6 @@ export class TaskExecutor {
       }
     }
 
-    if (reachedLimit) {
-      // Auto-JSON Recovery: Try to force close the JSON to salvage the operations
-      fullText += '"]}]}'; 
-    }
-
     let finalExplanation = 'Selesai! Perubahan telah diterapkan.';
     const markerIdx = fullText.indexOf('===JSON_START===');
     let jsonStart = -1;
@@ -237,11 +233,15 @@ export class TaskExecutor {
       }
     }
 
-    const jsonEnd = fullText.lastIndexOf('}') + 1;
-    if (jsonStart !== -1 && jsonEnd > jsonStart) {
-      let jsonStr = fullText.substring(jsonStart, jsonEnd);
+    if (jsonStart !== -1) {
+      let jsonStr = fullText.substring(jsonStart);
+      const lastBrace = jsonStr.lastIndexOf('}');
+      if (lastBrace !== -1 && !reachedLimit) {
+        jsonStr = jsonStr.substring(0, lastBrace + 1);
+      }
       try {
-        const parsed = JSON.parse(jsonStr);
+        const repairedJson = jsonrepair(jsonStr);
+        const parsed = JSON.parse(repairedJson);
         parsed.explanation = finalExplanation;
         if (!Array.isArray(parsed.operations)) {
           parsed.operations = [];

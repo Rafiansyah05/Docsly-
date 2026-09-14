@@ -51,6 +51,7 @@ const config_1 = require("@nestjs/config");
 const sdk_1 = __importDefault(require("@anthropic-ai/sdk"));
 const { PDFParse } = require('pdf-parse');
 const mammoth = __importStar(require("mammoth"));
+const jsonrepair_1 = require("jsonrepair");
 let TaskExecutor = class TaskExecutor {
     configService;
     anthropic;
@@ -204,9 +205,6 @@ let TaskExecutor = class TaskExecutor {
                 isComplete = true;
             }
         }
-        if (reachedLimit) {
-            fullText += '"]}]}';
-        }
         let finalExplanation = 'Selesai! Perubahan telah diterapkan.';
         const markerIdx = fullText.indexOf('===JSON_START===');
         let jsonStart = -1;
@@ -220,11 +218,15 @@ let TaskExecutor = class TaskExecutor {
                 finalExplanation = fullText.substring(0, jsonStart).trim();
             }
         }
-        const jsonEnd = fullText.lastIndexOf('}') + 1;
-        if (jsonStart !== -1 && jsonEnd > jsonStart) {
-            let jsonStr = fullText.substring(jsonStart, jsonEnd);
+        if (jsonStart !== -1) {
+            let jsonStr = fullText.substring(jsonStart);
+            const lastBrace = jsonStr.lastIndexOf('}');
+            if (lastBrace !== -1 && !reachedLimit) {
+                jsonStr = jsonStr.substring(0, lastBrace + 1);
+            }
             try {
-                const parsed = JSON.parse(jsonStr);
+                const repairedJson = (0, jsonrepair_1.jsonrepair)(jsonStr);
+                const parsed = JSON.parse(repairedJson);
                 parsed.explanation = finalExplanation;
                 if (!Array.isArray(parsed.operations)) {
                     parsed.operations = [];
