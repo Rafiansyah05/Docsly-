@@ -204,11 +204,11 @@ export class TaskExecutor {
           isComplete = true; // Force stop
         } else {
           // Keep looping to get more tokens
-          // Use Anthropic's Assistant Prefill feature:
-          // Provide the generated text so far as the last assistant message.
-          // Claude will seamlessly continue from this exact point without conversational fluff.
+          // Since the model doesn't support assistant prefill (conversation must end with a user message),
+          // we append the generated text as an assistant message, then add a user message asking to continue.
           if (messages.length === 1) {
             messages.push({ role: 'assistant', content: fullText });
+            messages.push({ role: 'user', content: 'Pesan Anda sebelumnya terpotong karena batas token. Lanjutkan tepat dari karakter terakhir yang terpotong. JANGAN mengulangi teks sebelumnya. JANGAN menuliskan basa-basi atau pengantar. Langsung saja lanjutkan teks atau struktur JSON yang terpotong.' });
           } else {
             messages[1].content = fullText;
           }
