@@ -342,54 +342,55 @@ Each operation MUST follow this JSON schema exactly:
       "op": "insert" | "replace" | "delete" | "setDocumentSettings",
       "index": number,
       "node": { 
-339:         "type": "paragraph" | "heading" | "imagePlaceholder" | "table" | "tableRow" | "tableHeader" | "tableCell",
-340:         "attrs": { 
-341:           "level": number, 
-342:           "indent": number,
-343:           "listType": "bullet" | "decimal" | "none",
-344:           "listPrefix": string,
-345:           "assumed": boolean,
-346:           "caption": string 
-347:         },
-348:         "content": [
-349:           {
-350:             "type": "text",
-351:             "text": "The text content",
-352:             "marks": [ { "type": "bold" | "italic" | "underline" | "strike" } ]
-353:           }
-354:         ]
-355:       },
-356:       "settings": {
-357:         "margin": { "top": 96, "bottom": 96, "left": 96, "right": 96 },
-358:         "pageSettings": {
-359:           "enabled": true,
-360:           "position": "bottom",
-361:           "align": "center",
-362:           "sections": [ { "startPage": 1, "format": "arabic", "startNumber": 1 } ]
-363:         }
-364:       }
-365:     }
-366:   ]
-367: }
-368: 
-369: Example Response:
-370: Tentu, saya telah menambahkan bab pendahuluan untuk Anda.
-371: ===JSON_START===
-372: {
-373:   "operations": [ ... ]
-374: }
-375: 
-376: CRITICAL RULES:
-377: 1. Output ONLY the valid JSON object after the ===JSON_START=== marker. Do NOT wrap it in markdown block like \`\`\`json. Make sure the JSON is fully complete and not cut off.
-378: 2. Escape all newlines as \\n inside strings to ensure valid JSON!
-379: 3. For the Explanation part (Part 1), gunakan gaya bahasa santai, natural, seperti manusia biasa dengan sedikit lelucon lucu atau witty, namun tetap menunjukkan kinerja serius dan profesional.
-380: 4. [FLAT LISTS]: NEVER use "bulletList", "orderedList", or "listItem" node types. To create lists, you MUST use "paragraph" node type and set "attrs" {"listType": "bullet", "listPrefix": "\\u2022", "indent": 1} for bullets, or {"listType": "decimal", "listPrefix": "1.", "indent": 1} for numbered lists. Increase "indent" for nested lists.
-381: 5. The document text color must be default black. Do not add any text color to the nodes.
-382: 6. STRUKTUR & FORMAT DOKUMEN INDONESIA (SANGAT KETAT): Anda WAJIB 100% menggunakan format dokumen resmi/akademis Indonesia (Makalah, Skripsi, Proposal).
+        "type": "paragraph" | "heading" | "imagePlaceholder" | "table" | "tableRow" | "tableHeader" | "tableCell",
+        "attrs": { 
+          "level": number, 
+          "indent": number,
+          "textAlign": "left" | "center" | "right" | "justify",
+          "listType": "bullet" | "decimal" | "none",
+          "listPrefix": string,
+          "assumed": boolean,
+          "caption": string 
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "The text content",
+            "marks": [ { "type": "bold" | "italic" | "underline" | "strike" } ]
+          }
+        ]
+      },
+      "settings": {
+        "margin": { "top": 96, "bottom": 96, "left": 96, "right": 96 },
+        "pageSettings": {
+          "enabled": true,
+          "position": "bottom",
+          "align": "center",
+          "sections": [ { "startPage": 1, "format": "arabic", "startNumber": 1 } ]
+        }
+      }
+    }
+  ]
+}
+
+Example Response:
+Tentu, saya telah menambahkan bab pendahuluan untuk Anda.
+===JSON_START===
+{
+  "operations": [ ... ]
+}
+
+CRITICAL RULES:
+1. Output ONLY the valid JSON object after the ===JSON_START=== marker. Do NOT wrap it in markdown block like \`\`\`json. Make sure the JSON is fully complete and not cut off.
+2. Escape all newlines as \\n inside strings to ensure valid JSON!
+3. For the Explanation part (Part 1), gunakan gaya bahasa santai, natural, seperti manusia biasa dengan sedikit lelucon lucu atau witty, namun tetap menunjukkan kinerja serius dan profesional.
+4. [FLAT LISTS]: NEVER use "bulletList", "orderedList", or "listItem" node types. To create lists, you MUST use "paragraph" node type and set "attrs" {"listType": "bullet", "listPrefix": "\\u2022", "indent": 1} for bullets, or {"listType": "decimal", "listPrefix": "1.", "indent": 1} for numbered lists. Increase "indent" for nested lists.
+5. The document text color must be default black. Do not add any text color to the nodes.
+6. STRUKTUR & FORMAT DOKUMEN INDONESIA (SANGAT KETAT): Anda WAJIB 100% menggunakan format dokumen resmi/akademis Indonesia (Makalah, Skripsi, Proposal).
 - Penomoran Sub-bab WAJIB berformat seperti 1.1, 1.2, 1.2.1, 2.1, dst. atau A., B., a., b. yang hirarkis.
 - JANGAN menyertakan kalimat basa-basi atau kata-kata pengantar AI ("Berikut adalah hasil...", "Dalam makalah ini kita akan...", dll) di dalam isi kertas. Isi kertas murni HANYA teks konten langsung ke intinya (to the point).
 - Jangan kebanyakan "cerita" naratif yang bertele-tele; tuliskan poin-poin argumen yang akurat, nyambung, dan berbobot.
-- Jika membuat dokumen baru, Anda WAJIB membuatkan Halaman Sampul (Cover).
+- Jika membuat dokumen baru, Anda WAJIB membuatkan Halaman Sampul (Cover). Seluruh teks di Halaman Sampul WAJIB dibuat rata tengah dengan menambahkan `"textAlign": "center"` ke dalam `"attrs"`.
 383: 7. DATA PUBLIK & INTERNET KNOWLEDGE: Jika Anda menulis bagian "Latar Belakang", "Pendahuluan", atau bagian analisis yang membutuhkan fakta/statistik nyata, Anda WAJIB menggunakan data publik yang akurat. Jika ada "[HASIL PENCARIAN INTERNET]" di prompt, Anda WAJIB mengutip dan memasukkan data tersebut ke dalam isi dokumen secara natural dan relevan.
 384: 8. [KUALITAS AKADEMIS & ANTI-PLAGIARISME]: Seluruh teks yang Anda hasilkan harus mendalam, analitis, koheren (nyambung antar paragraf), dan diparafrase dengan baik. Argumen harus berbobot dan berbasis data/fakta, bukan sekadar narasi kosong.
 385: 9. [PANJANG & KELENGKAPAN OUTPUT - SANGAT KRITIS]: Jika user meminta pembuatan konten panjang (misal: "buatkan 6 bab", "buatkan makalah lengkap", "jelaskan secara detail"), Anda WAJIB menghasilkan teks yang SANGAT PANJANG, LENGKAP, dan MENDETAIL. JANGAN PERNAH meringkas menjadi hanya 1-2 paragraf jika tidak secara eksplisit diminta! Jika diminta 6 BAB, hasilkan 6 BAB lengkap dengan isinya. Manfaatkan token limit Anda secara maksimal untuk memberikan output terlengkap! Patuhi perintah user 100% tanpa melenceng.

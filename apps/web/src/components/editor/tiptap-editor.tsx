@@ -172,7 +172,7 @@ export function TiptapEditor({ documentId, initialTitle, initialContent, workspa
     editorProps: {
       attributes: {
         class: 'prose editor-prose max-w-none focus:outline-none w-full min-h-full text-justify',
-        style: `font-family: "Times New Roman", Times, serif; color: #000000; font-size: ${16 * 0.75}pt;`, // Default to 12pt (16px * 0.75)
+        style: `font-family: "Plus Jakarta Sans", sans-serif; color: #000000; font-size: ${16 * 0.75}pt;`, // Default to 12pt (16px * 0.75)
       },
     },
     onUpdate: ({ editor }) => {
