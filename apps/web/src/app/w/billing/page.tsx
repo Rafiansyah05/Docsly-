@@ -24,7 +24,7 @@ export default async function BillingPage() {
     .eq('status', 'active')
     .order('berlaku_sampai', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   // Fetch billing history (payments)
   const { data: payments } = await supabase

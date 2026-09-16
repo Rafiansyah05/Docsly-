@@ -16,12 +16,17 @@ export async function POST(req: Request) {
     const adminSupabase = createAdminClient();
 
     // Ambil langganan aktif
-    const { data: subscription } = await adminSupabase
+    const { data: subscription, error: subError } = await adminSupabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
-      .single();
+      .limit(1)
+      .maybeSingle();
+
+    if (subError) {
+      console.error('Error fetching subscription:', subError);
+    }
 
     if (!subscription) {
       return NextResponse.json({ message: 'No active subscription' });

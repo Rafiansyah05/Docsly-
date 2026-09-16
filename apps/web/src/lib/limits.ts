@@ -36,11 +36,17 @@ export const PLAN_LIMITS = {
 
 export async function getUserPlan(userId: string): Promise<PlanType> {
   const supabase = createAdminClient();
-  const { data: sub } = await supabase
+  const { data: sub, error } = await supabase
     .from('subscriptions')
     .select('plan_type, status, berlaku_sampai')
     .eq('user_id', userId)
-    .single();
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching subscription in getUserPlan:', error);
+  }
 
   if (!sub || sub.status !== 'active') return 'free';
 
