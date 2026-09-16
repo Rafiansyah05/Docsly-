@@ -57,7 +57,9 @@ export function HeaderNav({ variant = 'fixed', pathname = '', workspaceName, cur
       if (limits?.ai_limit_reset_at) {
         // Cek kapasitas asli
         const plan = (currentPlan || 'free').toLowerCase();
-        const maxCredits = plan === 'premium' ? 1500 : plan === 'pro' ? 500 : 25;
+        let maxCredits = 25;
+        if (plan.includes('premium')) maxCredits = 1500;
+        else if (plan.includes('pro')) maxCredits = 500;
         
         if ((limits.ai_credits_used || 0) >= maxCredits) {
           const resetDate = new Date(limits.ai_limit_reset_at);
