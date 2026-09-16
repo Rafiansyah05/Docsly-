@@ -13,6 +13,8 @@ async function bootstrap() {
       new ExpressAdapter(cachedApp)
     );
     nestApp.enableCors();
+    nestApp.use(express.json({ limit: '50mb' }));
+    nestApp.use(express.urlencoded({ extended: true, limit: '50mb' }));
     await nestApp.init();
   }
   return cachedApp;
