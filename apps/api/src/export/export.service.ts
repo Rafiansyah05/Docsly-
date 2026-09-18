@@ -446,6 +446,9 @@ export class ExportService {
       const cheerio = require('cheerio');
       const $ = cheerio.load(html);
       
+      // Security: Remove dangerous tags to prevent SSRF and XSS
+      $('script, iframe, object, embed, applet, meta, base, form').remove();
+
       $('p').each((_: any, el: any) => {
         if ($(el).text().trim() === '' && $(el).find('img').length === 0 && $(el).find('br').length === 0) {
           $(el).html('<br>');
@@ -459,7 +462,7 @@ export class ExportService {
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu',
+          '--disable-gpu'
         ],
       };
       if (process.env.PUPPETEER_EXECUTABLE_PATH) {
@@ -467,6 +470,20 @@ export class ExportService {
       }
       browser = await puppeteer.launch(launchOptions);
       const page = await browser.newPage();
+      
+      // Security: Disable JS execution
+      await page.setJavaScriptEnabled(false);
+      
+      // Security: Block requests to internal networks and local files (SSRF prevention)
+      await page.setRequestInterception(true);
+      page.on('request', (req) => {
+        const url = req.url();
+        if (url.startsWith('file://') || url.includes('169.254.169.254') || url.includes('127.0.0.1') || url.includes('localhost') || url.startsWith('http://10.') || url.startsWith('http://192.168.')) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
 
       const fullHtml = `
         <!DOCTYPE html>

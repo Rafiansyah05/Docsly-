@@ -273,8 +273,19 @@ export class TaskExecutor {
 
     for (const file of attachments) {
       try {
+        if (!file.url || !file.url.startsWith('https://')) {
+          console.warn(`[Security] URL tidak valid atau bukan HTTPS: ${file.url}`);
+          continue;
+        }
+        
         const response = await fetch(file.url);
         if (!response.ok) continue;
+
+        const contentLength = Number(response.headers.get('content-length') || '0');
+        if (contentLength > 10 * 1024 * 1024) { // 10MB limit to prevent OOM
+           console.warn(`[Security] File terlalu besar (>10MB): ${file.url}`);
+           continue;
+        }
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
