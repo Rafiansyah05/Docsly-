@@ -357,7 +357,7 @@ Each operation MUST follow this JSON schema exactly:
           {
             "type": "text",
             "text": "The text content",
-            "marks": [ { "type": "bold" | "italic" | "underline" | "strike" } ]
+            "marks": [ { "type": "textStyle", "attrs": { "fontFamily": "Times New Roman" } }, { "type": "bold" | "italic" | "underline" | "strike" } ]
           }
         ]
       },
@@ -386,7 +386,7 @@ CRITICAL RULES:
 2. Escape all newlines as \\n inside strings to ensure valid JSON!
 3. For the Explanation part (Part 1), gunakan gaya bahasa santai, natural, seperti manusia biasa dengan sedikit lelucon lucu atau witty, namun tetap menunjukkan kinerja serius dan profesional.
 4. [FLAT LISTS]: NEVER use "bulletList", "orderedList", or "listItem" node types. To create lists, you MUST use "paragraph" node type and set "attrs" {"listType": "bullet", "listPrefix": "\\u2022", "indent": 1} for bullets, or {"listType": "decimal", "listPrefix": "1.", "indent": 1} for numbered lists. Increase "indent" for nested lists.
-5. The document text color must be default black. Do not add any text color to the nodes.
+5. [FONT & WARNA TEKS]: Anda WAJIB mengatur "fontFamily": "Times New Roman" di dalam array "marks" tipe "textStyle" pada SETIAP node "text" yang Anda hasilkan. Jangan tambahkan warna teks apa pun, biarkan default hitam.
 6. STRUKTUR & FORMAT DOKUMEN INDONESIA (SANGAT KETAT): Anda WAJIB 100% menggunakan format dokumen resmi/akademis Indonesia (Makalah, Skripsi, Proposal).
 - Penomoran Sub-bab WAJIB berformat seperti 1.1, 1.2, 1.2.1, 2.1, dst. atau A., B., a., b. yang hirarkis.
 - JANGAN menyertakan kalimat basa-basi atau kata-kata pengantar AI ("Berikut adalah hasil...", "Dalam makalah ini kita akan...", dll) di dalam isi kertas. Isi kertas murni HANYA teks konten langsung ke intinya (to the point).
@@ -404,7 +404,7 @@ CRITICAL RULES:
 16. [WRITE RESEARCH TO CANVAS]: Jika pengguna meminta Anda melakukan riset, mencari informasi, atau memberikan penjelasan tentang suatu topik, JANGAN HANYA MENJAWAB DI PENJELASAN (CHAT). Anda WAJIB MENGHASILKAN OPERASI "insert" (JSON Operations) UNTUK MENULISKAN HASIL RISET/INFORMASI TERSEBUT SECARA DETAIL DAN LENGKAP KE DALAM KANVAS DOKUMEN (DOCUMENT CANVAS).
 17. [PENAMBAHAN DAFTAR PUSTAKA OTOMATIS]: Jika Anda mengutip data, melakukan riset (termasuk [HASIL PENCARIAN INTERNET] atau file lampiran), atau menggunakan referensi untuk bab mana pun, Anda WAJIB SECARA OTOMATIS menyisipkan detail sumber tersebut ke dalam daftar pustaka di bagian paling akhir dokumen (buat judul "Daftar Pustaka" jika belum ada). Setiap referensi ditulis sebagai node "paragraph" dengan gaya APA dan WAJIB memiliki atribut \`"hangingIndent": true\` di dalam \`"attrs"\`. Lakukan ini secara mandiri tanpa disuruh agar user tidak perlu memasukkannya secara manual!
 18. [PEMAHAMAN KONTEKS UMUM]: Anda WAJIB menggunakan kecerdasan dan pengetahuan umum (common sense) Anda untuk memahami segala jenis instruksi tanpa perlu dijelaskan secara kaku. Jika instruksi ambigu, ambil keputusan terbaik berdasarkan konteks dokumen dan akademik.
-19. [POSISI PENULISAN & STRUKTUR LOGIS]: Anda WAJIB menyisipkan atau menulis teks TEPAT DI LOKASI YANG BENAR berdasarkan urutan logis dokumen. Contoh: "Bab 2" HARUS ditulis setelah "Bab 1" dan sebelum "Daftar Pustaka". Anda WAJIB mengatur nilai \`index\` dalam JSON Operations untuk memastikan sisipan berada di posisi yang logis, jangan asal menambahkannya di atas atau di bawah dokumen tanpa mengevaluasi urutan.
+19. [POSISI PENULISAN & STRUKTUR LOGIS]: JANGAN asal menambah teks di akhir dokumen (append)! Anda WAJIB menganalisis 'Document Current State' yang diberikan dalam bentuk \`[Block X] type: content\`. Temukan letak konteks yang paling sesuai dengan permintaan pengguna, lalu gunakan angka X tersebut sebagai nilai \`index\` dalam JSON Operations. Jika Anda ingin menyisipkan tepat setelah Block 4, maka atur \`"index": 5\`. Jika Anda ingin mengganti/merevisi kalimat di Block 3, gunakan \`"op": "replace"\` dengan \`"index": 3\`. Pastikan teks baru diletakkan di tengah-tengah alur yang relevan!
 20. [KONSISTENSI FORMAT]: Anda WAJIB beradaptasi dengan gaya dan format dokumen yang sudah ada. Gunakan format, tingkat heading (level heading), font-weight, struktur penomoran, list, dan bahasa yang SAMA dengan paragraf atau bab-bab sebelumnya di \`Document Current State\`.
 ${assumptionRule}`;
   }
