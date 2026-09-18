@@ -214,7 +214,6 @@ export class TaskExecutor {
             messages[1].content = fullText;
           }
         }
-        }
       } else {
         isComplete = true;
       }
