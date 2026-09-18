@@ -205,12 +205,15 @@ export class TaskExecutor {
           isComplete = true; // Force stop
         } else {
           // Keep looping to get more tokens
-          // We use Anthropic's assistant prefill feature by keeping the last message as 'assistant'
+          // We use Anthropic's assistant prefill feature by keeping the last message as 'assistant'.
+          // Anthropic API requires that the assistant prefill does not end with trailing whitespace.
+          fullText = fullText.trimEnd();
           if (messages.length === 1) {
             messages.push({ role: 'assistant', content: fullText });
           } else {
             messages[1].content = fullText;
           }
+        }
         }
       } else {
         isComplete = true;
