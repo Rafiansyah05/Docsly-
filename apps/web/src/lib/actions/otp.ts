@@ -153,9 +153,11 @@ export async function sendOtp(email: string, fullName: string) {
       return { error: 'Gagal memproses permintaan OTP. Silakan coba lagi.' };
     }
 
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Docsly <onboarding@resend.dev>';
+
     // Send email using Resend
     const { error: emailError } = await resend.emails.send({
-      from: 'Docsly <onboarding@resend.dev>',
+      from: fromEmail,
       to: [email],
       subject: 'Kode Verifikasi Registrasi Docsly',
       html: getEmailTemplate(otp, fullName),
@@ -172,6 +174,11 @@ export async function sendOtp(email: string, fullName: string) {
         console.warn(`[DEVELOPMENT MODE] OTP for ${email} is: ${otp}`);
         console.warn('=============================================\n');
         return { success: true };
+      }
+
+      // Berikan error spesifik jika karena domain onboarding belum diverifikasi
+      if (emailError.message && emailError.message.includes('testing email address')) {
+        return { error: 'Gagal mengirim OTP. Anda menggunakan domain onboarding Resend. Anda hanya bisa mengirim email ke alamat email yang terdaftar di akun Resend Anda, atau silakan verifikasi domain Anda di dashboard Resend.' };
       }
 
       return { error: 'Gagal mengirim email OTP. Pastikan konfigurasi email atau API Key Anda valid.' };
