@@ -3,9 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
 
-const resendApiKey = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_xxxxxxxx' 
-  ? process.env.RESEND_API_KEY 
-  : 're_eyVmLqwf_6DbhtidHUe7WDWaVPeHER5ow';
+const resendApiKey = process.env.RESEND_API_KEY || '';
 
 const resend = new Resend(resendApiKey);
 
