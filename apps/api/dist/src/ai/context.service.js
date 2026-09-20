@@ -15,16 +15,33 @@ let ContextBuilder = class ContextBuilder {
         }
         const blocks = documentJson.content;
         let result = '';
-        const limit = 50;
+        const babSummary = [];
+        for (let i = 0; i < blocks.length; i++) {
+            const block = blocks[i];
+            const text = this.getNodeText(block).trim();
+            if (!text)
+                continue;
+            if (block.type === 'heading' ||
+                /^BAB\s+([IVXivx]+|\d+)/i.test(text) ||
+                /^(PENDAHULUAN|KESIMPULAN|PENUTUP|DAFTAR PUSTAKA|ABSTRAK|KATA PENGANTAR)/i.test(text)) {
+                babSummary.push(`  [Block ${i}] ${text.substring(0, 60)}`);
+            }
+        }
+        if (babSummary.length > 0) {
+            result += `=== STRUKTUR BAB / CHAPTER SUMMARY ===\n${babSummary.join('\n')}\n=== AKHIR SUMMARY ===\n\n`;
+        }
+        const limit = 80;
         const shouldCompress = blocks.length > limit && activeBlockIndex !== undefined;
         for (let i = 0; i < blocks.length; i++) {
             const block = blocks[i];
             if (shouldCompress) {
-                const isFar = Math.abs(i - (activeBlockIndex ?? 0)) > 5;
+                const isFar = Math.abs(i - (activeBlockIndex ?? 0)) > 10;
+                const text = this.getNodeText(block).trim();
                 const isHeading = block.type === 'heading';
-                if (isFar && !isHeading) {
-                    if (!result.endsWith('...\n')) {
-                        result += `[Blocks ${i} terkompresi untuk efisiensi token]\n`;
+                const isBabMarker = /^BAB\s+/i.test(text);
+                if (isFar && !isHeading && !isBabMarker) {
+                    if (!result.endsWith('...compresso\n')) {
+                        result += `[Blocks ${i}+ terkompresi untuk efisiensi token]\n`;
                     }
                     continue;
                 }

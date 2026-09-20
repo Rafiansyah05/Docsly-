@@ -1544,7 +1544,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
         </div>
 
         <div className="p-3 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex-shrink-0">
-          <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx" className="hidden" onChange={handleFileAttach} />
+          <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,image/*" className="hidden" onChange={handleFileAttach} />
 
           <div className="relative rounded-xl transition-colors duration-200 bg-[#F4F4F5] dark:bg-zinc-900 border border-transparent dark:border-zinc-800">
             {selectedContext && (
@@ -1605,6 +1605,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                     {[
                       { label: 'PDF', ext: '.pdf,application/pdf' },
                       { label: 'Word (.docx)', ext: '.doc,.docx' },
+                      { label: 'Gambar', ext: '.jpg,.jpeg,.png,.webp,image/*' },
                     ].map((item) => (
                       <button
                         key={item.label}

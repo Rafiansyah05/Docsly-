@@ -10,6 +10,7 @@ export const PLAN_LIMITS = {
     citations: 25, 
     citations_cooldown_hours: 10,
     storage_mb: 100,
+    image_attachments: 0, // Free users cannot attach images
   },
   pro: {
     ai_credits: 500,
@@ -17,6 +18,7 @@ export const PLAN_LIMITS = {
     citations: 50,
     citations_cooldown_hours: 1,
     storage_mb: 2000,
+    image_attachments: 3, // Pro: max 3 images per request
   },
   premium: {
     ai_credits: 1500,
@@ -24,6 +26,7 @@ export const PLAN_LIMITS = {
     citations: -1, // -1 means unlimited
     citations_cooldown_hours: 0,
     storage_mb: 20000,
+    image_attachments: 5, // Premium: max 5 images per request
   },
   trial: {
     ai_credits: 25,
@@ -31,6 +34,7 @@ export const PLAN_LIMITS = {
     citations: -1, // Hak akses penuh untuk fitur
     citations_cooldown_hours: 0,
     storage_mb: 20000,
+    image_attachments: 5, // Trial gets full access
   }
 };
 

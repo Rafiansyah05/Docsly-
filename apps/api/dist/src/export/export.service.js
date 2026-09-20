@@ -387,6 +387,7 @@ let ExportService = class ExportService {
         try {
             const cheerio = require('cheerio');
             const $ = cheerio.load(html);
+            $('script, iframe, object, embed, applet, meta, base, form').remove();
             $('p').each((_, el) => {
                 if ($(el).text().trim() === '' && $(el).find('img').length === 0 && $(el).find('br').length === 0) {
                     $(el).html('<br>');
@@ -399,7 +400,7 @@ let ExportService = class ExportService {
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--disable-gpu',
+                    '--disable-gpu'
                 ],
             };
             if (process.env.PUPPETEER_EXECUTABLE_PATH) {
@@ -407,6 +408,17 @@ let ExportService = class ExportService {
             }
             browser = await puppeteer.launch(launchOptions);
             const page = await browser.newPage();
+            await page.setJavaScriptEnabled(false);
+            await page.setRequestInterception(true);
+            page.on('request', (req) => {
+                const url = req.url();
+                if (url.startsWith('file://') || url.includes('169.254.169.254') || url.includes('127.0.0.1') || url.includes('localhost') || url.startsWith('http://10.') || url.startsWith('http://192.168.')) {
+                    req.abort();
+                }
+                else {
+                    req.continue();
+                }
+            });
             const fullHtml = `
         <!DOCTYPE html>
         <html>

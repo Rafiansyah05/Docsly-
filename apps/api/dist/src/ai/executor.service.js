@@ -64,9 +64,12 @@ let TaskExecutor = class TaskExecutor {
     async execute(intent, prompt, documentContext, isAssuming = false, attachments = [], plan = 'Free', send) {
         const anthropicKey = this.configService.get('ANTHROPIC_API_KEY');
         const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
+        const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const imageAttachments = attachments.filter((a) => SUPPORTED_IMAGE_TYPES.includes(a.type) || /\.(jpg|jpeg|png|gif|webp)$/i.test(a.name || ''));
+        const docAttachments = attachments.filter((a) => !SUPPORTED_IMAGE_TYPES.includes(a.type) && !/\.(jpg|jpeg|png|gif|webp)$/i.test(a.name || ''));
         let fullPrompt = prompt;
-        if (attachments && attachments.length > 0) {
-            const parsedTexts = await this.parseAttachments(attachments);
+        if (docAttachments.length > 0) {
+            const parsedTexts = await this.parseAttachments(docAttachments);
             if (parsedTexts) {
                 fullPrompt = `[DOKUMEN LAMPIRAN PENGGUNA]\n${parsedTexts}\n\n[AKHIR LAMPIRAN]\n\n${prompt}`;
             }
@@ -76,7 +79,7 @@ let TaskExecutor = class TaskExecutor {
         }
         const systemPrompt = this.getSystemPrompt(intent, isAssuming);
         try {
-            return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt, plan, send);
+            return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt, plan, send, imageAttachments);
         }
         catch (error) {
             console.error(`Error in TaskExecutor (Claude):`, error);
@@ -86,14 +89,64 @@ let TaskExecutor = class TaskExecutor {
             };
         }
     }
-    async executeWithClaude(intent, prompt, documentContext, systemPrompt, plan, send) {
+    async executeWithClaude(intent, prompt, documentContext, systemPrompt, plan, send, imageAttachments = []) {
         const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
         const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
-        const maxTokens = isLightTask ? 4096 : 8192;
+        const maxTokens = isLightTask ? 4096 : 16000;
+        const MAX_PROMPT_CHARS = 20000;
+        const MAX_CONTEXT_CHARS = 150000;
+        const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+        const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const sanitizedPrompt = prompt.substring(0, MAX_PROMPT_CHARS);
+        const sanitizedContext = documentContext.substring(0, MAX_CONTEXT_CHARS);
+        const userContentBlocks = [];
+        for (const img of imageAttachments) {
+            try {
+                if (!img.url || !img.url.startsWith('https://')) {
+                    console.warn('[Vision Security] Skipping image with invalid URL:', img.url);
+                    continue;
+                }
+                const imgResponse = await fetch(img.url, { signal: AbortSignal.timeout(10000) });
+                if (!imgResponse.ok)
+                    continue;
+                const contentLength = Number(imgResponse.headers.get('content-length') || '0');
+                if (contentLength > MAX_IMAGE_SIZE_BYTES) {
+                    console.warn(`[Vision Security] Image too large (${contentLength} bytes), skipping.`);
+                    continue;
+                }
+                const arrayBuffer = await imgResponse.arrayBuffer();
+                if (arrayBuffer.byteLength > MAX_IMAGE_SIZE_BYTES) {
+                    console.warn(`[Vision Security] Image exceeds 5MB after download, skipping.`);
+                    continue;
+                }
+                const contentType = imgResponse.headers.get('content-type')?.split(';')[0].trim();
+                if (!ALLOWED_IMAGE_TYPES.includes(contentType)) {
+                    console.warn(`[Vision Security] Unsupported image content-type: ${contentType}, skipping.`);
+                    continue;
+                }
+                const base64Data = Buffer.from(arrayBuffer).toString('base64');
+                userContentBlocks.push({
+                    type: 'image',
+                    source: {
+                        type: 'base64',
+                        media_type: contentType,
+                        data: base64Data,
+                    },
+                });
+                console.log(`[Vision] Added image: ${img.name}, type: ${contentType}, size: ${arrayBuffer.byteLength} bytes`);
+            }
+            catch (imgErr) {
+                console.warn(`[Vision] Failed to fetch image ${img.name}:`, imgErr.message);
+            }
+        }
+        userContentBlocks.push({
+            type: 'text',
+            text: `Document Current State:\n${sanitizedContext}\n\nUser Request: ${sanitizedPrompt}`,
+        });
         const messages = [
             {
                 role: 'user',
-                content: `Document Current State:\n${documentContext}\n\nUser Request: ${prompt}`,
+                content: userContentBlocks,
             },
         ];
         let fullText = '';
@@ -192,9 +245,9 @@ let TaskExecutor = class TaskExecutor {
                     isComplete = true;
                 }
                 else {
+                    fullText = fullText.trimEnd();
                     if (messages.length === 1) {
                         messages.push({ role: 'assistant', content: fullText });
-                        messages.push({ role: 'user', content: 'Pesan Anda sebelumnya terpotong karena batas token. Lanjutkan tepat dari karakter terakhir yang terpotong. JANGAN mengulangi teks sebelumnya. JANGAN menuliskan basa-basi atau pengantar. Langsung saja lanjutkan teks atau struktur JSON yang terpotong.' });
                     }
                     else {
                         messages[1].content = fullText;
@@ -232,22 +285,38 @@ let TaskExecutor = class TaskExecutor {
                     parsed.operations = [];
                 }
                 if (reachedLimit) {
-                    parsed.explanation += ' (Output dipotong karena batas limit plan Anda mencapai batas maksimal token untuk sekali permintaan.)';
+                    parsed.explanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
                 }
                 return parsed;
             }
             catch (parseError) {
-                console.error('JSON Parse Error:', parseError);
-                console.error('Raw Claude Output:', fullText);
+                console.error('[TaskExecutor] JSON Parse Error:', parseError.message);
+                console.error('[TaskExecutor] Raw output length:', fullText.length);
+                try {
+                    const opsMatch = fullText.match(/"operations"\s*:\s*(\[[\s\S]*)/);
+                    if (opsMatch) {
+                        const partialOpsRepaired = (0, jsonrepair_1.jsonrepair)('{"operations":' + opsMatch[1]);
+                        const partialParsed = JSON.parse(partialOpsRepaired);
+                        if (Array.isArray(partialParsed.operations) && partialParsed.operations.length > 0) {
+                            console.warn('[TaskExecutor] Recovered', partialParsed.operations.length, 'operations from partial JSON');
+                            return {
+                                operations: partialParsed.operations,
+                                explanation: finalExplanation + ' (Sebagian output berhasil dipulihkan secara otomatis.)',
+                            };
+                        }
+                    }
+                }
+                catch (_) {
+                }
                 return {
                     operations: [],
-                    explanation: 'Maaf, balasan AI terlalu panjang atau memiliki format yang salah sehingga gagal diproses secara sempurna. Mohon persempit instruksi Anda.'
+                    explanation: finalExplanation || 'Selesai! Silakan ulangi permintaan Anda jika ada bagian yang belum lengkap.',
                 };
             }
         }
         return {
             operations: [],
-            explanation: 'Maaf, format balasan AI tidak valid. Mohon ulangi permintaan Anda.'
+            explanation: 'Selesai!',
         };
     }
     async parseAttachments(attachments) {
@@ -255,9 +324,18 @@ let TaskExecutor = class TaskExecutor {
         const MAX_CHARS_PER_FILE = 300000;
         for (const file of attachments) {
             try {
+                if (!file.url || !file.url.startsWith('https://')) {
+                    console.warn(`[Security] URL tidak valid atau bukan HTTPS: ${file.url}`);
+                    continue;
+                }
                 const response = await fetch(file.url);
                 if (!response.ok)
                     continue;
+                const contentLength = Number(response.headers.get('content-length') || '0');
+                if (contentLength > 10 * 1024 * 1024) {
+                    console.warn(`[Security] File terlalu besar (>10MB): ${file.url}`);
+                    continue;
+                }
                 const arrayBuffer = await response.arrayBuffer();
                 const buffer = Buffer.from(arrayBuffer);
                 let extractedText = '';
@@ -337,7 +415,7 @@ Each operation MUST follow this JSON schema exactly:
           {
             "type": "text",
             "text": "The text content",
-            "marks": [ { "type": "bold" | "italic" | "underline" | "strike" } ]
+            "marks": [ { "type": "textStyle", "attrs": { "fontFamily": "Times New Roman" } }, { "type": "bold" | "italic" | "underline" | "strike" } ]
           }
         ]
       },
@@ -366,7 +444,7 @@ CRITICAL RULES:
 2. Escape all newlines as \\n inside strings to ensure valid JSON!
 3. For the Explanation part (Part 1), gunakan gaya bahasa santai, natural, seperti manusia biasa dengan sedikit lelucon lucu atau witty, namun tetap menunjukkan kinerja serius dan profesional.
 4. [FLAT LISTS]: NEVER use "bulletList", "orderedList", or "listItem" node types. To create lists, you MUST use "paragraph" node type and set "attrs" {"listType": "bullet", "listPrefix": "\\u2022", "indent": 1} for bullets, or {"listType": "decimal", "listPrefix": "1.", "indent": 1} for numbered lists. Increase "indent" for nested lists.
-5. The document text color must be default black. Do not add any text color to the nodes.
+5. [FONT & WARNA TEKS]: Anda WAJIB mengatur "fontFamily": "Times New Roman" di dalam array "marks" tipe "textStyle" pada SETIAP node "text" yang Anda hasilkan. Jangan tambahkan warna teks apa pun, biarkan default hitam.
 6. STRUKTUR & FORMAT DOKUMEN INDONESIA (SANGAT KETAT): Anda WAJIB 100% menggunakan format dokumen resmi/akademis Indonesia (Makalah, Skripsi, Proposal).
 - Penomoran Sub-bab WAJIB berformat seperti 1.1, 1.2, 1.2.1, 2.1, dst. atau A., B., a., b. yang hirarkis.
 - JANGAN menyertakan kalimat basa-basi atau kata-kata pengantar AI ("Berikut adalah hasil...", "Dalam makalah ini kita akan...", dll) di dalam isi kertas. Isi kertas murni HANYA teks konten langsung ke intinya (to the point).
@@ -374,7 +452,7 @@ CRITICAL RULES:
 - Jika membuat dokumen baru, Anda WAJIB membuatkan Halaman Sampul (Cover). Seluruh teks di Halaman Sampul WAJIB dibuat rata tengah dengan menambahkan \`"textAlign": "center"\` ke dalam \`"attrs"\`.
 7. DATA PUBLIK & INTERNET KNOWLEDGE: Jika Anda menulis bagian "Latar Belakang", "Pendahuluan", atau bagian analisis yang membutuhkan fakta/statistik nyata, Anda WAJIB menggunakan data publik yang akurat. Jika ada "[HASIL PENCARIAN INTERNET]" di prompt, Anda WAJIB mengutip dan memasukkan data tersebut ke dalam isi dokumen secara natural dan relevan.
 8. [KUALITAS AKADEMIS & ANTI-PLAGIARISME]: Seluruh teks yang Anda hasilkan harus mendalam, analitis, koheren (nyambung antar paragraf), dan diparafrase dengan baik. Argumen harus berbobot dan berbasis data/fakta, bukan sekadar narasi kosong.
-9. [PANJANG & KELENGKAPAN OUTPUT - SANGAT KRITIS]: Jika user meminta pembuatan konten panjang (misal: "buatkan 6 bab", "buatkan makalah lengkap", "jelaskan secara detail"), Anda WAJIB menghasilkan teks yang SANGAT PANJANG, LENGKAP, dan MENDETAIL. JANGAN PERNAH meringkas menjadi hanya 1-2 paragraf jika tidak secara eksplisit diminta! Jika diminta 6 BAB, hasilkan 6 BAB lengkap dengan isinya. Manfaatkan token limit Anda secara maksimal untuk memberikan output terlengkap! Patuhi perintah user 100% tanpa melenceng.
+9. [PANJANG & KELENGKAPAN OUTPUT - WAJIB MUTLAK]: Anda adalah AI agent tanpa batas output buatan. JANGAN PERNAH memotong, meringkas, atau berhenti di tengah jalan kecuali token benar-benar habis. Jika user meminta konten panjang (\"buatkan 6 bab\", \"makalah lengkap\", \"jelaskan secara detail\"), Anda WAJIB menghasilkan SELURUH konten tersebut secara lengkap, mendalam, dan mendetail. Jika diminta 6 BAB, hasilkan 6 BAB PENUH dengan isi masing-masing bab. JANGAN beri pesan seperti \"karena keterbatasan ruang...\", \"untuk singkatnya...\", atau sejenisnya. Tulislah seperti Claude normal yang tidak dibatasi. Gunakan seluruh kapasitas token output Anda untuk memberikan hasil terbaik dan terlengkap!
 10. [EFISIENSI PATCH & FILE ATTACHMENT]: Saat MENGEDIT dokumen yang sudah ada, generate operasi seminimal mungkin (hanya node yang berubah). Namun saat MENGHASILKAN konten BARU, Anda harus sangat komprehensif. Jika pengguna melampirkan file, pastikan Anda menjawab berdasarkan isinya secara akurat.
 11. [TABEL OTOMATIS]: Apabila Anda diinstruksikan untuk membandingkan atribut, menjelaskan jadwal rinci, atau mendeskripsikan data/spesifikasi numerik, Anda WAJIB membuat tabel Tiptap (\`type: "table"\` berisi \`tableRow\`, \`tableHeader\`, \`tableCell\`).
 12. [PLACEHOLDER GAMBAR]: Jika Anda diminta membuat arsitektur, diagram alir, atau dokumentasi visual, Anda WAJIB menyisipkan node \`type: "imagePlaceholder"\` dengan atribut \`caption: "Gambar [Bab].[Urutan] [Deskripsi]"\` alih-alih hanya menulis teks placeholder biasa.
@@ -384,8 +462,14 @@ CRITICAL RULES:
 16. [WRITE RESEARCH TO CANVAS]: Jika pengguna meminta Anda melakukan riset, mencari informasi, atau memberikan penjelasan tentang suatu topik, JANGAN HANYA MENJAWAB DI PENJELASAN (CHAT). Anda WAJIB MENGHASILKAN OPERASI "insert" (JSON Operations) UNTUK MENULISKAN HASIL RISET/INFORMASI TERSEBUT SECARA DETAIL DAN LENGKAP KE DALAM KANVAS DOKUMEN (DOCUMENT CANVAS).
 17. [PENAMBAHAN DAFTAR PUSTAKA OTOMATIS]: Jika Anda mengutip data, melakukan riset (termasuk [HASIL PENCARIAN INTERNET] atau file lampiran), atau menggunakan referensi untuk bab mana pun, Anda WAJIB SECARA OTOMATIS menyisipkan detail sumber tersebut ke dalam daftar pustaka di bagian paling akhir dokumen (buat judul "Daftar Pustaka" jika belum ada). Setiap referensi ditulis sebagai node "paragraph" dengan gaya APA dan WAJIB memiliki atribut \`"hangingIndent": true\` di dalam \`"attrs"\`. Lakukan ini secara mandiri tanpa disuruh agar user tidak perlu memasukkannya secara manual!
 18. [PEMAHAMAN KONTEKS UMUM]: Anda WAJIB menggunakan kecerdasan dan pengetahuan umum (common sense) Anda untuk memahami segala jenis instruksi tanpa perlu dijelaskan secara kaku. Jika instruksi ambigu, ambil keputusan terbaik berdasarkan konteks dokumen dan akademik.
-19. [POSISI PENULISAN & STRUKTUR LOGIS]: Anda WAJIB menyisipkan atau menulis teks TEPAT DI LOKASI YANG BENAR berdasarkan urutan logis dokumen. Contoh: "Bab 2" HARUS ditulis setelah "Bab 1" dan sebelum "Daftar Pustaka". Anda WAJIB mengatur nilai \`index\` dalam JSON Operations untuk memastikan sisipan berada di posisi yang logis, jangan asal menambahkannya di atas atau di bawah dokumen tanpa mengevaluasi urutan.
+19. [POSISI PENULISAN & STRUKTUR LOGIS - SANGAT KRITIS]: JANGAN asal menambah teks di akhir dokumen (append)! Anda WAJIB menganalisis 'Document Current State' yang diberikan dalam bentuk \`[Block X] type: content\`. Ikuti LANGKAH-LANGKAH berikut:
+  LANGKAH 1: Baca seluruh daftar [Block X] dan identifikasi struktur bab yang sudah ada.
+  LANGKAH 2: Tentukan NOMOR BAB TERAKHIR yang sudah ada. Contoh: jika ada [Block 12] BAB III, maka BAB baru berikutnya HARUS bernomor "BAB IV".
+  LANGKAH 3: Temukan BLOCK INDEX tepat SETELAH bab/bagian terakhir yang relevan. Contoh: jika BAB III ada di Block 12 dan kontennya berakhir di Block 20, dan BAB IV (jika ada) mulai di Block 21, maka block baru harus diinsert di index 21.
+  LANGKAH 4: Jika menyisipkan BAB baru di antara BAB yang sudah ada, pastikan nomor BAB berurutan. Contoh: jika ada BAB II di Block 5 dan BAB IV di Block 15, dan user meminta tambah BAB III, maka insert di index 15 (sebelum BAB IV), BUKAN di akhir dokumen.
+  CONTOH KONKRET: Dokumen berisi [Block 0] BAB I, [Block 1-5] isi BAB I, [Block 6] BAB II, [Block 7-10] isi BAB II. User minta "tambah BAB III". Maka: insert di index 11 (setelah Block 10, bukan di akhir atau di tengah BAB lain).
 20. [KONSISTENSI FORMAT]: Anda WAJIB beradaptasi dengan gaya dan format dokumen yang sudah ada. Gunakan format, tingkat heading (level heading), font-weight, struktur penomoran, list, dan bahasa yang SAMA dengan paragraf atau bab-bab sebelumnya di \`Document Current State\`.
+21. [URUTAN BAB WAJIB BERURUTAN - SANGAT KRITIS]: Ketika menambahkan atau melanjutkan BAB, nomor BAB HARUS selalu mengikuti urutan aritmetika yang benar (I, II, III, IV, V... atau 1, 2, 3, 4, 5...). JANGAN PERNAH membuat "BAB IV" jika dokumen belum memiliki "BAB III". JANGAN PERNAH melewatkan nomor BAB. Jika dokumen sudah punya BAB I sampai BAB III, BAB berikutnya PASTI BAB IV. Cek ini WAJIB dilakukan sebelum menulis operasi apapun.
 ${assumptionRule}`;
     }
     getMockResponse(intent, prompt) {

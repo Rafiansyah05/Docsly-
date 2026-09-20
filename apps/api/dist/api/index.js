@@ -14,6 +14,8 @@ async function bootstrap() {
         cachedApp = (0, express_1.default)();
         const nestApp = await core_1.NestFactory.create(app_module_1.AppModule, new platform_express_1.ExpressAdapter(cachedApp));
         nestApp.enableCors();
+        nestApp.use(express_1.default.json({ limit: '50mb' }));
+        nestApp.use(express_1.default.urlencoded({ extended: true, limit: '50mb' }));
         await nestApp.init();
     }
     return cachedApp;

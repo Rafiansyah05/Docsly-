@@ -62,9 +62,18 @@ export class TaskExecutor {
     const anthropicKey = this.configService.get<string>('ANTHROPIC_API_KEY');
     const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
 
+    // Separate image attachments from document attachments
+    const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const imageAttachments = attachments.filter(
+      (a) => SUPPORTED_IMAGE_TYPES.includes(a.type) || /\.(jpg|jpeg|png|gif|webp)$/i.test(a.name || '')
+    );
+    const docAttachments = attachments.filter(
+      (a) => !SUPPORTED_IMAGE_TYPES.includes(a.type) && !/\.(jpg|jpeg|png|gif|webp)$/i.test(a.name || '')
+    );
+
     let fullPrompt = prompt;
-    if (attachments && attachments.length > 0) {
-      const parsedTexts = await this.parseAttachments(attachments);
+    if (docAttachments.length > 0) {
+      const parsedTexts = await this.parseAttachments(docAttachments);
       if (parsedTexts) {
         fullPrompt = `[DOKUMEN LAMPIRAN PENGGUNA]\n${parsedTexts}\n\n[AKHIR LAMPIRAN]\n\n${prompt}`;
       }
@@ -77,7 +86,7 @@ export class TaskExecutor {
     const systemPrompt = this.getSystemPrompt(intent, isAssuming);
 
     try {
-      return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt, plan, send);
+      return await this.executeWithClaude(intent, fullPrompt, documentContext, systemPrompt, plan, send, imageAttachments);
     } catch (error: any) {
       console.error(`Error in TaskExecutor (Claude):`, error);
       return {
@@ -93,7 +102,8 @@ export class TaskExecutor {
     documentContext: string,
     systemPrompt: string,
     plan: string,
-    send?: (event: string, data: object) => void
+    send?: (event: string, data: object) => void,
+    imageAttachments: any[] = [],
   ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
     const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
     const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
@@ -104,13 +114,70 @@ export class TaskExecutor {
     // ── Security: Enforce input size limits to prevent prompt injection & abuse ──
     const MAX_PROMPT_CHARS = 20000;
     const MAX_CONTEXT_CHARS = 150000;
+    const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB per image
+    const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
+    type AllowedImageMediaType = typeof ALLOWED_IMAGE_TYPES[number];
     const sanitizedPrompt = prompt.substring(0, MAX_PROMPT_CHARS);
     const sanitizedContext = documentContext.substring(0, MAX_CONTEXT_CHARS);
+
+    // Build multimodal content: images come first, then text
+    const userContentBlocks: any[] = [];
+
+    // Fetch and validate each image attachment, then encode as base64 for Claude vision
+    for (const img of imageAttachments) {
+      try {
+        if (!img.url || !img.url.startsWith('https://')) {
+          console.warn('[Vision Security] Skipping image with invalid URL:', img.url);
+          continue;
+        }
+        const imgResponse = await fetch(img.url, { signal: AbortSignal.timeout(10000) });
+        if (!imgResponse.ok) continue;
+
+        // Block oversized images to prevent OOM
+        const contentLength = Number(imgResponse.headers.get('content-length') || '0');
+        if (contentLength > MAX_IMAGE_SIZE_BYTES) {
+          console.warn(`[Vision Security] Image too large (${contentLength} bytes), skipping.`);
+          continue;
+        }
+
+        const arrayBuffer = await imgResponse.arrayBuffer();
+        if (arrayBuffer.byteLength > MAX_IMAGE_SIZE_BYTES) {
+          console.warn(`[Vision Security] Image exceeds 5MB after download, skipping.`);
+          continue;
+        }
+
+        // Validate content type from actual response headers (not user-supplied)
+        const contentType = imgResponse.headers.get('content-type')?.split(';')[0].trim() as AllowedImageMediaType;
+        if (!ALLOWED_IMAGE_TYPES.includes(contentType)) {
+          console.warn(`[Vision Security] Unsupported image content-type: ${contentType}, skipping.`);
+          continue;
+        }
+
+        const base64Data = Buffer.from(arrayBuffer).toString('base64');
+        userContentBlocks.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: contentType,
+            data: base64Data,
+          },
+        });
+        console.log(`[Vision] Added image: ${img.name}, type: ${contentType}, size: ${arrayBuffer.byteLength} bytes`);
+      } catch (imgErr: any) {
+        console.warn(`[Vision] Failed to fetch image ${img.name}:`, imgErr.message);
+      }
+    }
+
+    // Add the text content block last
+    userContentBlocks.push({
+      type: 'text',
+      text: `Document Current State:\n${sanitizedContext}\n\nUser Request: ${sanitizedPrompt}`,
+    });
 
     const messages: any[] = [
       {
         role: 'user',
-        content: `Document Current State:\n${sanitizedContext}\n\nUser Request: ${sanitizedPrompt}`,
+        content: userContentBlocks,
       },
     ];
 

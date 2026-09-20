@@ -2,7 +2,7 @@
 export const maxDuration = 300;
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkAndConsumeAICredit } from '@/lib/limits';
+import { checkAndConsumeAICredit, PLAN_LIMITS } from '@/lib/limits';
 
 export async function POST(req: Request) {
   try {
@@ -29,11 +29,32 @@ export async function POST(req: Request) {
       );
     }
 
+    const plan = (limitCheck.plan || 'free') as keyof typeof PLAN_LIMITS;
+    const planLimits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+
+    // Enforce image attachment limit server-side: strip excess images so
+    // Free users cannot bypass the frontend check by sending raw API calls.
+    const maxImages = planLimits.image_attachments;
+    let attachments = body.attachments || [];
+    const imageAttachments = attachments.filter((a: any) =>
+      a.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(a.name || '')
+    );
+    if (imageAttachments.length > maxImages) {
+      // Silently trim excess images
+      const allowedImages = imageAttachments.slice(0, maxImages);
+      const nonImages = attachments.filter((a: any) =>
+        !a.type?.startsWith('image/') && !/\.(jpg|jpeg|png|gif|webp)$/i.test(a.name || '')
+      );
+      attachments = [...nonImages, ...allowedImages];
+    }
+
     // Forward to NestJS AI Microservice
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.docsly.space';
     const payload = {
       ...body,
-      plan: limitCheck.plan || 'Free'
+      attachments,
+      plan: limitCheck.plan || 'Free',
+      imageLimit: maxImages,
     };
     
     const aiResponse = await fetch(`${baseUrl}/ai/execute`, {
