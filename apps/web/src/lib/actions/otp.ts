@@ -151,10 +151,18 @@ export async function sendOtp(email: string, fullName: string) {
       return { error: 'Gagal memproses permintaan OTP. Silakan coba lagi.' };
     }
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Docsly <onboarding@resend.dev>';
+    // Create a fresh Resend instance here to always pick up the latest env value at runtime
+    const apiKey = process.env.RESEND_API_KEY || '';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Docsly <noreply@docsly.space>';
+    
+    console.log('[OTP] Attempting to send email to:', email);
+    console.log('[OTP] Using from:', fromEmail);
+    console.log('[OTP] API key present:', !!apiKey, '| key prefix:', apiKey.substring(0, 8));
+
+    const resendClient = new Resend(apiKey);
 
     // Send email using Resend
-    const { error: emailError } = await resend.emails.send({
+    const { data: emailData, error: emailError } = await resendClient.emails.send({
       from: fromEmail,
       to: [email],
       subject: 'Kode Verifikasi Registrasi Docsly',
@@ -162,10 +170,9 @@ export async function sendOtp(email: string, fullName: string) {
     });
 
     if (emailError) {
-      console.error('Failed to send email:', emailError);
+      console.error('[OTP] Failed to send email. Full error:', JSON.stringify(emailError));
       
       // Fallback: If in development, bypass the email failure and print the OTP to console
-      // This ensures local testing of the authentication flow never blocks the developer.
       if (process.env.NODE_ENV !== 'production') {
         console.warn('\n=============================================');
         console.warn(`[DEVELOPMENT MODE] Bypassing email send failure.`);
@@ -174,14 +181,11 @@ export async function sendOtp(email: string, fullName: string) {
         return { success: true };
       }
 
-      // Berikan error spesifik jika karena domain onboarding belum diverifikasi
-      if (emailError.message && emailError.message.includes('testing email address')) {
-        return { error: 'Gagal mengirim OTP. Anda menggunakan domain onboarding Resend. Anda hanya bisa mengirim email ke alamat email yang terdaftar di akun Resend Anda, atau silakan verifikasi domain Anda di dashboard Resend.' };
-      }
-
-      return { error: 'Gagal mengirim email OTP. Pastikan konfigurasi email atau API Key Anda valid.' };
+      // Return actual Resend error message for easier debugging
+      return { error: `Gagal mengirim email OTP: ${emailError.message || 'Unknown Resend error'}` };
     }
 
+    console.log('[OTP] Email sent successfully. ID:', emailData?.id);
     return { success: true };
   } catch (err: any) {
     console.error('sendOtp error:', err);
