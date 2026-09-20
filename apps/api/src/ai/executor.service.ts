@@ -348,14 +348,15 @@ export class TaskExecutor {
         // If all parsing fails, return empty with a generic message (do NOT expose internal errors to user)
         return {
           operations: [],
-          explanation: finalExplanation || 'Selesai! Silakan ulangi permintaan Anda jika ada bagian yang belum lengkap.',
+          explanation: finalExplanation || fullText.trim() || 'Selesai!',
         };
       }
     }
 
+    // If no JSON block at all, the AI likely just answered a question in plain text.
     return {
       operations: [],
-      explanation: 'Selesai!',
+      explanation: fullText.trim() || 'Selesai!',
     };
   }
 

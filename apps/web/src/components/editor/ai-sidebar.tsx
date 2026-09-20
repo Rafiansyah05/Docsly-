@@ -572,17 +572,24 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
               setStageLabel(data.label || 'Memproses...');
               setProgress(data.percent || 0);
 
-              if (data.stage === 'classify') {
-                // Insert aiTyping at end of document (safe — does not depend on cursor)
-                const endPos = editor.state.doc.content.size;
-                const tr = editor.state.tr.insert(
-                  endPos,
-                  editor.state.schema.nodes.aiTyping.create({ stage: data.stage, percent: data.percent, words: 0 })
-                );
-                editor.view.dispatch(tr);
-                // Auto-scroll to the panel
-                editor.commands.scrollIntoView();
-              } else {
+              if (data.stage === 'classified' && data.intent !== 'general_chat') {
+                let found = false;
+                editor.state.doc.descendants((node: any) => {
+                  if (node.type.name === 'aiTyping') found = true;
+                });
+                
+                if (!found) {
+                  // Insert aiTyping at end of document (safe — does not depend on cursor)
+                  const endPos = editor.state.doc.content.size;
+                  const tr = editor.state.tr.insert(
+                    endPos,
+                    editor.state.schema.nodes.aiTyping.create({ stage: data.stage, percent: data.percent, words: 0 })
+                  );
+                  editor.view.dispatch(tr);
+                  // Auto-scroll to the panel
+                  editor.commands.scrollIntoView();
+                }
+              } else if (data.stage !== 'classify' && data.stage !== 'classified') {
                 // Update existing aiTyping node attrs
                 const tr = editor.state.tr;
                 let found = false;

@@ -310,13 +310,13 @@ let TaskExecutor = class TaskExecutor {
                 }
                 return {
                     operations: [],
-                    explanation: finalExplanation || 'Selesai! Silakan ulangi permintaan Anda jika ada bagian yang belum lengkap.',
+                    explanation: finalExplanation || fullText.trim() || 'Selesai!',
                 };
             }
         }
         return {
             operations: [],
-            explanation: 'Selesai!',
+            explanation: fullText.trim() || 'Selesai!',
         };
     }
     async parseAttachments(attachments) {

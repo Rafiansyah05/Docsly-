@@ -57,7 +57,7 @@ export class AiController {
         intent = await this.intentClassifier.classify(prompt);
       }
       const intentLabel = this.getIntentLabel(intent);
-      send('progress', { stage: 'classified', label: `Terdeteksi: ${intentLabel}`, percent: 30 });
+      send('progress', { stage: 'classified', intent: intent, label: `Terdeteksi: ${intentLabel}`, percent: 30 });
 
       // Stage 2 — Build context
       send('progress', { stage: 'context', label: 'Membaca isi dokumen...', percent: 45 });

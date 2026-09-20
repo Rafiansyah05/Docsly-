@@ -56,7 +56,7 @@ let AiController = class AiController {
                 intent = await this.intentClassifier.classify(prompt);
             }
             const intentLabel = this.getIntentLabel(intent);
-            send('progress', { stage: 'classified', label: `Terdeteksi: ${intentLabel}`, percent: 30 });
+            send('progress', { stage: 'classified', intent: intent, label: `Terdeteksi: ${intentLabel}`, percent: 30 });
             send('progress', { stage: 'context', label: 'Membaca isi dokumen...', percent: 45 });
             const context = this.contextBuilder.build(documentJson, activeBlockIndex);
             send('progress', { stage: 'search', label: 'Memeriksa kebutuhan pencarian internet...', percent: 60 });
