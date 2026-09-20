@@ -308,12 +308,13 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const processFiles = (files: File[]) => {
+    if (files.length === 0) return;
     
-    // Check max 3 files total
-    if (attachedFiles.length + files.length > 3) {
-      toast.error('Maksimal hanya 3 file dokumen yang dapat diunggah bersamaan.');
+    // Check max 5 files total to accommodate Premium users who can attach up to 5 images
+    // The server will still strictly enforce the exact limit based on the user's plan.
+    if (attachedFiles.length + files.length > 5) {
+      toast.error('Maksimal 5 lampiran yang dapat ditambahkan sekaligus.');
       return;
     }
 
@@ -321,15 +322,45 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     const MAX_SIZE = 5 * 1024 * 1024;
     for (const f of files) {
       if (f.size > MAX_SIZE) {
-        toast.error(`Ukuran file ${f.name} terlalu besar. Maksimal 5MB per dokumen.`);
+        toast.error(`Ukuran file ${f.name || 'yang disisipkan'} terlalu besar. Maksimal 5MB.`);
         return;
       }
     }
 
-    const mapped = files.map((f) => ({ file: f, name: f.name, type: f.type }));
+    const mapped = files.map((f) => {
+      // Beri nama default jika dari clipboard (tanpa nama)
+      const name = f.name === 'image.png' && f.type.startsWith('image/') ? `pasted_image_${Date.now()}.${f.type.split('/')[1] || 'png'}` : f.name;
+      return { file: f, name, type: f.type };
+    });
     setAttachedFiles((prev) => [...prev, ...mapped]);
     setShowAttachMenu(false);
+  };
+
+  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    processFiles(Array.from(e.target.files || []));
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file') {
+        const file = items[i].getAsFile();
+        if (file) files.push(file);
+      }
+    }
+    
+    if (files.length > 0) {
+      processFiles(files);
+      // Cegah default paste jika isinya *hanya* file (mencegah paste path aneh/URL gambar text fallback)
+      // Jika paste campuran teks dan file, teks akan tetap terpaste secara alami (tanpa preventDefault)
+      if (e.clipboardData.getData('text/plain') === '') {
+        e.preventDefault();
+      }
+    }
   };
 
   const removeAttachedFile = (i: number) => {
@@ -1583,6 +1614,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                   handleSend();
                 }
               }}
+              onPaste={handlePaste}
               placeholder={workflowState === 'chat' ? 'Tanyakan sesuatu atau / untuk perintah...' : 'Alur kerja aktif...'}
               disabled={isLoading || workflowState !== 'chat'}
               rows={1}
