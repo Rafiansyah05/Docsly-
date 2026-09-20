@@ -5,6 +5,14 @@ import { formatPageNumber, PageSettings } from '@/lib/page-numbers';
 import { PaginationPluginKey } from './pagination';
 import { getMarkerInfo } from '@/lib/editor/hierarchy-analyzer';
 
+// Truncates TOC entry text to a max number of words to keep the Daftar Isi concise.
+// Headings like "BAB I PENDAHULUAN" stay intact; long sentences are clipped.
+function truncateTocText(text: string, maxWords = 8): string {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text.trim();
+  return words.slice(0, maxWords).join(' ') + '…';
+}
+
 const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
   const [headings, setHeadings] = useState<any[]>(node?.attrs?.headings || []);
   const [spacers, setSpacers] = useState<Record<number, number>>({});
@@ -75,7 +83,8 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
                  if (hasText && allTextBold) isBold = true;
              }
 
-             if (isBold && wordCount > 0 && wordCount <= 12 && !text.endsWith('.')) {
+             // Tightened from 12 to 8 words: only very short bold paragraphs become TOC items
+             if (isBold && wordCount > 0 && wordCount <= 8 && !text.endsWith('.')) {
                  isTocItem = true;
                  detectedLevel = (node.attrs.indent || 0) + 1;
              }
@@ -104,10 +113,15 @@ const TocComponent = ({ editor, node, updateAttributes, getPos }: any) => {
           if (node.attrs.listType && node.attrs.listType !== 'none' && node.attrs.listPrefix) {
              prefix = node.attrs.listPrefix + ' ';
           }
-          
+
+          const rawText = (prefix + node.textContent).trim();
+          // For headings (type='heading'), keep full text as they're typically short.
+          // For paragraphs acting as headings, truncate to 8 words for clean TOC display.
+          const tocText = node.type.name === 'heading' ? rawText : truncateTocText(rawText, 8);
+
           newHeadings.push({
             level: detectedLevel,
-            text: (prefix + node.textContent).trim(),
+            text: tocText,
             customText: existing?.customText,
             id: id,
             pos,

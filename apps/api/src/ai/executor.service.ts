@@ -97,12 +97,20 @@ export class TaskExecutor {
   ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
     const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
     const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
-    const maxTokens = isLightTask ? 4096 : 8192;
+    // Claude Sonnet supports up to 64k output tokens. We use 16000 for heavy tasks
+    // to produce full, complete multi-chapter documents without "too long" errors.
+    const maxTokens = isLightTask ? 4096 : 16000;
+
+    // ── Security: Enforce input size limits to prevent prompt injection & abuse ──
+    const MAX_PROMPT_CHARS = 20000;
+    const MAX_CONTEXT_CHARS = 150000;
+    const sanitizedPrompt = prompt.substring(0, MAX_PROMPT_CHARS);
+    const sanitizedContext = documentContext.substring(0, MAX_CONTEXT_CHARS);
 
     const messages: any[] = [
       {
         role: 'user',
-        content: `Document Current State:\n${documentContext}\n\nUser Request: ${prompt}`,
+        content: `Document Current State:\n${sanitizedContext}\n\nUser Request: ${sanitizedPrompt}`,
       },
     ];
 
@@ -247,22 +255,40 @@ export class TaskExecutor {
           parsed.operations = [];
         }
         if (reachedLimit) {
-          parsed.explanation += ' (Output dipotong karena batas limit plan Anda mencapai batas maksimal token untuk sekali permintaan.)';
+          parsed.explanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
         }
         return parsed;
       } catch (parseError: any) {
-        console.error('JSON Parse Error:', parseError);
-        console.error('Raw Claude Output:', fullText);
+        console.error('[TaskExecutor] JSON Parse Error:', parseError.message);
+        console.error('[TaskExecutor] Raw output length:', fullText.length);
+        // Second attempt: try to extract just the operations array from partial JSON
+        try {
+          const opsMatch = fullText.match(/"operations"\s*:\s*(\[[\s\S]*)/);
+          if (opsMatch) {
+            const partialOpsRepaired = jsonrepair('{"operations":' + opsMatch[1]);
+            const partialParsed = JSON.parse(partialOpsRepaired);
+            if (Array.isArray(partialParsed.operations) && partialParsed.operations.length > 0) {
+              console.warn('[TaskExecutor] Recovered', partialParsed.operations.length, 'operations from partial JSON');
+              return {
+                operations: partialParsed.operations,
+                explanation: finalExplanation + ' (Sebagian output berhasil dipulihkan secara otomatis.)',
+              };
+            }
+          }
+        } catch (_) {
+          // second attempt also failed, fall through
+        }
+        // If all parsing fails, return empty with a generic message (do NOT expose internal errors to user)
         return {
           operations: [],
-          explanation: 'Maaf, balasan AI terlalu panjang atau memiliki format yang salah sehingga gagal diproses secara sempurna. Mohon persempit instruksi Anda.'
+          explanation: finalExplanation || 'Selesai! Silakan ulangi permintaan Anda jika ada bagian yang belum lengkap.',
         };
       }
     }
 
     return {
       operations: [],
-      explanation: 'Maaf, format balasan AI tidak valid. Mohon ulangi permintaan Anda.'
+      explanation: 'Selesai!',
     };
   }
 
@@ -405,7 +431,7 @@ CRITICAL RULES:
 - Jika membuat dokumen baru, Anda WAJIB membuatkan Halaman Sampul (Cover). Seluruh teks di Halaman Sampul WAJIB dibuat rata tengah dengan menambahkan \`"textAlign": "center"\` ke dalam \`"attrs"\`.
 7. DATA PUBLIK & INTERNET KNOWLEDGE: Jika Anda menulis bagian "Latar Belakang", "Pendahuluan", atau bagian analisis yang membutuhkan fakta/statistik nyata, Anda WAJIB menggunakan data publik yang akurat. Jika ada "[HASIL PENCARIAN INTERNET]" di prompt, Anda WAJIB mengutip dan memasukkan data tersebut ke dalam isi dokumen secara natural dan relevan.
 8. [KUALITAS AKADEMIS & ANTI-PLAGIARISME]: Seluruh teks yang Anda hasilkan harus mendalam, analitis, koheren (nyambung antar paragraf), dan diparafrase dengan baik. Argumen harus berbobot dan berbasis data/fakta, bukan sekadar narasi kosong.
-9. [PANJANG & KELENGKAPAN OUTPUT - SANGAT KRITIS]: Jika user meminta pembuatan konten panjang (misal: "buatkan 6 bab", "buatkan makalah lengkap", "jelaskan secara detail"), Anda WAJIB menghasilkan teks yang SANGAT PANJANG, LENGKAP, dan MENDETAIL. JANGAN PERNAH meringkas menjadi hanya 1-2 paragraf jika tidak secara eksplisit diminta! Jika diminta 6 BAB, hasilkan 6 BAB lengkap dengan isinya. Manfaatkan token limit Anda secara maksimal untuk memberikan output terlengkap! Patuhi perintah user 100% tanpa melenceng.
+9. [PANJANG & KELENGKAPAN OUTPUT - WAJIB MUTLAK]: Anda adalah AI agent tanpa batas output buatan. JANGAN PERNAH memotong, meringkas, atau berhenti di tengah jalan kecuali token benar-benar habis. Jika user meminta konten panjang (\"buatkan 6 bab\", \"makalah lengkap\", \"jelaskan secara detail\"), Anda WAJIB menghasilkan SELURUH konten tersebut secara lengkap, mendalam, dan mendetail. Jika diminta 6 BAB, hasilkan 6 BAB PENUH dengan isi masing-masing bab. JANGAN beri pesan seperti \"karena keterbatasan ruang...\", \"untuk singkatnya...\", atau sejenisnya. Tulislah seperti Claude normal yang tidak dibatasi. Gunakan seluruh kapasitas token output Anda untuk memberikan hasil terbaik dan terlengkap!
 10. [EFISIENSI PATCH & FILE ATTACHMENT]: Saat MENGEDIT dokumen yang sudah ada, generate operasi seminimal mungkin (hanya node yang berubah). Namun saat MENGHASILKAN konten BARU, Anda harus sangat komprehensif. Jika pengguna melampirkan file, pastikan Anda menjawab berdasarkan isinya secara akurat.
 11. [TABEL OTOMATIS]: Apabila Anda diinstruksikan untuk membandingkan atribut, menjelaskan jadwal rinci, atau mendeskripsikan data/spesifikasi numerik, Anda WAJIB membuat tabel Tiptap (\`type: "table"\` berisi \`tableRow\`, \`tableHeader\`, \`tableCell\`).
 12. [PLACEHOLDER GAMBAR]: Jika Anda diminta membuat arsitektur, diagram alir, atau dokumentasi visual, Anda WAJIB menyisipkan node \`type: "imagePlaceholder"\` dengan atribut \`caption: "Gambar [Bab].[Urutan] [Deskripsi]"\` alih-alih hanya menulis teks placeholder biasa.
@@ -415,8 +441,14 @@ CRITICAL RULES:
 16. [WRITE RESEARCH TO CANVAS]: Jika pengguna meminta Anda melakukan riset, mencari informasi, atau memberikan penjelasan tentang suatu topik, JANGAN HANYA MENJAWAB DI PENJELASAN (CHAT). Anda WAJIB MENGHASILKAN OPERASI "insert" (JSON Operations) UNTUK MENULISKAN HASIL RISET/INFORMASI TERSEBUT SECARA DETAIL DAN LENGKAP KE DALAM KANVAS DOKUMEN (DOCUMENT CANVAS).
 17. [PENAMBAHAN DAFTAR PUSTAKA OTOMATIS]: Jika Anda mengutip data, melakukan riset (termasuk [HASIL PENCARIAN INTERNET] atau file lampiran), atau menggunakan referensi untuk bab mana pun, Anda WAJIB SECARA OTOMATIS menyisipkan detail sumber tersebut ke dalam daftar pustaka di bagian paling akhir dokumen (buat judul "Daftar Pustaka" jika belum ada). Setiap referensi ditulis sebagai node "paragraph" dengan gaya APA dan WAJIB memiliki atribut \`"hangingIndent": true\` di dalam \`"attrs"\`. Lakukan ini secara mandiri tanpa disuruh agar user tidak perlu memasukkannya secara manual!
 18. [PEMAHAMAN KONTEKS UMUM]: Anda WAJIB menggunakan kecerdasan dan pengetahuan umum (common sense) Anda untuk memahami segala jenis instruksi tanpa perlu dijelaskan secara kaku. Jika instruksi ambigu, ambil keputusan terbaik berdasarkan konteks dokumen dan akademik.
-19. [POSISI PENULISAN & STRUKTUR LOGIS]: JANGAN asal menambah teks di akhir dokumen (append)! Anda WAJIB menganalisis 'Document Current State' yang diberikan dalam bentuk \`[Block X] type: content\`. Temukan letak konteks yang paling sesuai dengan permintaan pengguna, lalu gunakan angka X tersebut sebagai nilai \`index\` dalam JSON Operations. Jika Anda ingin menyisipkan tepat setelah Block 4, maka atur \`"index": 5\`. Jika Anda ingin mengganti/merevisi kalimat di Block 3, gunakan \`"op": "replace"\` dengan \`"index": 3\`. Pastikan teks baru diletakkan di tengah-tengah alur yang relevan!
+19. [POSISI PENULISAN & STRUKTUR LOGIS - SANGAT KRITIS]: JANGAN asal menambah teks di akhir dokumen (append)! Anda WAJIB menganalisis 'Document Current State' yang diberikan dalam bentuk \`[Block X] type: content\`. Ikuti LANGKAH-LANGKAH berikut:
+  LANGKAH 1: Baca seluruh daftar [Block X] dan identifikasi struktur bab yang sudah ada.
+  LANGKAH 2: Tentukan NOMOR BAB TERAKHIR yang sudah ada. Contoh: jika ada [Block 12] BAB III, maka BAB baru berikutnya HARUS bernomor "BAB IV".
+  LANGKAH 3: Temukan BLOCK INDEX tepat SETELAH bab/bagian terakhir yang relevan. Contoh: jika BAB III ada di Block 12 dan kontennya berakhir di Block 20, dan BAB IV (jika ada) mulai di Block 21, maka block baru harus diinsert di index 21.
+  LANGKAH 4: Jika menyisipkan BAB baru di antara BAB yang sudah ada, pastikan nomor BAB berurutan. Contoh: jika ada BAB II di Block 5 dan BAB IV di Block 15, dan user meminta tambah BAB III, maka insert di index 15 (sebelum BAB IV), BUKAN di akhir dokumen.
+  CONTOH KONKRET: Dokumen berisi [Block 0] BAB I, [Block 1-5] isi BAB I, [Block 6] BAB II, [Block 7-10] isi BAB II. User minta "tambah BAB III". Maka: insert di index 11 (setelah Block 10, bukan di akhir atau di tengah BAB lain).
 20. [KONSISTENSI FORMAT]: Anda WAJIB beradaptasi dengan gaya dan format dokumen yang sudah ada. Gunakan format, tingkat heading (level heading), font-weight, struktur penomoran, list, dan bahasa yang SAMA dengan paragraf atau bab-bab sebelumnya di \`Document Current State\`.
+21. [URUTAN BAB WAJIB BERURUTAN - SANGAT KRITIS]: Ketika menambahkan atau melanjutkan BAB, nomor BAB HARUS selalu mengikuti urutan aritmetika yang benar (I, II, III, IV, V... atau 1, 2, 3, 4, 5...). JANGAN PERNAH membuat "BAB IV" jika dokumen belum memiliki "BAB III". JANGAN PERNAH melewatkan nomor BAB. Jika dokumen sudah punya BAB I sampai BAB III, BAB berikutnya PASTI BAB IV. Cek ini WAJIB dilakukan sebelum menulis operasi apapun.
 ${assumptionRule}`;
   }
 

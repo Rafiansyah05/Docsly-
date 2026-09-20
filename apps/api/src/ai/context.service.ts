@@ -10,20 +10,44 @@ export class ContextBuilder {
     const blocks = documentJson.content;
     let result = '';
 
-    // If document is very long (e.g. > 50 blocks), apply compression
-    const limit = 50;
+    // Build a BAB/chapter structure summary first so the AI always knows
+    // what chapters exist and their block indices — critical for correct ordering.
+    const babSummary: string[] = [];
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      const text = this.getNodeText(block).trim();
+      if (!text) continue;
+      // Detect BAB headings (heading type or paragraph starting with BAB)
+      if (
+        block.type === 'heading' ||
+        /^BAB\s+([IVXivx]+|\d+)/i.test(text) ||
+        /^(PENDAHULUAN|KESIMPULAN|PENUTUP|DAFTAR PUSTAKA|ABSTRAK|KATA PENGANTAR)/i.test(text)
+      ) {
+        babSummary.push(`  [Block ${i}] ${text.substring(0, 60)}`);
+      }
+    }
+
+    if (babSummary.length > 0) {
+      result += `=== STRUKTUR BAB / CHAPTER SUMMARY ===\n${babSummary.join('\n')}\n=== AKHIR SUMMARY ===\n\n`;
+    }
+
+    // If document is very long (e.g. > 80 blocks), apply compression only when
+    // we have a clear active cursor position. If there's no activeBlockIndex, show all.
+    const limit = 80;
     const shouldCompress = blocks.length > limit && activeBlockIndex !== undefined;
 
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
       
-      // If compressing, skip content far from activeBlockIndex but keep headings
+      // If compressing, skip content far from activeBlockIndex but keep headings and BAB markers
       if (shouldCompress) {
-        const isFar = Math.abs(i - (activeBlockIndex ?? 0)) > 5;
+        const isFar = Math.abs(i - (activeBlockIndex ?? 0)) > 10;
+        const text = this.getNodeText(block).trim();
         const isHeading = block.type === 'heading';
-        if (isFar && !isHeading) {
-          if (!result.endsWith('...\n')) {
-            result += `[Blocks ${i} terkompresi untuk efisiensi token]\n`;
+        const isBabMarker = /^BAB\s+/i.test(text);
+        if (isFar && !isHeading && !isBabMarker) {
+          if (!result.endsWith('...compresso\n')) {
+            result += `[Blocks ${i}+ terkompresi untuk efisiensi token]\n`;
           }
           continue;
         }
