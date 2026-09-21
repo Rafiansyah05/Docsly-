@@ -42,7 +42,10 @@ export declare class TaskExecutor {
     private configService;
     private anthropic;
     constructor(configService: ConfigService);
-    execute(intent: UserIntent, prompt: string, documentContext: string, isAssuming?: boolean, attachments?: any[], plan?: string, send?: (event: string, data: object) => void): Promise<{
+    execute(intent: UserIntent, prompt: string, documentContext: string, isAssuming?: boolean, attachments?: any[], plan?: string, send?: (event: string, data: object) => void, chatHistory?: Array<{
+        role: 'user' | 'assistant';
+        content: string;
+    }>): Promise<{
         operations: BlockOperation[];
         explanation?: string;
     }>;

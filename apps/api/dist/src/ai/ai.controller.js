@@ -36,7 +36,7 @@ let AiController = class AiController {
         this.webSearch = webSearch;
     }
     async execute(body, res) {
-        const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments, plan = 'Free' } = body;
+        const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments, plan = 'Free', chatHistory } = body;
         if (!prompt) {
             res.status(400).json({ error: 'Prompt is required' });
             return;
@@ -67,7 +67,7 @@ let AiController = class AiController {
                 enhancedPrompt = `${searchData}\n\nUser Request: ${prompt}`;
             }
             send('progress', { stage: 'execute', label: 'AI sedang menulis & memproses...', percent: 70 });
-            let result = await this.taskExecutor.execute(intent, enhancedPrompt, context, action === 'skip_questions', attachments, plan, send);
+            let result = await this.taskExecutor.execute(intent, enhancedPrompt, context, action === 'skip_questions', attachments, plan, send, chatHistory);
             if (result.operations && result.operations.length > 0) {
                 send('progress', { stage: 'compliance', label: 'Memeriksa tata bahasa & PUEBI...', percent: 90 });
                 result.operations = await this.languageCompliance.verify(result.operations);

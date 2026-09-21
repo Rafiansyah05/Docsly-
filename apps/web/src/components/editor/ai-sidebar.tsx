@@ -507,6 +507,12 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     }
 
     try {
+      // Build a trimmed chat history (max 10 last messages, excluding the placeholder we just added)
+      const chatHistory = messages
+        .slice(-12, -1) // get up to 10 messages before the new placeholder
+        .filter((m) => m.content && m.content.trim() !== '')
+        .map((m) => ({ role: m.role, content: m.content }));
+
       // POST the request first to get the stream URL pattern
       // We use fetch with streaming via Next.js proxy
       const response = await fetch('/api/ai/execute', {
@@ -517,6 +523,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           documentJson: editor.getJSON(),
           activeBlockIndex: getActiveBlockIndex(),
           attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
+          chatHistory: chatHistory.length > 0 ? chatHistory : undefined,
         }),
       });
 

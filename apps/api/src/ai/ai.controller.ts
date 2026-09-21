@@ -28,10 +28,10 @@ export class AiController {
    */
   @Post('execute')
   async execute(
-    @Body() body: { prompt: string; documentJson: any; activeBlockIndex?: number; intent?: string; action?: string; attachments?: any[]; plan?: string },
+    @Body() body: { prompt: string; documentJson: any; activeBlockIndex?: number; intent?: string; action?: string; attachments?: any[]; plan?: string; chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }> },
     @Res() res: Response,
   ): Promise<void> {
-    const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments, plan = 'Free' } = body;
+    const { prompt, documentJson, activeBlockIndex, intent: passedIntent, action, attachments, plan = 'Free', chatHistory } = body;
 
     if (!prompt) {
       res.status(400).json({ error: 'Prompt is required' });
@@ -101,7 +101,8 @@ export class AiController {
         action === 'skip_questions',
         attachments,
         plan,
-        send
+        send,
+        chatHistory,
       );
 
       // Stage 5 - Language Compliance Layer

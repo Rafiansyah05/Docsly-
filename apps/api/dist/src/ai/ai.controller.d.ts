@@ -21,6 +21,10 @@ export declare class AiController {
         action?: string;
         attachments?: any[];
         plan?: string;
+        chatHistory?: Array<{
+            role: 'user' | 'assistant';
+            content: string;
+        }>;
     }, res: Response): Promise<void>;
     translate(body: {
         text: string;

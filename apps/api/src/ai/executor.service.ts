@@ -57,7 +57,8 @@ export class TaskExecutor {
     isAssuming: boolean = false,
     attachments: any[] = [],
     plan: string = 'Free',
-    send?: (event: string, data: object) => void
+    send?: (event: string, data: object) => void,
+    chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
   ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
     const anthropicKey = this.configService.get<string>('ANTHROPIC_API_KEY');
     const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
@@ -77,6 +78,14 @@ export class TaskExecutor {
       if (parsedTexts) {
         fullPrompt = `[DOKUMEN LAMPIRAN PENGGUNA]\n${parsedTexts}\n\n[AKHIR LAMPIRAN]\n\n${prompt}`;
       }
+    }
+
+    // Inject chat history as context block so the AI understands the ongoing conversation
+    if (chatHistory && chatHistory.length > 0) {
+      const historyBlock = chatHistory
+        .map((m) => `${m.role === 'user' ? 'User' : 'Docsly AI'}: ${m.content.substring(0, 800)}`)
+        .join('\n');
+      fullPrompt = `[RIWAYAT PERCAKAPAN SEBELUMNYA — Gunakan ini sebagai konteks tambahan saat menjawab]\n${historyBlock}\n[AKHIR RIWAYAT PERCAKAPAN]\n\n${fullPrompt}`;
     }
 
     if (!hasAnthropic) {

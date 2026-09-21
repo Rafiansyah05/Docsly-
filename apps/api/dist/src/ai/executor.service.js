@@ -61,7 +61,7 @@ let TaskExecutor = class TaskExecutor {
             apiKey: this.configService.get('ANTHROPIC_API_KEY') || '',
         });
     }
-    async execute(intent, prompt, documentContext, isAssuming = false, attachments = [], plan = 'Free', send) {
+    async execute(intent, prompt, documentContext, isAssuming = false, attachments = [], plan = 'Free', send, chatHistory) {
         const anthropicKey = this.configService.get('ANTHROPIC_API_KEY');
         const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
         const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -73,6 +73,12 @@ let TaskExecutor = class TaskExecutor {
             if (parsedTexts) {
                 fullPrompt = `[DOKUMEN LAMPIRAN PENGGUNA]\n${parsedTexts}\n\n[AKHIR LAMPIRAN]\n\n${prompt}`;
             }
+        }
+        if (chatHistory && chatHistory.length > 0) {
+            const historyBlock = chatHistory
+                .map((m) => `${m.role === 'user' ? 'User' : 'Docsly AI'}: ${m.content.substring(0, 800)}`)
+                .join('\n');
+            fullPrompt = `[RIWAYAT PERCAKAPAN SEBELUMNYA — Gunakan ini sebagai konteks tambahan saat menjawab]\n${historyBlock}\n[AKHIR RIWAYAT PERCAKAPAN]\n\n${fullPrompt}`;
         }
         if (!hasAnthropic) {
             return this.getMockResponse(intent, fullPrompt);
