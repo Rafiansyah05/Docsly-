@@ -248,6 +248,7 @@ let TaskExecutor = class TaskExecutor {
                     fullText = fullText.trimEnd();
                     if (messages.length === 1) {
                         messages.push({ role: 'assistant', content: fullText });
+                        messages.push({ role: 'user', content: 'Lanjutkan persis dari kata terakhir yang terpotong.' });
                     }
                     else {
                         messages[1].content = fullText;

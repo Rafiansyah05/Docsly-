@@ -280,11 +280,12 @@ export class TaskExecutor {
           isComplete = true; // Force stop
         } else {
           // Keep looping to get more tokens
-          // We use Anthropic's assistant prefill feature by keeping the last message as 'assistant'.
-          // Anthropic API requires that the assistant prefill does not end with trailing whitespace.
+          // Since some models do not support assistant message prefill, we must ensure 
+          // the conversation ends with a user message.
           fullText = fullText.trimEnd();
           if (messages.length === 1) {
             messages.push({ role: 'assistant', content: fullText });
+            messages.push({ role: 'user', content: 'Lanjutkan persis dari kata terakhir yang terpotong.' });
           } else {
             messages[1].content = fullText;
           }
