@@ -259,18 +259,12 @@ let TaskExecutor = class TaskExecutor {
                 isComplete = true;
             }
         }
-        let finalExplanation = 'Selesai! Perubahan telah diterapkan.';
+        let finalExplanation = '';
         const markerIdx = fullText.indexOf('===JSON_START===');
         let jsonStart = -1;
         if (markerIdx !== -1) {
             finalExplanation = fullText.substring(0, markerIdx).trim();
             jsonStart = fullText.indexOf('{', markerIdx);
-        }
-        else {
-            jsonStart = fullText.indexOf('{');
-            if (jsonStart > 0) {
-                finalExplanation = fullText.substring(0, jsonStart).trim();
-            }
         }
         if (jsonStart !== -1) {
             let jsonStr = fullText.substring(jsonStart);
@@ -281,7 +275,7 @@ let TaskExecutor = class TaskExecutor {
             try {
                 const repairedJson = (0, jsonrepair_1.jsonrepair)(jsonStr);
                 const parsed = JSON.parse(repairedJson);
-                parsed.explanation = finalExplanation;
+                parsed.explanation = finalExplanation || 'Selesai! Perubahan telah diterapkan.';
                 if (!Array.isArray(parsed.operations)) {
                     parsed.operations = [];
                 }
@@ -302,7 +296,7 @@ let TaskExecutor = class TaskExecutor {
                             console.warn('[TaskExecutor] Recovered', partialParsed.operations.length, 'operations from partial JSON');
                             return {
                                 operations: partialParsed.operations,
-                                explanation: finalExplanation + ' (Sebagian output berhasil dipulihkan secara otomatis.)',
+                                explanation: finalExplanation || 'Selesai! (Sebagian output berhasil dipulihkan secara otomatis.)',
                             };
                         }
                     }
@@ -311,7 +305,7 @@ let TaskExecutor = class TaskExecutor {
                 }
                 return {
                     operations: [],
-                    explanation: finalExplanation || fullText.trim() || 'Selesai!',
+                    explanation: finalExplanation || fullText.trim() || 'Terjadi kesalahan saat memproses respons. Silakan coba lagi.',
                 };
             }
         }
@@ -441,6 +435,7 @@ Tentu, saya telah menambahkan bab pendahuluan untuk Anda.
 }
 
 CRITICAL RULES:
+0. [NON-NEGOTIABLE]: After writing your PART 1 (explanation), you MUST ALWAYS output the ===JSON_START=== marker followed by valid JSON operations. Do NOT skip this. Even if the document is empty or the task is a summary/research task, you MUST write the content into the canvas via insert operations. The ONLY exception is if the intent is "general_chat" (pure question, no document editing needed).
 1. Output ONLY the valid JSON object after the ===JSON_START=== marker. Do NOT wrap it in markdown block like \`\`\`json. Make sure the JSON is fully complete and not cut off.
 2. Escape all newlines as \\n inside strings to ensure valid JSON!
 3. For the Explanation part (Part 1), gunakan gaya bahasa santai, natural, seperti manusia biasa dengan sedikit lelucon lucu atau witty, namun tetap menunjukkan kinerja serius dan profesional.
