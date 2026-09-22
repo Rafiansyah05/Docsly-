@@ -155,7 +155,8 @@ let TaskExecutor = class TaskExecutor {
                 content: userContentBlocks,
             },
         ];
-        let fullText = '';
+        let allOperations = [];
+        let finalExplanation = '';
         let isComplete = false;
         let loops = 0;
         const MAX_LOOPS = 50;
@@ -163,7 +164,7 @@ let TaskExecutor = class TaskExecutor {
         let windowBuf = '';
         let inStr = false;
         let esc = false;
-        let explanationEnded = false;
+        let chunkCount = 0;
         while (!isComplete && loops < MAX_LOOPS) {
             loops++;
             const stream = await this.anthropic.messages.stream({
@@ -172,31 +173,34 @@ let TaskExecutor = class TaskExecutor {
                 system: systemPrompt,
                 messages: messages,
             });
-            let chunkCount = 0;
-            let lastTextLength = fullText.length;
+            let currentLoopText = '';
             let hasHitMarker = false;
             let explanationStreamedLength = 0;
+            let explanationEnded = false;
             for await (const chunk of stream) {
                 if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
                     const textChunk = chunk.delta.text;
-                    fullText += textChunk;
+                    currentLoopText += textChunk;
                     chunkCount++;
-                    if (!hasHitMarker && loops === 1) {
-                        const markerIndex = fullText.indexOf('===JSON_START===');
+                    if (!hasHitMarker) {
+                        const markerIndex = currentLoopText.indexOf('===JSON_START===');
                         if (markerIndex !== -1) {
                             hasHitMarker = true;
                             explanationEnded = true;
-                            const explanationText = fullText.substring(0, markerIndex).trim();
+                            const explanationText = currentLoopText.substring(0, markerIndex).trim();
+                            if (loops === 1) {
+                                finalExplanation = explanationText;
+                            }
                             const newText = explanationText.substring(explanationStreamedLength);
-                            if (newText.length > 0 && send) {
+                            if (newText.length > 0 && send && loops === 1) {
                                 send('explanation_chunk', { text: newText });
                             }
                         }
                         else {
-                            const safeLen = Math.max(0, fullText.length - 20);
-                            const safeText = fullText.substring(0, safeLen);
+                            const safeLen = Math.max(0, currentLoopText.length - 20);
+                            const safeText = currentLoopText.substring(0, safeLen);
                             const newText = safeText.substring(explanationStreamedLength);
-                            if (newText.length > 0 && send) {
+                            if (newText.length > 0 && send && loops === 1) {
                                 send('explanation_chunk', { text: newText });
                                 explanationStreamedLength += newText.length;
                             }
@@ -240,84 +244,78 @@ let TaskExecutor = class TaskExecutor {
                         }
                     }
                     if (send && chunkCount % 5 === 0) {
-                        send('typing', { chunks: chunkCount, length: fullText.length });
+                        send('typing', { chunks: chunkCount, length: currentLoopText.length });
                     }
                 }
             }
             const finalMessage = await stream.finalMessage();
+            let loopOperations = [];
+            const markerIdx = currentLoopText.indexOf('===JSON_START===');
+            let jsonStart = -1;
+            if (markerIdx !== -1) {
+                if (loops === 1)
+                    finalExplanation = currentLoopText.substring(0, markerIdx).trim();
+                jsonStart = currentLoopText.indexOf('{', markerIdx);
+            }
+            if (jsonStart !== -1) {
+                let jsonStr = currentLoopText.substring(jsonStart);
+                const lastBrace = jsonStr.lastIndexOf('}');
+                if (lastBrace !== -1) {
+                    jsonStr = jsonStr.substring(0, lastBrace + 1);
+                }
+                try {
+                    const repairedJson = (0, jsonrepair_1.jsonrepair)(jsonStr);
+                    const parsed = JSON.parse(repairedJson);
+                    if (Array.isArray(parsed.operations)) {
+                        loopOperations = parsed.operations;
+                    }
+                }
+                catch (parseError) {
+                    try {
+                        const opsMatch = currentLoopText.match(/"operations"\s*:\s*(\[[\s\S]*)/);
+                        if (opsMatch) {
+                            const partialOpsRepaired = (0, jsonrepair_1.jsonrepair)('{"operations":' + opsMatch[1]);
+                            const partialParsed = JSON.parse(partialOpsRepaired);
+                            if (Array.isArray(partialParsed.operations)) {
+                                loopOperations = partialParsed.operations;
+                            }
+                        }
+                    }
+                    catch (_) { }
+                }
+            }
+            allOperations = allOperations.concat(loopOperations);
             if (finalMessage.stop_reason === 'max_tokens') {
                 if (loops >= MAX_LOOPS) {
                     reachedLimit = true;
                     isComplete = true;
                 }
                 else {
-                    fullText = fullText.trimEnd();
                     if (messages.length === 1) {
-                        messages.push({ role: 'assistant', content: fullText });
-                        messages.push({ role: 'user', content: 'Lanjutkan persis dari kata terakhir yang terpotong.' });
+                        messages.push({ role: 'assistant', content: currentLoopText });
+                        messages.push({
+                            role: 'user',
+                            content: 'Teks terpotong karena batas token. Tolong lanjutkan dengan memberikan JSON object BARU yang HANYA berisi sisa operations yang belum selesai. Gunakan format ===JSON_START=== lalu berikan object JSON-nya: { "operations": [ ...sisa operations... ] }.'
+                        });
                     }
                     else {
-                        messages[1].content = fullText;
+                        messages[messages.length - 2].content = currentLoopText;
                     }
                 }
             }
             else {
                 isComplete = true;
+                if (loops === 1 && markerIdx === -1) {
+                    finalExplanation = currentLoopText.trim();
+                }
             }
         }
-        let finalExplanation = '';
-        const markerIdx = fullText.indexOf('===JSON_START===');
-        let jsonStart = -1;
-        if (markerIdx !== -1) {
-            finalExplanation = fullText.substring(0, markerIdx).trim();
-            jsonStart = fullText.indexOf('{', markerIdx);
-        }
-        if (jsonStart !== -1) {
-            let jsonStr = fullText.substring(jsonStart);
-            const lastBrace = jsonStr.lastIndexOf('}');
-            if (lastBrace !== -1 && !reachedLimit) {
-                jsonStr = jsonStr.substring(0, lastBrace + 1);
-            }
-            try {
-                const repairedJson = (0, jsonrepair_1.jsonrepair)(jsonStr);
-                const parsed = JSON.parse(repairedJson);
-                parsed.explanation = finalExplanation || 'Selesai! Perubahan telah diterapkan.';
-                if (!Array.isArray(parsed.operations)) {
-                    parsed.operations = [];
-                }
-                if (reachedLimit) {
-                    parsed.explanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
-                }
-                return parsed;
-            }
-            catch (parseError) {
-                console.error('[TaskExecutor] JSON Parse Error:', parseError.message);
-                console.error('[TaskExecutor] Raw output length:', fullText.length);
-                try {
-                    const opsMatch = fullText.match(/"operations"\s*:\s*(\[[\s\S]*)/);
-                    if (opsMatch) {
-                        const partialOpsRepaired = (0, jsonrepair_1.jsonrepair)('{"operations":' + opsMatch[1]);
-                        const partialParsed = JSON.parse(partialOpsRepaired);
-                        if (Array.isArray(partialParsed.operations) && partialParsed.operations.length > 0) {
-                            console.warn('[TaskExecutor] Recovered', partialParsed.operations.length, 'operations from partial JSON');
-                            return {
-                                operations: partialParsed.operations,
-                                explanation: finalExplanation || 'Selesai! (Sebagian output berhasil dipulihkan secara otomatis.)',
-                            };
-                        }
-                    }
-                }
-                catch (_) {
-                }
-                return {
-                    operations: [],
-                    explanation: finalExplanation || fullText.trim() || 'Terjadi kesalahan saat memproses respons. Silakan coba lagi.',
-                };
-            }
+        if (reachedLimit) {
+            finalExplanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
         }
         return {
-            operations: [],
-            explanation: fullText.trim() || 'Selesai!',
+            operations: allOperations,
+            explanation: finalExplanation || 'Selesai! Perubahan telah diterapkan.',
         };
     }
     async parseAttachments(attachments) {

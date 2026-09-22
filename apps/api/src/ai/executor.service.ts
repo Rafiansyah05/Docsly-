@@ -190,7 +190,8 @@ export class TaskExecutor {
       },
     ];
 
-    let fullText = '';
+    let allOperations: BlockOperation[] = [];
+    let finalExplanation = '';
     let isComplete = false;
     let loops = 0;
     
@@ -202,7 +203,7 @@ export class TaskExecutor {
     let windowBuf = '';
     let inStr = false;
     let esc = false;
-    let explanationEnded = false;
+    let chunkCount = 0;
 
     while (!isComplete && loops < MAX_LOOPS) {
       loops++;
@@ -213,33 +214,36 @@ export class TaskExecutor {
         messages: messages,
       });
       
-      let chunkCount = 0;
-      let lastTextLength = fullText.length;
+      let currentLoopText = '';
       let hasHitMarker = false;
       let explanationStreamedLength = 0;
+      let explanationEnded = false;
       
       for await (const chunk of stream) {
         if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
           const textChunk = chunk.delta.text;
-          fullText += textChunk;
+          currentLoopText += textChunk;
           chunkCount++;
           
-          if (!hasHitMarker && loops === 1) {
-            const markerIndex = fullText.indexOf('===JSON_START===');
+          if (!hasHitMarker) {
+            const markerIndex = currentLoopText.indexOf('===JSON_START===');
             if (markerIndex !== -1) {
               hasHitMarker = true;
               explanationEnded = true;
-              const explanationText = fullText.substring(0, markerIndex).trim();
+              const explanationText = currentLoopText.substring(0, markerIndex).trim();
+              if (loops === 1) {
+                finalExplanation = explanationText; // Only keep the first loop's explanation
+              }
               const newText = explanationText.substring(explanationStreamedLength);
-              if (newText.length > 0 && send) {
+              if (newText.length > 0 && send && loops === 1) {
                  send('explanation_chunk', { text: newText });
               }
             } else {
               // stream safely, leaving last 20 chars in buffer
-              const safeLen = Math.max(0, fullText.length - 20);
-              const safeText = fullText.substring(0, safeLen);
+              const safeLen = Math.max(0, currentLoopText.length - 20);
+              const safeText = currentLoopText.substring(0, safeLen);
               const newText = safeText.substring(explanationStreamedLength);
-              if (newText.length > 0 && send) {
+              if (newText.length > 0 && send && loops === 1) {
                  send('explanation_chunk', { text: newText });
                  explanationStreamedLength += newText.length;
               }
@@ -276,95 +280,86 @@ export class TaskExecutor {
           }
 
           if (send && chunkCount % 5 === 0) {
-            send('typing', { chunks: chunkCount, length: fullText.length });
+            send('typing', { chunks: chunkCount, length: currentLoopText.length });
           }
         }
       }
       
       const finalMessage = await stream.finalMessage();
       
+      // Parse the JSON from the current loop
+      let loopOperations: any[] = [];
+      const markerIdx = currentLoopText.indexOf('===JSON_START===');
+      let jsonStart = -1;
+      if (markerIdx !== -1) {
+        if (loops === 1) finalExplanation = currentLoopText.substring(0, markerIdx).trim();
+        jsonStart = currentLoopText.indexOf('{', markerIdx);
+      }
+
+      if (jsonStart !== -1) {
+        let jsonStr = currentLoopText.substring(jsonStart);
+        const lastBrace = jsonStr.lastIndexOf('}');
+        if (lastBrace !== -1) {
+          jsonStr = jsonStr.substring(0, lastBrace + 1);
+        }
+        try {
+          const repairedJson = jsonrepair(jsonStr);
+          const parsed = JSON.parse(repairedJson);
+          if (Array.isArray(parsed.operations)) {
+            loopOperations = parsed.operations;
+          }
+        } catch (parseError: any) {
+          try {
+            const opsMatch = currentLoopText.match(/"operations"\s*:\s*(\[[\s\S]*)/);
+            if (opsMatch) {
+              const partialOpsRepaired = jsonrepair('{"operations":' + opsMatch[1]);
+              const partialParsed = JSON.parse(partialOpsRepaired);
+              if (Array.isArray(partialParsed.operations)) {
+                loopOperations = partialParsed.operations;
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      // Add to total operations
+      allOperations = allOperations.concat(loopOperations);
+
       if (finalMessage.stop_reason === 'max_tokens') {
         if (loops >= MAX_LOOPS) {
           reachedLimit = true;
           isComplete = true; // Force stop
         } else {
           // Keep looping to get more tokens
-          // Since some models do not support assistant message prefill, we must ensure 
-          // the conversation ends with a user message.
-          fullText = fullText.trimEnd();
+          // Ask the model to output a NEW JSON object with the REMAINING operations
           if (messages.length === 1) {
-            messages.push({ role: 'assistant', content: fullText });
-            messages.push({ role: 'user', content: 'Lanjutkan persis dari kata terakhir yang terpotong.' });
+            messages.push({ role: 'assistant', content: currentLoopText });
+            messages.push({ 
+              role: 'user', 
+              content: 'Teks terpotong karena batas token. Tolong lanjutkan dengan memberikan JSON object BARU yang HANYA berisi sisa operations yang belum selesai. Gunakan format ===JSON_START=== lalu berikan object JSON-nya: { "operations": [ ...sisa operations... ] }.' 
+            });
           } else {
-            messages[1].content = fullText;
+            // Update the assistant message to the current loop's text so context window doesn't explode with accumulated strings
+            messages[messages.length - 2].content = currentLoopText;
+            // The user message asking to continue is already at messages[messages.length - 1]
           }
         }
       } else {
         isComplete = true;
+        // If it finished on loop 1 without a JSON marker, it's a general chat.
+        if (loops === 1 && markerIdx === -1) {
+          finalExplanation = currentLoopText.trim();
+        }
       }
     }
 
-    let finalExplanation = '';
-    const markerIdx = fullText.indexOf('===JSON_START===');
-    let jsonStart = -1;
-    if (markerIdx !== -1) {
-      finalExplanation = fullText.substring(0, markerIdx).trim();
-      jsonStart = fullText.indexOf('{', markerIdx);
-    }
-    // REMOVED: the dangerous fallback that searched for any '{' in the text,
-    // which caused the explanation text to be parsed as JSON and always return
-    // operations: [] when the explanation contained any curly braces.
-
-    if (jsonStart !== -1) {
-      let jsonStr = fullText.substring(jsonStart);
-      const lastBrace = jsonStr.lastIndexOf('}');
-      if (lastBrace !== -1 && !reachedLimit) {
-        jsonStr = jsonStr.substring(0, lastBrace + 1);
-      }
-      try {
-        const repairedJson = jsonrepair(jsonStr);
-        const parsed = JSON.parse(repairedJson);
-        parsed.explanation = finalExplanation || 'Selesai! Perubahan telah diterapkan.';
-        if (!Array.isArray(parsed.operations)) {
-          parsed.operations = [];
-        }
-        if (reachedLimit) {
-          parsed.explanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
-        }
-        return parsed;
-      } catch (parseError: any) {
-        console.error('[TaskExecutor] JSON Parse Error:', parseError.message);
-        console.error('[TaskExecutor] Raw output length:', fullText.length);
-        // Second attempt: try to extract just the operations array from partial JSON
-        try {
-          const opsMatch = fullText.match(/"operations"\s*:\s*(\[[\s\S]*)/);
-          if (opsMatch) {
-            const partialOpsRepaired = jsonrepair('{"operations":' + opsMatch[1]);
-            const partialParsed = JSON.parse(partialOpsRepaired);
-            if (Array.isArray(partialParsed.operations) && partialParsed.operations.length > 0) {
-              console.warn('[TaskExecutor] Recovered', partialParsed.operations.length, 'operations from partial JSON');
-              return {
-                operations: partialParsed.operations,
-                explanation: finalExplanation || 'Selesai! (Sebagian output berhasil dipulihkan secara otomatis.)',
-              };
-            }
-          }
-        } catch (_) {
-          // second attempt also failed, fall through
-        }
-        // JSON parsing failed completely — return the explanation text as the response
-        return {
-          operations: [],
-          explanation: finalExplanation || fullText.trim() || 'Terjadi kesalahan saat memproses respons. Silakan coba lagi.',
-        };
-      }
+    if (reachedLimit) {
+      finalExplanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
     }
 
-    // No JSON marker found at all — AI answered in plain text (general_chat or Q&A).
-    // Return the full text as the chat response without touching the canvas.
     return {
-      operations: [],
-      explanation: fullText.trim() || 'Selesai!',
+      operations: allOperations,
+      explanation: finalExplanation || 'Selesai! Perubahan telah diterapkan.',
     };
   }
 

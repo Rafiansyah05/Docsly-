@@ -67,6 +67,7 @@ Return valid JSON. Escape newlines as \\n. Make sure the entire JSON array is co
                 if (response.stop_reason === 'max_tokens' && loops < MAX_LOOPS) {
                     if (messages.length === 1) {
                         messages.push({ role: 'assistant', content: fullText });
+                        messages.push({ role: 'user', content: 'Lanjutkan persis dari karakter yang terpotong tanpa penjelasan apapun.' });
                     }
                     else {
                         messages[1].content = fullText;
