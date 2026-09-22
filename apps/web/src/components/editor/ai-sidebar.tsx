@@ -394,13 +394,16 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
     return <FileText className="h-3 w-3" />;
   };
 
-  const handleSend = async () => {
-    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
+  const handleSend = async (overrideInput?: string, overrideFiles?: { file: File; name: string; type: string }[], isAutoContinue = false) => {
+    const rawInput = overrideInput !== undefined ? overrideInput : input.trim();
+    const currentFiles = overrideFiles !== undefined ? overrideFiles : [...attachedFiles];
+    
+    if ((!rawInput && currentFiles.length === 0) || isLoading) return;
 
-    const userMessage = input.trim();
-    setInput('');
-    const currentFiles = [...attachedFiles];
-    setAttachedFiles([]);
+    const userMessage = rawInput;
+    if (overrideInput === undefined) setInput('');
+    if (overrideFiles === undefined) setAttachedFiles([]);
+    
     setIsLoading(true);
     setProgress(5);
     setStageLabel('Mengunggah file...');
@@ -424,7 +427,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
           setIsLoading(false);
           setProgress(0);
           setStageLabel('Memproses...');
-          setAttachedFiles(currentFiles); // Restore
+          if (overrideFiles === undefined) setAttachedFiles(currentFiles); // Restore
           return;
         }
         if (!res.ok) throw new Error(checkData.message);
@@ -432,7 +435,7 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
         console.error('Storage check failed:', e);
         toast.error('Gagal mengecek sisa kapasitas storage. Coba lagi.');
         setIsLoading(false);
-        setAttachedFiles(currentFiles);
+        if (overrideFiles === undefined) setAttachedFiles(currentFiles);
         return;
       }
     }
@@ -462,11 +465,15 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
       console.error(e);
     }
 
-    setMessages((prev) => [
-      ...prev, 
-      { role: 'user', content: userMessage, attachments: uploadedAttachments },
-      { role: 'assistant', content: '' } // Placeholder for streaming
-    ]);
+    setMessages((prev) => {
+      const newMessages = [...prev];
+      if (!isAutoContinue) {
+        newMessages.push({ role: 'user', content: userMessage, attachments: uploadedAttachments });
+      }
+      newMessages.push({ role: 'assistant', content: '' }); // Placeholder for streaming
+      return newMessages;
+    });
+    
     setProgress(15);
     setStageLabel('Menghubungi server AI...');
 
@@ -725,6 +732,12 @@ export function AiSidebar({ editor, documentId }: AiSidebarProps) {
                 }
                 return newMessages;
               });
+              
+              if (data.autoContinue) {
+                setTimeout(() => {
+                  handleSend('Lanjutkan', [], true);
+                }, 1000);
+              }
             }
 
             if (eventType === 'error') {

@@ -159,6 +159,7 @@ let TaskExecutor = class TaskExecutor {
         let finalExplanation = '';
         let isComplete = false;
         let loops = 0;
+        const startTime = Date.now();
         const MAX_LOOPS = 50;
         let reachedLimit = false;
         let windowBuf = '';
@@ -285,33 +286,37 @@ let TaskExecutor = class TaskExecutor {
                 }
             }
             allOperations = allOperations.concat(loopOperations);
-            if (finalMessage.stop_reason === 'max_tokens') {
-                if (loops >= MAX_LOOPS) {
-                    reachedLimit = true;
-                    isComplete = true;
+            const elapsedTime = Date.now() - startTime;
+            const TIMEOUT_WARNING_MS = 240000;
+            const approachingTimeout = elapsedTime > TIMEOUT_WARNING_MS;
+            if (finalMessage.stop_reason === 'max_tokens' && !approachingTimeout && loops < MAX_LOOPS) {
+                if (messages.length === 1) {
+                    messages.push({ role: 'assistant', content: currentLoopText });
+                    messages.push({
+                        role: 'user',
+                        content: 'Teks terpotong karena batas token. Tolong lanjutkan dengan memberikan JSON object BARU yang HANYA berisi sisa operations yang belum selesai. Gunakan format ===JSON_START=== lalu berikan object JSON-nya: { "operations": [ ...sisa operations... ] }.'
+                    });
                 }
                 else {
-                    if (messages.length === 1) {
-                        messages.push({ role: 'assistant', content: currentLoopText });
-                        messages.push({
-                            role: 'user',
-                            content: 'Teks terpotong karena batas token. Tolong lanjutkan dengan memberikan JSON object BARU yang HANYA berisi sisa operations yang belum selesai. Gunakan format ===JSON_START=== lalu berikan object JSON-nya: { "operations": [ ...sisa operations... ] }.'
-                        });
-                    }
-                    else {
-                        messages[messages.length - 2].content = currentLoopText;
-                    }
+                    messages[messages.length - 2].content = currentLoopText;
                 }
             }
             else {
                 isComplete = true;
+                if (finalMessage.stop_reason === 'max_tokens' || loops >= MAX_LOOPS) {
+                    reachedLimit = true;
+                }
                 if (loops === 1 && markerIdx === -1) {
                     finalExplanation = currentLoopText.trim();
                 }
             }
         }
         if (reachedLimit) {
-            finalExplanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
+            return {
+                operations: allOperations,
+                explanation: finalExplanation || 'Sedang memproses kelanjutannya...',
+                autoContinue: true,
+            };
         }
         return {
             operations: allOperations,

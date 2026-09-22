@@ -59,7 +59,7 @@ export class TaskExecutor {
     plan: string = 'Free',
     send?: (event: string, data: object) => void,
     chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
-  ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
+  ): Promise<{ operations: BlockOperation[]; explanation?: string; autoContinue?: boolean }> {
     const anthropicKey = this.configService.get<string>('ANTHROPIC_API_KEY');
     const hasAnthropic = anthropicKey && !anthropicKey.includes('xxxxxxxx');
 
@@ -113,7 +113,7 @@ export class TaskExecutor {
     plan: string,
     send?: (event: string, data: object) => void,
     imageAttachments: any[] = [],
-  ): Promise<{ operations: BlockOperation[]; explanation?: string }> {
+  ): Promise<{ operations: BlockOperation[]; explanation?: string; autoContinue?: boolean }> {
     const isLightTask = intent === 'grammar_check' || intent === 'summarize' || intent === 'general_chat';
     const model = isLightTask ? 'claude-haiku-4-5' : 'claude-sonnet-5';
     // Claude Sonnet supports up to 64k output tokens. We use 16000 for heavy tasks
@@ -194,6 +194,7 @@ export class TaskExecutor {
     let finalExplanation = '';
     let isComplete = false;
     let loops = 0;
+    const startTime = Date.now();
     
     // Dynamic Limits: We allow up to 50 loops (approx 400k tokens) so the AI acts like a proper agent that doesn't stop until finished.
     const MAX_LOOPS = 50;
@@ -325,27 +326,29 @@ export class TaskExecutor {
       // Add to total operations
       allOperations = allOperations.concat(loopOperations);
 
-      if (finalMessage.stop_reason === 'max_tokens') {
-        if (loops >= MAX_LOOPS) {
-          reachedLimit = true;
-          isComplete = true; // Force stop
+      const elapsedTime = Date.now() - startTime;
+      const TIMEOUT_WARNING_MS = 240000; // 240 seconds (4 minutes)
+      const approachingTimeout = elapsedTime > TIMEOUT_WARNING_MS;
+
+      if (finalMessage.stop_reason === 'max_tokens' && !approachingTimeout && loops < MAX_LOOPS) {
+        // Keep looping to get more tokens
+        // Ask the model to output a NEW JSON object with the REMAINING operations
+        if (messages.length === 1) {
+          messages.push({ role: 'assistant', content: currentLoopText });
+          messages.push({ 
+            role: 'user', 
+            content: 'Teks terpotong karena batas token. Tolong lanjutkan dengan memberikan JSON object BARU yang HANYA berisi sisa operations yang belum selesai. Gunakan format ===JSON_START=== lalu berikan object JSON-nya: { "operations": [ ...sisa operations... ] }.' 
+          });
         } else {
-          // Keep looping to get more tokens
-          // Ask the model to output a NEW JSON object with the REMAINING operations
-          if (messages.length === 1) {
-            messages.push({ role: 'assistant', content: currentLoopText });
-            messages.push({ 
-              role: 'user', 
-              content: 'Teks terpotong karena batas token. Tolong lanjutkan dengan memberikan JSON object BARU yang HANYA berisi sisa operations yang belum selesai. Gunakan format ===JSON_START=== lalu berikan object JSON-nya: { "operations": [ ...sisa operations... ] }.' 
-            });
-          } else {
-            // Update the assistant message to the current loop's text so context window doesn't explode with accumulated strings
-            messages[messages.length - 2].content = currentLoopText;
-            // The user message asking to continue is already at messages[messages.length - 1]
-          }
+          // Update the assistant message to the current loop's text so context window doesn't explode with accumulated strings
+          messages[messages.length - 2].content = currentLoopText;
+          // The user message asking to continue is already at messages[messages.length - 1]
         }
       } else {
         isComplete = true;
+        if (finalMessage.stop_reason === 'max_tokens' || loops >= MAX_LOOPS) {
+          reachedLimit = true;
+        }
         // If it finished on loop 1 without a JSON marker, it's a general chat.
         if (loops === 1 && markerIdx === -1) {
           finalExplanation = currentLoopText.trim();
@@ -354,7 +357,11 @@ export class TaskExecutor {
     }
 
     if (reachedLimit) {
-      finalExplanation += ' (Catatan: output sangat panjang sehingga sebagian mungkin terpotong. Anda dapat melanjutkan dengan instruksi berikutnya.)';
+      return {
+        operations: allOperations,
+        explanation: finalExplanation || 'Sedang memproses kelanjutannya...',
+        autoContinue: true,
+      };
     }
 
     return {

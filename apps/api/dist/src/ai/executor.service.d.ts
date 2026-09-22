@@ -48,6 +48,7 @@ export declare class TaskExecutor {
     }>): Promise<{
         operations: BlockOperation[];
         explanation?: string;
+        autoContinue?: boolean;
     }>;
     private executeWithClaude;
     private parseAttachments;
