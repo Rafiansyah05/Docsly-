@@ -789,8 +789,67 @@ let ExportService = class ExportService {
         return fileBuffer;
     }
     async importDocx(buffer) {
-        const result = await mammoth.convertToHtml({ buffer });
-        return result.value;
+        const cheerio = require('cheerio');
+        function transformElement(element) {
+            if (element.children) {
+                element.children = element.children.map(transformElement);
+            }
+            if (element.type === 'paragraph') {
+                if (element.alignment) {
+                    element.styleId = `align-${element.alignment}`;
+                    element.styleName = `align-${element.alignment}`;
+                }
+            }
+            if (element.type === 'run') {
+                if (element.font || element.fontSize) {
+                    const marker = `[[__STYLE__:${element.font || ''}:${element.fontSize || ''}]]`;
+                    element.children.unshift({
+                        type: 'text',
+                        value: marker,
+                    });
+                    element.styleId = 'font-styled';
+                    element.styleName = 'font-styled';
+                }
+            }
+            return element;
+        }
+        const options = {
+            transformDocument: transformElement,
+            styleMap: [
+                "p[style-name='align-center'] => p.ql-align-center:fresh",
+                "p[style-name='align-right'] => p.ql-align-right:fresh",
+                "p[style-name='align-left'] => p.ql-align-left:fresh",
+                "p[style-name='align-justify'] => p.ql-align-justify:fresh",
+                "p[style-name='align-both'] => p.ql-align-justify:fresh",
+                "r[style-name='font-styled'] => span.font-styled"
+            ]
+        };
+        const result = await mammoth.convertToHtml({ buffer }, options);
+        let html = result.value;
+        const $ = cheerio.load(html, null, false);
+        $('.ql-align-center').css('text-align', 'center').removeClass('ql-align-center');
+        $('.ql-align-right').css('text-align', 'right').removeClass('ql-align-right');
+        $('.ql-align-left').css('text-align', 'left').removeClass('ql-align-left');
+        $('.ql-align-justify').css('text-align', 'justify').removeClass('ql-align-justify');
+        $('.font-styled').removeClass('font-styled');
+        $('*').each((_, el) => {
+            if (el.type === 'tag') {
+                $(el).contents().filter(function () { return this.type === 'text'; }).each(function () {
+                    let text = this.data;
+                    const match = text.match(/\[\[__STYLE__:([^:]*):([^\]]*)\]\]/);
+                    if (match) {
+                        const font = match[1];
+                        const size = match[2];
+                        if (font)
+                            $(el).css('font-family', font);
+                        if (size)
+                            $(el).css('font-size', `${size}pt`);
+                        this.data = text.replace(/\[\[__STYLE__:([^:]*):([^\]]*)\]\]/g, '');
+                    }
+                });
+            }
+        });
+        return $.html();
     }
 };
 exports.ExportService = ExportService;
